@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import tempfile
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
@@ -47,7 +48,13 @@ from stock_daily_report.report.render import (
     render_site_index,
 )
 from stock_daily_report.risk.rules import configuration_hash, resolve_risk_rules
-from stock_daily_report.snapshots import load_snapshot, write_snapshot
+from stock_daily_report.snapshots import (
+    InputSnapshot,
+    SnapshotConflictError,
+    SnapshotError,
+    load_snapshot,
+    write_snapshot,
+)
 
 
 @dataclass(frozen=True)
@@ -150,45 +157,115 @@ def run_daily_report(
                 PipelineFailure(stock.code, str(error), tuple(issue_codes))
             )
 
-    report_dir = root / "reports" / active_report_date.isoformat()
-    _remove_report_artifacts(report_dir)
     if failures:
         if active_service is not None:
             active_service.discard_staged_cache_writes()
         raise PipelineError(failures)
 
     bars_by_code = {code: result.bars for code, result in fetched.items()}
-    if active_service is not None:
-        active_service.commit_staged_cache_writes()
-    snapshot_path = write_snapshot(
-        root,
-        report_date=active_report_date,
-        bars_by_code=bars_by_code,
-        generated_at=generated_at,
-    )
-    snapshot = load_snapshot(snapshot_path)
-    report = _build_report(
-        active_settings,
-        active_watchlist,
-        fetched,
-        snapshot_path=snapshot_path,
-        snapshot_hash=snapshot.content_hash,
-        report_date=active_report_date,
-        generated_at=generated_at,
-    )
-
-    report_dir.mkdir(parents=True, exist_ok=True)
+    root.mkdir(parents=True, exist_ok=True)
+    report_dir = root / "reports" / active_report_date.isoformat()
     json_path = report_dir / "report.json"
     markdown_path = report_dir / "report.md"
     html_path = report_dir / "index.html"
+    transaction_root = Path(tempfile.mkdtemp(prefix=".publication-", dir=root))
+    publication: _PublicationTransaction | None = None
     try:
-        _atomic_write(json_path, report.model_dump_json(indent=2) + "\n")
-        _atomic_write(markdown_path, render_markdown(report))
-        _atomic_write(html_path, render_html(report))
-        _write_site_index(root)
-    except Exception:
-        _remove_report_artifacts(report_dir)
+        staged_snapshot_path = write_snapshot(
+            transaction_root,
+            report_date=active_report_date,
+            bars_by_code=bars_by_code,
+            generated_at=generated_at,
+        )
+        staged_snapshot = load_snapshot(staged_snapshot_path)
+        snapshot_target = (
+            root
+            / "snapshots"
+            / active_report_date.isoformat()
+            / "input.json"
+        )
+        snapshot = _resolve_snapshot_for_publication(
+            snapshot_target, staged_snapshot
+        )
+        snapshot_path = snapshot_target
+        report = _build_report(
+            active_settings,
+            active_watchlist,
+            fetched,
+            snapshot_path=snapshot_path,
+            snapshot_hash=snapshot.content_hash,
+            report_date=active_report_date,
+            generated_at=generated_at,
+        )
+
+        staged_report_dir = transaction_root / "reports" / active_report_date.isoformat()
+        staged_report_dir.mkdir(parents=True, exist_ok=True)
+        _atomic_write(
+            staged_report_dir / "report.json",
+            report.model_dump_json(indent=2) + "\n",
+        )
+        _atomic_write(staged_report_dir / "report.md", render_markdown(report))
+        _atomic_write(staged_report_dir / "index.html", render_html(report))
+        _validate_staged_report(staged_report_dir)
+
+        staged_site_dir = transaction_root / "site"
+        staged_site_dir.mkdir(parents=True, exist_ok=True)
+        _atomic_write(
+            staged_site_dir / "index.html",
+            _render_site_index_for_publication(root, active_report_date),
+        )
+        staged_styles_path: Path | None = None
+        styles_source = _project_root() / "site" / "styles.css"
+        styles_target = root / "site" / "styles.css"
+        if styles_source.exists() and not styles_target.exists():
+            staged_styles_path = staged_site_dir / "styles.css"
+            _atomic_write(staged_styles_path, styles_source.read_text(encoding="utf-8"))
+
+        publication = _PublicationTransaction(
+            root=root,
+            report_date=active_report_date,
+            staged_report_dir=staged_report_dir,
+            staged_snapshot_path=(
+                None if snapshot_target.exists() else staged_snapshot_path
+            ),
+            staged_site_index=staged_site_dir / "index.html",
+            staged_styles_path=staged_styles_path,
+        )
+        publication.publish()
+        if active_service is not None:
+            active_service.commit_staged_cache_writes()
+        publication.finalize()
+    except PipelineError:
+        if active_service is not None:
+            active_service.discard_staged_cache_writes()
+        if publication is not None:
+            publication.rollback()
         raise
+    except SnapshotConflictError as error:
+        if active_service is not None:
+            active_service.discard_staged_cache_writes()
+        if publication is not None:
+            publication.rollback()
+        raise PipelineError(
+            [PipelineFailure("snapshot_conflict", str(error))]
+        ) from error
+    except SnapshotError as error:
+        if active_service is not None:
+            active_service.discard_staged_cache_writes()
+        if publication is not None:
+            publication.rollback()
+        raise PipelineError(
+            [PipelineFailure("snapshot_error", f"Could not prepare snapshot: {error}")]
+        ) from error
+    except Exception:
+        if active_service is not None:
+            active_service.discard_staged_cache_writes()
+        if publication is not None:
+            publication.rollback()
+        raise
+    finally:
+        shutil.rmtree(transaction_root, ignore_errors=True)
+
     return ReportOutputs(
         json_path=json_path,
         markdown_path=markdown_path,
@@ -196,6 +273,145 @@ def run_daily_report(
         snapshot_path=snapshot_path,
         report=report,
     )
+
+
+def _resolve_snapshot_for_publication(
+    snapshot_target: Path,
+    staged_snapshot: InputSnapshot,
+) -> InputSnapshot:
+    if not snapshot_target.exists():
+        return staged_snapshot
+    existing_snapshot = load_snapshot(snapshot_target)
+    if (
+        existing_snapshot.report_date == staged_snapshot.report_date
+        and existing_snapshot.bars_by_code == staged_snapshot.bars_by_code
+    ):
+        return existing_snapshot
+    raise PipelineError(
+        [
+            PipelineFailure(
+                "snapshot_conflict",
+                "Immutable snapshot already exists with different content: "
+                f"{snapshot_target}",
+            )
+        ]
+    )
+
+
+def _validate_staged_report(staged_report_dir: Path) -> None:
+    report_json = staged_report_dir / "report.json"
+    ReportDocument.model_validate_json(report_json.read_text(encoding="utf-8"))
+    for name in ("report.md", "index.html"):
+        if not (staged_report_dir / name).read_text(encoding="utf-8").strip():
+            raise ValueError(f"Staged report artifact is empty: {name}")
+
+
+def _render_site_index_for_publication(root: Path, report_date: date) -> str:
+    report_dates = {
+        path.name
+        for path in (root / "reports").iterdir()
+        if path.is_dir() and (path / "index.html").exists()
+    } if (root / "reports").exists() else set()
+    report_dates.add(report_date.isoformat())
+    return render_site_index(sorted(report_dates))
+
+
+class _PublicationTransaction:
+    """Publish staged outputs with reversible renames and rollback.
+
+    A directory rename is atomic on the same filesystem, but three separate
+    paths cannot be atomically replaced as one unit. Existing paths are first
+    moved to a transaction-local backup; any later failure restores those
+    backups before the transaction is discarded.
+    """
+
+    def __init__(
+        self,
+        *,
+        root: Path,
+        report_date: date,
+        staged_report_dir: Path,
+        staged_snapshot_path: Path | None,
+        staged_site_index: Path,
+        staged_styles_path: Path | None,
+    ) -> None:
+        self.root = root
+        self.report_date = report_date
+        self.staged_report_dir = staged_report_dir
+        self.staged_snapshot_path = staged_snapshot_path
+        self.staged_site_index = staged_site_index
+        self.staged_styles_path = staged_styles_path
+        self.report_dir = root / "reports" / report_date.isoformat()
+        self.snapshot_path = (
+            root / "snapshots" / report_date.isoformat() / "input.json"
+        )
+        self.site_index = root / "site" / "index.html"
+        self.styles_path = root / "site" / "styles.css"
+        self.backup_root = staged_report_dir.parents[1] / "backups"
+        self.backup_report_dir = self.backup_root / "report"
+        self.backup_snapshot_path = self.backup_root / "snapshot.json"
+        self.backup_site_index = self.backup_root / "site-index.html"
+        self.backup_styles = self.backup_root / "styles.css"
+        self._report_backed_up = False
+        self._report_published = False
+        self._snapshot_published = False
+        self._site_index_backed_up = False
+        self._site_index_published = False
+        self._styles_published = False
+        self._finished = False
+
+    def publish(self) -> None:
+        self.backup_root.mkdir(parents=True, exist_ok=True)
+        try:
+            if self.report_dir.exists():
+                os.replace(self.report_dir, self.backup_report_dir)
+                self._report_backed_up = True
+            self.report_dir.parent.mkdir(parents=True, exist_ok=True)
+            os.replace(self.staged_report_dir, self.report_dir)
+            self._report_published = True
+
+            if self.staged_snapshot_path is not None:
+                self.snapshot_path.parent.mkdir(parents=True, exist_ok=True)
+                os.replace(self.staged_snapshot_path, self.snapshot_path)
+                self._snapshot_published = True
+
+            if self.site_index.exists():
+                os.replace(self.site_index, self.backup_site_index)
+                self._site_index_backed_up = True
+            self.site_index.parent.mkdir(parents=True, exist_ok=True)
+            os.replace(self.staged_site_index, self.site_index)
+            self._site_index_published = True
+
+            if self.staged_styles_path is not None:
+                self.styles_path.parent.mkdir(parents=True, exist_ok=True)
+                os.replace(self.staged_styles_path, self.styles_path)
+                self._styles_published = True
+        except Exception:
+            self.rollback()
+            raise
+
+    def finalize(self) -> None:
+        self._finished = True
+        shutil.rmtree(self.backup_root, ignore_errors=True)
+
+    def rollback(self) -> None:
+        if self._finished:
+            return
+        if self._styles_published:
+            self.styles_path.unlink(missing_ok=True)
+        if self._site_index_published:
+            self.site_index.unlink(missing_ok=True)
+        if self._site_index_backed_up and self.backup_site_index.exists():
+            self.site_index.parent.mkdir(parents=True, exist_ok=True)
+            os.replace(self.backup_site_index, self.site_index)
+        if self._snapshot_published:
+            self.snapshot_path.unlink(missing_ok=True)
+        if self._report_published:
+            shutil.rmtree(self.report_dir, ignore_errors=True)
+        if self._report_backed_up and self.backup_report_dir.exists():
+            self.report_dir.parent.mkdir(parents=True, exist_ok=True)
+            os.replace(self.backup_report_dir, self.report_dir)
+        self._finished = True
 
 
 def _fetch_direct(
@@ -398,27 +614,6 @@ def _build_default_service(
         active_settings,
         now=now,
     )
-
-
-def _write_site_index(root: Path) -> None:
-    reports_root = root / "reports"
-    report_dates = [
-        path.name
-        for path in reports_root.iterdir()
-        if path.is_dir() and (path / "index.html").exists()
-    ] if reports_root.exists() else []
-    site_path = root / "site" / "index.html"
-    site_path.parent.mkdir(parents=True, exist_ok=True)
-    _atomic_write(site_path, render_site_index(report_dates))
-    styles_source = _project_root() / "site" / "styles.css"
-    styles_target = site_path.parent / "styles.css"
-    if styles_source.exists() and not styles_target.exists():
-        _atomic_write(styles_target, styles_source.read_text(encoding="utf-8"))
-
-
-def _remove_report_artifacts(report_dir: Path) -> None:
-    for filename in ("report.json", "report.md", "index.html"):
-        (report_dir / filename).unlink(missing_ok=True)
 
 
 def _atomic_write(path: Path, content: str) -> None:

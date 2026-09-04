@@ -5,8 +5,14 @@ from datetime import UTC, date, datetime, timedelta
 
 import pytest
 
+import stock_daily_report.cli as cli_module
+import stock_daily_report.pipeline as pipeline_module
 from stock_daily_report.models import DailyBar, Settings, Watchlist
-from stock_daily_report.pipeline import PipelineError, run_daily_report
+from stock_daily_report.pipeline import (
+    PipelineError,
+    PipelineFailure,
+    run_daily_report,
+)
 from stock_daily_report.providers.service import MarketDataService
 from stock_daily_report.quality.checks import DataQualitySettings
 
@@ -90,6 +96,263 @@ def test_daily_pipeline_writes_json_markdown_and_html(tmp_path, fixture_settings
     assert outputs.markdown_path == tmp_path / "reports/2026-09-04/report.md"
     assert outputs.html_path == tmp_path / "reports/2026-09-04/index.html"
     assert outputs.snapshot_path == tmp_path / "snapshots/2026-09-04/input.json"
+
+
+def test_successful_publication_commits_cache_after_all_outputs_exist(
+    tmp_path, fixture_settings, monkeypatch
+):
+    service = MarketDataService(
+        {
+            "fixture": RecordingProvider({"600519": make_bars("600519")}),
+            "unused": RecordingProvider({"600519": make_bars("600519")}),
+        },
+        primary_provider="fixture",
+        fallback_provider="unused",
+        cache_directory=tmp_path / "cache",
+        cache_ttl_seconds=3600,
+        quality_settings=DataQualitySettings(
+            minimum_history_bars=fixture_settings.market_data.minimum_history_bars,
+            max_completed_trading_day_lag=fixture_settings.market_data.max_completed_trading_day_lag,
+        ),
+    )
+    observed: list[tuple[bool, bool, bool, bool]] = []
+    original_commit = service.commit_staged_cache_writes
+
+    def commit_after_publication():
+        observed.append(
+            (
+                (tmp_path / "reports/2026-09-04/report.json").exists(),
+                (tmp_path / "reports/2026-09-04/report.md").exists(),
+                (tmp_path / "reports/2026-09-04/index.html").exists(),
+                (tmp_path / "site/index.html").exists(),
+            )
+        )
+        original_commit()
+
+    monkeypatch.setattr(service, "commit_staged_cache_writes", commit_after_publication)
+
+    run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+        service=service,
+        report_date=date(2026, 9, 4),
+    )
+
+    assert observed == [(True, True, True, True)]
+    assert list((tmp_path / "cache").glob("*.json"))
+
+
+def test_failed_rerun_preserves_existing_report_and_site_bytes(
+    tmp_path, fixture_settings
+):
+    watchlist = Watchlist(stocks=[{"code": "600519", "name": "one"}])
+    run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        report_date=date(2026, 9, 4),
+    )
+    report_paths = [
+        tmp_path / "reports/2026-09-04/report.json",
+        tmp_path / "reports/2026-09-04/report.md",
+        tmp_path / "reports/2026-09-04/index.html",
+        tmp_path / "site/index.html",
+    ]
+    before = {path: path.read_bytes() for path in report_paths}
+
+    with pytest.raises(PipelineError):
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=watchlist,
+            provider=RecordingProvider(
+                {"600519": make_bars("600519")}, fail_code="600519"
+            ),
+            report_date=date(2026, 9, 4),
+        )
+
+    assert {path: path.read_bytes() for path in report_paths} == before
+
+
+def test_snapshot_conflict_is_a_typed_pipeline_failure_and_preserves_outputs(
+    tmp_path, fixture_settings
+):
+    watchlist = Watchlist(stocks=[{"code": "600519", "name": "one"}])
+    original_bars = make_bars("600519")
+    run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=RecordingProvider({"600519": original_bars}),
+        report_date=date(2026, 9, 4),
+    )
+    report_paths = [
+        tmp_path / "reports/2026-09-04/report.json",
+        tmp_path / "reports/2026-09-04/report.md",
+        tmp_path / "reports/2026-09-04/index.html",
+        tmp_path / "site/index.html",
+    ]
+    before = {path: path.read_bytes() for path in report_paths}
+    changed_bars = list(original_bars)
+    changed_bars[-1] = changed_bars[-1].model_copy(update={"close": 1.0, "low": 1.0})
+
+    with pytest.raises(PipelineError, match="snapshot_conflict"):
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=watchlist,
+            provider=RecordingProvider({"600519": changed_bars}),
+            report_date=date(2026, 9, 4),
+        )
+
+    assert {path: path.read_bytes() for path in report_paths} == before
+
+
+@pytest.mark.parametrize("failure_kind", ["render", "site_index"])
+def test_publication_failure_restores_old_state_and_discards_staged_cache(
+    tmp_path, fixture_settings, monkeypatch, failure_kind
+):
+    watchlist = Watchlist(stocks=[{"code": "600519", "name": "one"}])
+    run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        report_date=date(2026, 9, 4),
+    )
+    report_paths = [
+        tmp_path / "reports/2026-09-04/report.json",
+        tmp_path / "reports/2026-09-04/report.md",
+        tmp_path / "reports/2026-09-04/index.html",
+        tmp_path / "site/index.html",
+    ]
+    before = {path: path.read_bytes() for path in report_paths}
+    cache_directory = tmp_path / "cache"
+    service = MarketDataService(
+        {
+            "fixture": RecordingProvider({"600519": make_bars("600519")}),
+            "unused": RecordingProvider({"600519": make_bars("600519")}),
+        },
+        primary_provider="fixture",
+        fallback_provider="unused",
+        cache_directory=cache_directory,
+        cache_ttl_seconds=3600,
+        quality_settings=DataQualitySettings(
+            minimum_history_bars=fixture_settings.market_data.minimum_history_bars,
+            max_completed_trading_day_lag=fixture_settings.market_data.max_completed_trading_day_lag,
+        ),
+    )
+    original_atomic_write = pipeline_module._atomic_write
+
+    def fail_site_index(path, content):
+        if path.parent.name == "site" and path.name == "index.html":
+            raise OSError("injected site index failure")
+        original_atomic_write(path, content)
+
+    if failure_kind == "render":
+        monkeypatch.setattr(
+            pipeline_module,
+            "render_html",
+            lambda _report: (_ for _ in ()).throw(
+                OSError("injected render failure")
+            ),
+        )
+    else:
+        monkeypatch.setattr(pipeline_module, "_atomic_write", fail_site_index)
+
+    expected_message = f"injected {failure_kind.replace('_', ' ')} failure"
+    with pytest.raises(OSError, match=expected_message):
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=watchlist,
+            service=service,
+            report_date=date(2026, 9, 4),
+        )
+
+    assert {path: path.read_bytes() for path in report_paths} == before
+    assert not list(cache_directory.glob("*.json"))
+
+
+def test_failed_rerun_never_deletes_unrelated_dated_reports(tmp_path, fixture_settings):
+    watchlist = Watchlist(stocks=[{"code": "600519", "name": "one"}])
+    run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        report_date=date(2026, 9, 3),
+    )
+    unrelated = tmp_path / "reports/2026-09-03"
+    before = {path.name: path.read_bytes() for path in unrelated.iterdir()}
+
+    with pytest.raises(PipelineError):
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=watchlist,
+            provider=RecordingProvider(
+                {"600519": make_bars("600519")}, fail_code="600519"
+            ),
+            report_date=date(2026, 9, 4),
+        )
+
+    assert {path.name: path.read_bytes() for path in unrelated.iterdir()} == before
+
+
+def test_cli_handles_pipeline_failure_without_traceback(
+    tmp_path, fixture_settings, monkeypatch, capsys
+):
+    settings_path = tmp_path / "settings.yaml"
+    settings_path.write_text(
+        "rule_version:\n  name: simplified\n  version: v1\n"
+        "notifications:\n  enabled_channels: []\n"
+        "market_data:\n  primary_provider: fixture\n"
+        "  fallback_provider: unused\n"
+        "  minimum_history_bars: 60\n"
+        "  max_completed_trading_day_lag: 1\n"
+        "risk_rules:\n  rule_version: risk-v1\n"
+        "  high_realized_volatility20: 0.45\n"
+        "  overextension_ma20_distance: 0.20\n"
+        "  large_drawdown60: -0.20\n"
+        "  adverse_volume_ratio20: 0.50\n"
+        "  minimum_history_bars: 61\n",
+        encoding="utf-8",
+    )
+    watchlist_path = tmp_path / "watchlist.yaml"
+    watchlist_path.write_text(
+        "stocks:\n  - code: '600519'\n    name: one\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "run_daily_report",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            PipelineError(
+                [PipelineFailure("snapshot_conflict", "immutable snapshot conflict")]
+            )
+        ),
+    )
+
+    result = cli_module.main(
+        [
+            "daily",
+            "--date",
+            "2026-09-04",
+            "--settings",
+            str(settings_path),
+            "--watchlist",
+            str(watchlist_path),
+            "--output-root",
+            str(tmp_path / "published"),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert result == 1
+    assert "snapshot_conflict" in captured.err
+    assert "Traceback" not in captured.err
 
 
 def test_market_summary_is_derived_from_validated_watchlist_bars(

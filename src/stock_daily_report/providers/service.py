@@ -2,7 +2,9 @@
 
 import hashlib
 import json
+import os
 import re
+import tempfile
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
@@ -131,10 +133,28 @@ class RawResponseCache:
             "key": self._key(provider, code, start, end),
             "response": _redact(response, self._secrets),
         }
-        self._path_for(provider, code, start, end).write_text(
-            json.dumps(document, ensure_ascii=False, separators=(",", ":"), sort_keys=True),
-            encoding="utf-8",
+        path = self._path_for(provider, code, start, end)
+        content = json.dumps(
+            document, ensure_ascii=False, separators=(",", ":"), sort_keys=True
         )
+        temporary_path: Path | None = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                dir=self._directory,
+                delete=False,
+                prefix=f".{path.name}.",
+                suffix=".tmp",
+            ) as temporary:
+                temporary_path = Path(temporary.name)
+                temporary.write(content)
+                temporary.flush()
+                os.fsync(temporary.fileno())
+            os.replace(temporary_path, path)
+        finally:
+            if temporary_path is not None:
+                temporary_path.unlink(missing_ok=True)
 
     def _path_for(
         self, provider: str, code: str, start: date | None, end: date | None
@@ -278,10 +298,21 @@ class MarketDataService:
     def commit_staged_cache_writes(self) -> None:
         """Persist deferred responses after a complete batch validates."""
 
-        staged_writes = self._staged_cache_writes
+        staged_writes = tuple(self._staged_cache_writes)
+        backups: list[tuple[Path, bytes | None]] = []
+        try:
+            for provider_name, code, start, end, response in staged_writes:
+                path = self._cache._path_for(provider_name, code, start, end)
+                backups.append((path, path.read_bytes() if path.exists() else None))
+                self._cache.store(provider_name, code, start, end, response)
+        except Exception:
+            for path, previous in reversed(backups):
+                if previous is None:
+                    path.unlink(missing_ok=True)
+                else:
+                    path.write_bytes(previous)
+            raise
         self._staged_cache_writes = []
-        for provider_name, code, start, end, response in staged_writes:
-            self._cache.store(provider_name, code, start, end, response)
 
     def discard_staged_cache_writes(self) -> None:
         """Drop deferred responses when a batch cannot be completed."""

@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from datetime import date
 from pathlib import Path
 
 from stock_daily_report.config import load_settings, load_watchlist
-from stock_daily_report.pipeline import run_daily_report
+from stock_daily_report.pipeline import PipelineError, run_daily_report
 from stock_daily_report.providers.fixture import FixtureMarketDataProvider
 
 
@@ -30,13 +31,17 @@ def main(argv: list[str] | None = None) -> int:
             if args.fixture_directory is not None
             else None
         )
-        outputs = run_daily_report(
-            settings,
-            output_root=args.output_root,
-            watchlist=watchlist,
-            provider=provider,
-            report_date=args.date,
-        )
+        try:
+            outputs = run_daily_report(
+                settings,
+                output_root=args.output_root,
+                watchlist=watchlist,
+                provider=provider,
+                report_date=args.date,
+            )
+        except PipelineError as error:
+            print(error, file=sys.stderr)
+            return 1
         print(outputs.html_path)
         return 0
     return 2
