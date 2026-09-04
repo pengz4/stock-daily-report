@@ -51,6 +51,13 @@ class Decision(BaseModel):
     rule_version: str = Field(min_length=1)
     config_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
 
+    @field_validator("evidence", "risk_codes")
+    @classmethod
+    def reject_duplicate_codes(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        if len(value) != len(set(value)):
+            raise ValueError("duplicate evidence or risk code(s) are not allowed")
+        return value
+
     @property
     def key_price_levels(self) -> tuple[KeyPriceLevel, ...]:
         """Compatibility name for consumers that spell out price levels."""

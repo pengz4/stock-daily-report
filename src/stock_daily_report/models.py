@@ -171,6 +171,24 @@ class RiskRulesSettings(BaseModel):
     adverse_volume_ratio20: float = Field(ge=0.0)
     minimum_history_bars: int = Field(ge=1)
 
+    @field_validator(
+        "high_realized_volatility20",
+        "overextension_ma20_distance",
+        "large_drawdown60",
+        "adverse_volume_ratio20",
+        "minimum_history_bars",
+        mode="before",
+    )
+    @classmethod
+    def reject_non_finite_thresholds(cls, value: object) -> object:
+        try:
+            numeric_value = float(value)
+        except (TypeError, ValueError):
+            return value
+        if not math.isfinite(numeric_value):
+            raise ValueError("risk thresholds must be finite")
+        return value
+
 
 class Settings(BaseModel):
     """Top-level deterministic report settings."""

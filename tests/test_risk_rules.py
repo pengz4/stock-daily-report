@@ -157,6 +157,35 @@ def test_missing_metrics_are_not_treated_as_zero_or_bullish():
     assert all("nan" not in text.lower() for text in decision.evidence)
 
 
+@pytest.mark.parametrize(
+    "metric",
+    [
+        "close",
+        "ma20",
+        "ma60",
+        "return20",
+        "return60",
+        "macd_line",
+        "macd_signal",
+        "rsi14",
+        "realized_volatility20",
+        "drawdown60",
+        "volume_ratio20",
+    ],
+)
+def test_missing_any_required_decision_metric_never_receives_bullish_label(metric):
+    from stock_daily_report.decision import decide
+
+    decision = decide(
+        metrics=metrics(**{metric: None}),
+        structure=structure(),
+        quality=valid_quality(),
+    )
+
+    assert decision.label == "等待确认"
+    assert "insufficient_metric_data" in decision.risk_codes
+
+
 def test_zero_volume_is_explicitly_adverse_and_outputs_are_deduplicated():
     from stock_daily_report.decision import decide
 
@@ -234,4 +263,59 @@ def test_supplied_settings_without_risk_rules_are_rejected():
             structure=structure(),
             quality=valid_quality(),
             settings=settings,
+        )
+
+
+def _valid_decision_kwargs() -> dict[str, object]:
+    return {
+        "label": "观察",
+        "evidence": ("technical_signals_require_confirmation",),
+        "risk_codes": (),
+        "key_levels": (),
+        "next_conditions": ("继续观察价格、技术指标与结构确认状态",),
+        "rule_version": "risk-test-v1",
+        "config_hash": "0" * 64,
+    }
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("risk_codes", ("duplicate", "duplicate")),
+        ("evidence", ("duplicate", "duplicate")),
+    ],
+)
+def test_decision_rejects_duplicate_codes(field, value):
+    from stock_daily_report.decision import Decision
+
+    with pytest.raises(ValidationError, match="duplicate"):
+        Decision(**{**_valid_decision_kwargs(), field: value})
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "high_realized_volatility20",
+        "overextension_ma20_distance",
+        "large_drawdown60",
+        "adverse_volume_ratio20",
+        "minimum_history_bars",
+    ],
+)
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
+def test_risk_thresholds_reject_non_finite_numbers(field, value):
+    with pytest.raises(ValidationError, match="finite"):
+        RiskRulesSettings(
+            rule_version="risk-test-v1",
+            high_realized_volatility20=(
+                value if field == "high_realized_volatility20" else 0.80
+            ),
+            overextension_ma20_distance=(
+                value if field == "overextension_ma20_distance" else 0.30
+            ),
+            large_drawdown60=value if field == "large_drawdown60" else -0.40,
+            adverse_volume_ratio20=(
+                value if field == "adverse_volume_ratio20" else 0.20
+            ),
+            minimum_history_bars=value if field == "minimum_history_bars" else 60,
         )

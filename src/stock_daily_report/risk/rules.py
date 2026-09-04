@@ -14,6 +14,20 @@ from stock_daily_report.indicators.technical import TechnicalMetrics
 from stock_daily_report.models import RiskRulesSettings, Settings
 from stock_daily_report.quality.checks import DataQualityResult
 
+_REQUIRED_DECISION_METRICS = (
+    "close",
+    "ma20",
+    "ma60",
+    "return20",
+    "return60",
+    "macd_line",
+    "macd_signal",
+    "rsi14",
+    "realized_volatility20",
+    "drawdown60",
+    "volume_ratio20",
+)
+
 
 @dataclass(frozen=True)
 class RiskAssessment:
@@ -71,6 +85,16 @@ def evaluate_risk_rules(
     if close is None or ma20 is None:
         add_risk("insufficient_metric_data")
         add_evidence("close_or_ma20_unavailable")
+        insufficient_data = True
+
+    missing_required_metrics = tuple(
+        name
+        for name in _REQUIRED_DECISION_METRICS
+        if _finite(getattr(metrics, name)) is None
+    )
+    if missing_required_metrics:
+        add_risk("insufficient_metric_data")
+        add_evidence("required_metric_data_unavailable")
         insufficient_data = True
 
     volatility = _finite(metrics.realized_volatility20)
