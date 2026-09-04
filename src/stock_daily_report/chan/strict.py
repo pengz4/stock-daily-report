@@ -4,12 +4,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
+from importlib import resources
 from itertools import pairwise
 from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from stock_daily_report.models import DailyBar
 
@@ -26,6 +27,18 @@ class StrictProfile(BaseModel):
     minimum_central_strokes: int = Field(ge=3)
     require_next_bar_for_tradeability: bool = True
 
+    @model_validator(mode="after")
+    def enforce_v1_rules(self) -> StrictProfile:
+        expected = (3, 3, True)
+        actual = (
+            self.minimum_stroke_separation,
+            self.minimum_central_strokes,
+            self.require_next_bar_for_tradeability,
+        )
+        if self.rule_version == "strict-v1" and actual != expected:
+            raise ValueError("strict-v1 rules are fixed and cannot be overridden")
+        return self
+
 
 class StrictProfileError(ValueError):
     """Raised when the strict rule profile cannot be loaded."""
@@ -34,15 +47,17 @@ class StrictProfileError(ValueError):
 def load_strict_profile(path: str | Path | None = None) -> StrictProfile:
     """Load the checked-in strict profile with safe YAML parsing."""
 
-    profile_path = (
-        Path(path)
-        if path is not None
-        else Path(__file__).resolve().parents[3] / "config" / "strict_chan_rules.yaml"
-    )
     try:
-        document = yaml.safe_load(profile_path.read_text(encoding="utf-8"))
+        if path is None:
+            profile_text = resources.files(__package__).joinpath(
+                "strict_chan_rules.yaml"
+            ).read_text(encoding="utf-8")
+        else:
+            profile_text = Path(path).read_text(encoding="utf-8")
+        document = yaml.safe_load(profile_text)
     except (OSError, UnicodeDecodeError, yaml.YAMLError) as error:
-        raise StrictProfileError(f"Could not read strict profile: {profile_path}") from error
+        location = path or "packaged strict_chan_rules.yaml"
+        raise StrictProfileError(f"Could not read strict profile: {location}") from error
     if not isinstance(document, dict):
         raise StrictProfileError("strict profile must be a YAML mapping")
     try:
@@ -55,7 +70,7 @@ def load_strict_profile(path: str | Path | None = None) -> StrictProfile:
 class StrictEvent:
     """One auditable strict structural event."""
 
-    kind: Literal["fractal", "stroke", "central_area"]
+    kind: Literal["fractal", "stroke", "central_area", "segment", "signal"]
     formed_at: date
     confirmed_at: date | None
     tradable_at: date | None
@@ -76,6 +91,7 @@ class StrictChanResult:
     strokes: tuple[StrictEvent, ...]
     central_candidates: tuple[StrictEvent, ...]
     central_areas: tuple[StrictEvent, ...]
+    segments: tuple[StrictEvent, ...]
     signals: tuple[StrictEvent, ...]
 
     @property
@@ -85,6 +101,7 @@ class StrictChanResult:
             *self.strokes,
             *self.central_candidates,
             *self.central_areas,
+            *self.segments,
             *self.signals,
         )
 
@@ -125,14 +142,17 @@ class StrictChanAnalyzer:
         central_candidates, central_areas = self._find_central_areas(
             stroke_candidates
         )
+        segments = self._find_segments(stroke_candidates)
+        signals = self._find_signals(copied, central_areas)
         return StrictChanResult(
             rule_version=self.profile.rule_version,
             processed_bars=tuple(processed),
             fractals=tuple(item.event for item in fractal_candidates),
             strokes=tuple(item.event for item in stroke_candidates),
-            central_candidates=tuple(item.event for item in central_candidates),
-            central_areas=tuple(item.event for item in central_areas),
-            signals=(),
+            central_candidates=tuple(central_candidates),
+            central_areas=tuple(central_areas),
+            segments=tuple(segments),
+            signals=tuple(signals),
         )
 
     @staticmethod
@@ -204,9 +224,8 @@ class StrictChanAnalyzer:
             )
         return processed
 
-    @classmethod
     def _find_fractals(
-        cls, processed: list[_ProcessedBar], bars: list[DailyBar]
+        self, processed: list[_ProcessedBar], bars: list[DailyBar]
     ) -> list[_FractalCandidate]:
         result: list[_FractalCandidate] = []
         for index in range(1, len(processed) - 1):
@@ -230,9 +249,9 @@ class StrictChanAnalyzer:
                 if right_source_index + 1 < len(bars)
                 else None
             )
-            status: StrictStatus = (
-                "confirmed" if tradable_at is not None else "candidate"
-            )
+            if not self.profile.require_next_bar_for_tradeability:
+                tradable_at = confirmed_at
+            status: StrictStatus = "confirmed"
             result.append(
                 _FractalCandidate(
                     event=StrictEvent(
@@ -338,19 +357,23 @@ class StrictChanAnalyzer:
                 continue
             end = start + self.profile.minimum_central_strokes
             while end < len(strokes):
-                extended = self._overlap([*group, strokes[end]])
-                if extended is None:
+                next_stroke = strokes[end].event
+                if (
+                    next_stroke.high is None
+                    or next_stroke.low is None
+                    or next_stroke.high < overlap[0]
+                    or next_stroke.low > overlap[1]
+                ):
                     break
-                overlap = extended
                 group.append(strokes[end])
                 end += 1
-            last = strokes[end - 1].event
+            initial_last = strokes[start + self.profile.minimum_central_strokes - 1].event
             areas.append(
                 StrictEvent(
                     kind="central_area",
                     formed_at=strokes[start + 2].event.formed_at,
-                    confirmed_at=last.confirmed_at,
-                    tradable_at=last.tradable_at,
+                    confirmed_at=initial_last.confirmed_at,
+                    tradable_at=initial_last.tradable_at,
                     status="confirmed",
                     reason_code="strict_three_stroke_overlap",
                     low=overlap[0],
@@ -359,6 +382,75 @@ class StrictChanAnalyzer:
             )
             start = end
         return candidates, areas
+
+    @staticmethod
+    def _find_segments(strokes: list[_StrokeCandidate]) -> list[StrictEvent]:
+        segments: list[StrictEvent] = []
+        for start in range(0, len(strokes) - 2, 2):
+            group = strokes[start : start + 3]
+            if len(group) < 3:
+                break
+            events = [stroke.event for stroke in group]
+            segments.append(
+                StrictEvent(
+                    kind="segment",
+                    formed_at=events[0].formed_at,
+                    confirmed_at=events[-1].confirmed_at,
+                    tradable_at=events[-1].tradable_at,
+                    status="confirmed",
+                    reason_code="strict_three_stroke_feature_sequence",
+                    low=min(event.low for event in events if event.low is not None),
+                    high=max(
+                        event.high for event in events if event.high is not None
+                    ),
+                )
+            )
+        return segments
+
+    @staticmethod
+    def _find_signals(
+        bars: list[DailyBar], central_areas: list[StrictEvent]
+    ) -> list[StrictEvent]:
+        if not bars or not central_areas:
+            return []
+        area = central_areas[-1]
+        if area.high is None or area.low is None:
+            return []
+        for index in range(len(bars) - 1, -1, -1):
+            bar = bars[index]
+            if bar.close > area.high or bar.close < area.low:
+                direction = "up" if bar.close > area.high else "down"
+                confirmed_at = (
+                    bars[index + 1].trade_date
+                    if index + 1 < len(bars)
+                    and (
+                        (
+                            direction == "up"
+                            and bars[index + 1].close > area.high
+                        )
+                        or (
+                            direction == "down"
+                            and bars[index + 1].close < area.low
+                        )
+                    )
+                    else None
+                )
+                tradable_at = (
+                    bars[index + 2].trade_date
+                    if confirmed_at is not None and index + 2 < len(bars)
+                    else None
+                )
+                return [
+                    StrictEvent(
+                        kind="signal",
+                        formed_at=bar.trade_date,
+                        confirmed_at=confirmed_at,
+                        tradable_at=tradable_at,
+                        status="confirmed" if confirmed_at else "candidate",
+                        reason_code=f"strict_breakout_{direction}_candidate",
+                    )
+                ]
+        return []
 
 
 __all__ = [
