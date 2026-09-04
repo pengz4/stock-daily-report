@@ -303,6 +303,10 @@ def test_cache_recovery_waits_for_publication_lock_before_replaying(
             {
                 "schema_version": 2,
                 "state": "ready",
+                "publication_root": str(tmp_path.resolve()),
+                "publication_owner_token": hashlib.sha256(
+                    str(tmp_path.resolve()).encode("utf-8")
+                ).hexdigest(),
                 "entries": [
                     {
                         "path": target.name,
@@ -450,6 +454,66 @@ def test_cache_lock_is_held_through_publication_acknowledgement_and_cleanup(
     assert service._cache.load(
         "fixture", "concurrent", None, date(2026, 9, 4)
     ) == [{"close": 2.0}]
+
+
+def test_cache_snapshot_lock_blocks_recovery_until_report_is_published(
+    tmp_path, fixture_settings, monkeypatch
+):
+    watchlist = Watchlist(stocks=[{"code": "600519", "name": "one"}])
+    provider = RecordingProvider({"600519": make_bars("600519")})
+    service = MarketDataService(
+        {
+            "fixture": provider,
+            "unused": RecordingProvider({"600519": make_bars("600519")}),
+        },
+        primary_provider="fixture",
+        fallback_provider="unused",
+        cache_directory=tmp_path / "cache",
+        cache_ttl_seconds=3600,
+        quality_settings=DataQualitySettings(
+            minimum_history_bars=fixture_settings.market_data.minimum_history_bars,
+            max_completed_trading_day_lag=fixture_settings.market_data.max_completed_trading_day_lag,
+        ),
+    )
+    service._cache.store(
+        "fixture",
+        "600519",
+        None,
+        date(2026, 9, 4),
+        [bar.model_dump(mode="json") for bar in make_bars("600519")],
+    )
+    load_returned = threading.Event()
+    recovery_attempted = threading.Event()
+    recovery_acquired: list[bool] = []
+    original_load = service._cache.load
+
+    def observe_load(*args, **kwargs):
+        result = original_load(*args, **kwargs)
+        load_returned.set()
+        assert recovery_attempted.wait(timeout=5)
+        return result
+
+    def attempt_recovery():
+        assert load_returned.wait(timeout=5)
+        with service._cache.transaction_lock(nonblocking=True) as acquired:
+            recovery_acquired.append(acquired)
+        recovery_attempted.set()
+
+    monkeypatch.setattr(service._cache, "load", observe_load)
+    recovery_thread = threading.Thread(target=attempt_recovery)
+    recovery_thread.start()
+    outputs = run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        service=service,
+        report_date=date(2026, 9, 4),
+    )
+    recovery_thread.join(timeout=5)
+
+    assert not recovery_thread.is_alive()
+    assert recovery_acquired == [False]
+    assert outputs.report.metadata.report_date == date(2026, 9, 4)
 
 
 def test_cache_recovery_rejects_cross_output_root_without_rollback(
@@ -989,6 +1053,100 @@ def test_concurrent_different_dates_preserve_all_site_index_entries(
     site_index = (tmp_path / "site/index.html").read_text(encoding="utf-8")
     assert "../reports/2026-09-04/index.html" in site_index
     assert "../reports/2026-09-05/index.html" in site_index
+
+
+def test_later_date_recovers_older_orphan_before_touching_shared_site(
+    tmp_path, fixture_settings
+):
+    watchlist = Watchlist(stocks=[{"code": "600519", "name": "one"}])
+    run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        report_date=date(2026, 9, 4),
+    )
+    orphan = tmp_path / ".publication-multi-date-orphan"
+    staged_report = orphan / "reports/2026-09-04"
+    staged_report.mkdir(parents=True)
+    for name in ("report.json", "report.md", "index.html"):
+        (staged_report / name).write_text("new", encoding="utf-8")
+    staged_site = orphan / "site"
+    staged_site.mkdir()
+    (staged_site / "index.html").write_text("new", encoding="utf-8")
+    repo_root = Path(__file__).parents[1]
+    child = f"""
+import os
+from datetime import date
+from pathlib import Path
+import stock_daily_report.pipeline as pipeline
+
+root = Path({str(tmp_path)!r})
+transaction_root = root / ".publication-multi-date-orphan"
+transaction = pipeline._PublicationTransaction(
+    root=root,
+    report_date=date(2026, 9, 4),
+    staged_report_dir=transaction_root / "reports/2026-09-04",
+    staged_snapshot_path=None,
+    staged_site_index=transaction_root / "site/index.html",
+    staged_styles_path=None,
+)
+original_replace = pipeline.os.replace
+
+def hard_exit_after_site_backup(source, destination):
+    original_replace(source, destination)
+    if Path(destination) == transaction.backup_site_index:
+        os._exit(75)
+
+pipeline.os.replace = hard_exit_after_site_backup
+transaction.publish()
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", child],
+        cwd=repo_root,
+        env={**os.environ, "PYTHONPATH": str(repo_root / "src")},
+        check=False,
+    )
+    assert result.returncode == 75
+    old_date_lock_directory = tmp_path / "snapshots/2026-09-04"
+    with pipeline_module._snapshot_write_lock(old_date_lock_directory):
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=watchlist,
+            provider=RecordingProvider({"600519": make_bars("600519")}),
+            report_date=date(2026, 9, 5),
+        )
+
+    assert not list(tmp_path.glob(".publication-*"))
+    site_index = (tmp_path / "site/index.html").read_text(encoding="utf-8")
+    assert "../reports/2026-09-05/index.html" in site_index
+
+
+def test_publication_fsync_failure_retains_recovery_artifacts(
+    tmp_path, fixture_settings, monkeypatch
+):
+    def fail_site_directory_fsync(directory):
+        if Path(directory) == tmp_path / "site":
+            raise OSError("injected directory fsync failure")
+        return original_fsync_directory(directory)
+
+    original_fsync_directory = pipeline_module._fsync_directory
+    monkeypatch.setattr(
+        pipeline_module, "_fsync_directory", fail_site_directory_fsync
+    )
+
+    with pytest.raises(PublicationRollbackError, match="rollback"):
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+            provider=RecordingProvider({"600519": make_bars("600519")}),
+            report_date=date(2026, 9, 4),
+        )
+
+    recovery_roots = list(tmp_path.glob(".publication-*/backups"))
+    assert recovery_roots
 
 
 def test_failed_date_publication_cannot_rollback_another_date(

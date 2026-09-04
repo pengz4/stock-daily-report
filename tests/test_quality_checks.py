@@ -14,6 +14,16 @@ from stock_daily_report.quality.checks import DataQualitySettings, validate_bars
 FIXTURE_DIRECTORY = Path(__file__).parents[1] / "fixtures" / "bars"
 
 
+def _owner_fields(root: Path) -> dict[str, str]:
+    canonical_root = root.expanduser().resolve()
+    return {
+        "publication_root": str(canonical_root),
+        "publication_owner_token": hashlib.sha256(
+            str(canonical_root).encode("utf-8")
+        ).hexdigest(),
+    }
+
+
 @pytest.fixture
 def bars() -> list[DailyBar]:
     return [
@@ -526,6 +536,7 @@ def test_cache_startup_discards_pre_mutation_recovery_state(tmp_path):
             {
                 "schema_version": 2,
                 "state": "preparing",
+                **_owner_fields(tmp_path),
                 "entries": [
                     {
                         "path": existing_path.name,
@@ -564,6 +575,7 @@ def test_cache_recovery_streams_preimage_without_reading_it_all(
             {
                 "schema_version": 2,
                 "state": "ready",
+                **_owner_fields(tmp_path),
                 "entries": [
                     {
                         "path": target.name,
@@ -609,6 +621,7 @@ def test_cache_replays_ready_recovery_manifest_on_startup(tmp_path):
             {
                 "schema_version": 2,
                 "state": "ready",
+                **_owner_fields(tmp_path),
                 "entries": [
                     {
                         "path": existing_path.name,
@@ -667,6 +680,52 @@ def test_cache_recovery_manifest_failure_is_explicit_and_retained(tmp_path):
         recovery_cache.recover_pending_manifests()
 
     assert recovery_directory.exists()
+
+
+def test_direct_cache_recovery_rejects_bound_journal_without_owner_root(
+    tmp_path, bars
+):
+    from stock_daily_report.providers.service import (
+        CacheRollbackError,
+        RawResponseCache,
+    )
+
+    shared_cache = tmp_path / "shared-cache"
+    output_root = tmp_path / "output"
+    output_root.mkdir()
+    publication_manifest = output_root / ".publication-owner" / "manifest.json"
+    publication_manifest.parent.mkdir()
+    publication_manifest.write_text(
+        json.dumps({"state": "committed"}), encoding="utf-8"
+    )
+    service = _service(
+        RecordingProvider("primary", response=bars),
+        RecordingProvider("fallback", response=bars),
+        shared_cache,
+    )
+    service.fetch(
+        "600519",
+        end=date(2026, 9, 4),
+        as_of=date(2026, 9, 4),
+        defer_cache=True,
+    )
+    service.set_publication_recovery_context(
+        publication_manifest, publication_root=output_root
+    )
+    service.commit_staged_cache_writes()
+
+    cache_path = service._cache._path_for(
+        "primary", "600519", None, date(2026, 9, 4)
+    )
+    recovery_paths = list(shared_cache.glob(".cache-recovery-*"))
+    assert len(recovery_paths) == 1
+    before = cache_path.read_bytes()
+
+    with pytest.raises(CacheRollbackError, match="another publication root"):
+        RawResponseCache(shared_cache, ttl_seconds=30).recover_pending_manifests()
+
+    assert cache_path.read_bytes() == before
+    assert recovery_paths[0].exists()
 
 
 def test_akshare_adapter_maps_complete_source_records_without_network():

@@ -119,7 +119,7 @@ class RawResponseCache:
 
     Atomic writes and staged batch commits use one stable cache lock so a
     rollback cannot remove another writer's entry. Recovery is explicit by
-    default and must be invoked by the pipeline after its date and site locks.
+    default and every recovery journal is bound to a canonical owner root.
     """
 
     def __init__(
@@ -538,28 +538,23 @@ class RawResponseCache:
         shutil.rmtree(recovery_path)
         _fsync_directory(self._directory)
 
-    @staticmethod
     def _publication_owner_mismatch(
-        manifest: Mapping[str, object], *, publication_root: Path | None
+        self, manifest: Mapping[str, object], *, publication_root: Path | None
     ) -> str | None:
-        if publication_root is None:
-            return None
         persisted_root_value = manifest.get("publication_root")
         publication_manifest_value = manifest.get("publication_manifest")
-        if persisted_root_value is None and publication_manifest_value is None:
-            return None
+        owner_token = manifest.get("publication_owner_token")
+        if not isinstance(persisted_root_value, str) or not isinstance(
+            owner_token, str
+        ):
+            return "Cache recovery lacks a canonical publication root owner"
         try:
-            if persisted_root_value is None:
-                if not isinstance(publication_manifest_value, str):
-                    return "Cache recovery has an invalid publication root owner"
-                publication_manifest = Path(publication_manifest_value)
-                persisted_root = publication_manifest.parent.parent
-                persisted_root_value = str(persisted_root)
-            elif isinstance(persisted_root_value, str):
-                persisted_root = Path(persisted_root_value)
-            else:
-                return "Cache recovery has an invalid publication root owner"
-            expected_root = Path(publication_root).expanduser().resolve()
+            persisted_root = Path(persisted_root_value)
+            expected_root = (
+                Path(publication_root).expanduser().resolve()
+                if publication_root is not None
+                else self._directory
+            )
             if (
                 not persisted_root.is_absolute()
                 or persisted_root.is_symlink()
@@ -587,11 +582,7 @@ class RawResponseCache:
                         "Cache recovery belongs to another publication root; "
                         "recovery artifacts retained"
                     )
-            owner_token = manifest.get("publication_owner_token")
-            if owner_token is not None and (
-                not isinstance(owner_token, str)
-                or owner_token != _publication_owner_token(persisted_root)
-            ):
+            if owner_token != _publication_owner_token(persisted_root):
                 return (
                     "Cache recovery owner token mismatch; recovery artifacts "
                     "retained"
@@ -600,14 +591,11 @@ class RawResponseCache:
             return "Cache recovery has an invalid publication root owner"
         return None
 
-    @staticmethod
     def _publication_commit_is_durable(
-        manifest: Mapping[str, object],
-        *,
-        publication_root: Path | None = None,
+        self, manifest: Mapping[str, object], *, publication_root: Path | None = None
     ) -> bool:
         if (
-            RawResponseCache._publication_owner_mismatch(
+            self._publication_owner_mismatch(
                 manifest, publication_root=publication_root
             )
             is not None
@@ -1013,6 +1001,11 @@ class MarketDataService:
         )
         _fsync_directory(self._cache._directory)
         self._cache_recovery_path = recovery_path
+        publication_root = self._publication_root or self._cache._directory
+        publication_owner_token = (
+            self._publication_owner_token
+            or _publication_owner_token(publication_root)
+        )
         manifest = {
             "schema_version": 2,
             "state": "preparing",
@@ -1022,11 +1015,9 @@ class MarketDataService:
                 else None
             ),
             "publication_root": (
-                str(self._publication_root)
-                if self._publication_root is not None
-                else None
+                str(publication_root)
             ),
-            "publication_owner_token": self._publication_owner_token,
+            "publication_owner_token": publication_owner_token,
             "entries": [
                 {
                     "path": path.name,

@@ -79,6 +79,39 @@ def _fsync_directory(directory: Path) -> None:
         os.close(descriptor)
 
 
+def _fsync_file(path: Path) -> None:
+    with path.open("rb") as source:
+        os.fsync(source.fileno())
+
+
+def _fsync_tree(path: Path) -> None:
+    if path.is_dir() and not path.is_symlink():
+        children = sorted(path.rglob("*"), key=lambda child: len(child.parts))
+        for child in children:
+            if child.is_file() and not child.is_symlink():
+                _fsync_file(child)
+        for directory in sorted(
+            (
+                child
+                for child in [path, *children]
+                if child.is_dir() and not child.is_symlink()
+            ),
+            key=lambda child: len(child.parts),
+            reverse=True,
+        ):
+            _fsync_directory(directory)
+        return
+    _fsync_file(path)
+    _fsync_directory(path.parent)
+
+
+def _replace_and_fsync(source: Path, destination: Path) -> None:
+    os.replace(source, destination)
+    _fsync_directory(source.parent)
+    if destination.parent != source.parent:
+        _fsync_directory(destination.parent)
+
+
 @dataclass(frozen=True)
 class PipelineFailure:
     """One watchlist retrieval or quality failure."""
@@ -130,8 +163,9 @@ def run_daily_report(
 
     Retrieval and quality validation complete for every watchlist code before
     the immutable snapshot or any success-shaped report artifact is written.
-    Publication acquires the date lock before the site-wide lock; deferred
-    cache writes commit only after publication finalization succeeds.
+    Cache-backed retrieval acquires the date, site, and cache locks before
+    fetching and holds them through publication and cache finalization.
+    Deferred cache writes commit only after publication finalization succeeds.
     """
 
     active_settings = (
@@ -163,6 +197,7 @@ def run_daily_report(
         recovery_cache = _build_recovery_cache(active_settings, root)
 
     transaction_root: Path | None = None
+    publication_started = False
     try:
         cache_lock = _cache_lock_owner(
             service=active_service, cache=recovery_cache
@@ -174,53 +209,61 @@ def run_daily_report(
             cache=recovery_cache,
             cache_lock=cache_lock,
         )
-        for stock in sorted(active_watchlist.stocks, key=lambda item: item.code):
-            try:
-                result = (
-                    active_service.fetch(
-                        stock.code,
-                        end=active_report_date,
-                        as_of=active_report_date,
-                        defer_cache=True,
-                    )
-                    if active_service is not None
-                    else _fetch_direct(
-                        provider,
-                        stock.code,
-                        report_date=active_report_date,
-                        settings=active_settings,
-                    )
-                )
-                fetched[stock.code] = result
-            except (ProviderError, ValidationError, TypeError, ValueError) as error:
-                quality = getattr(error, "quality", None)
-                issue_codes = (
-                    quality.issue_codes
-                    if isinstance(quality, DataQualityResult)
-                    else ()
-                )
-                failures.append(
-                    PipelineFailure(stock.code, str(error), tuple(issue_codes))
-                )
 
-        if failures:
-            raise PipelineError(failures)
-
-        bars_by_code = {code: result.bars for code, result in fetched.items()}
-        report_dir = root / "reports" / active_report_date.isoformat()
-        json_path = report_dir / "report.json"
-        markdown_path = report_dir / "report.md"
-        html_path = report_dir / "index.html"
-        with _publication_lock(
-            root, active_report_date, cache=cache_lock
-        ):
+        def recover_locked() -> None:
             if active_service is not None:
                 active_service.recover_pending_cache_manifests(
                     publication_root=root
                 )
             elif recovery_cache is not None:
                 recovery_cache.recover_pending_manifests(publication_root=root)
-            _recover_pending_publications(root, active_report_date)
+            _recover_pending_publications(root)
+
+        def fetch_all() -> None:
+            for stock in sorted(active_watchlist.stocks, key=lambda item: item.code):
+                try:
+                    result = (
+                        active_service.fetch(
+                            stock.code,
+                            end=active_report_date,
+                            as_of=active_report_date,
+                            defer_cache=True,
+                        )
+                        if active_service is not None
+                        else _fetch_direct(
+                            provider,
+                            stock.code,
+                            report_date=active_report_date,
+                            settings=active_settings,
+                        )
+                    )
+                    fetched[stock.code] = result
+                except (
+                    ProviderError,
+                    ValidationError,
+                    TypeError,
+                    ValueError,
+                ) as error:
+                    quality = getattr(error, "quality", None)
+                    issue_codes = (
+                        quality.issue_codes
+                        if isinstance(quality, DataQualityResult)
+                        else ()
+                    )
+                    failures.append(
+                        PipelineFailure(stock.code, str(error), tuple(issue_codes))
+                    )
+            if failures:
+                raise PipelineError(failures)
+
+        def publish_locked() -> ReportOutputs:
+            nonlocal publication_started, transaction_root
+            bars_by_code = {code: result.bars for code, result in fetched.items()}
+            report_dir = root / "reports" / active_report_date.isoformat()
+            json_path = report_dir / "report.json"
+            markdown_path = report_dir / "report.md"
+            html_path = report_dir / "index.html"
+            publication_started = True
             transaction_root = Path(tempfile.mkdtemp(prefix=".publication-", dir=root))
             try:
                 return _publish_report_transaction(
@@ -240,9 +283,22 @@ def run_daily_report(
             finally:
                 _cleanup_transaction_root(transaction_root, active_report_date)
                 transaction_root = None
+
+        if active_service is not None:
+            with _publication_lock(root, active_report_date, cache=cache_lock):
+                recover_locked()
+                fetch_all()
+                return publish_locked()
+
+        fetch_all()
+        with _publication_lock(root, active_report_date, cache=cache_lock):
+            recover_locked()
+            return publish_locked()
     finally:
         if active_service is not None:
             active_service.discard_staged_cache_writes()
+        if failures and not publication_started:
+            _cleanup_prepublication_lock_directory(root, active_report_date)
         if transaction_root is not None:
             _cleanup_transaction_root(transaction_root, active_report_date)
 
@@ -272,10 +328,24 @@ def _cleanup_transaction_root(transaction_root: Path, report_date: date) -> None
     try:
         transaction_root.rmdir()
     except FileNotFoundError:
-        return
+        pass
     except OSError:
         return
     _fsync_directory(transaction_root.parent)
+
+
+def _cleanup_prepublication_lock_directory(root: Path, report_date: date) -> None:
+    lock_directory = root / "snapshots" / report_date.isoformat()
+    lock_path = lock_directory / ".input.lock"
+    if not lock_directory.exists() or not lock_path.exists():
+        return
+    if any(path != lock_path for path in lock_directory.iterdir()):
+        return
+    lock_path.unlink()
+    lock_directory.rmdir()
+    snapshots_directory = lock_directory.parent
+    if snapshots_directory.exists() and not any(snapshots_directory.iterdir()):
+        snapshots_directory.rmdir()
 
 
 def _recover_pending_publications(
@@ -350,58 +420,26 @@ def _recover_pending_publications_if_idle(
 ) -> None:
     root = Path(root).expanduser().resolve()
     transaction_paths = sorted(root.glob(".publication-*"))
-    recovery_dates: set[date] = set()
-    for transaction_path in transaction_paths:
-        transaction_dates: set[date] = set()
-        try:
-            manifest = _read_publication_manifest(transaction_path)
-            transaction_dates.add(date.fromisoformat(manifest["report_date"]))
-        except PublicationRollbackError:
-            cleanup = _read_cleanup_journal(transaction_path)
-            if cleanup is not None:
-                try:
-                    transaction_dates.add(date.fromisoformat(cleanup["report_date"]))
-                except (KeyError, TypeError, ValueError) as error:
-                    raise PublicationRollbackError(
-                        "Invalid orphan cleanup report date retained at "
-                        f"{transaction_path}"
-                    ) from error
-            report_directory = transaction_path / "reports"
-            for candidate in (
-                report_directory.iterdir() if report_directory.exists() else ()
-            ):
-                try:
-                    transaction_dates.add(date.fromisoformat(candidate.name))
-                except ValueError:
-                    continue
-            if not transaction_dates:
-                transaction_dates.add(report_date)
-        recovery_dates.update(transaction_dates)
     pending_cache = (
         (service is not None and service.has_pending_cache_manifests())
         or (cache is not None and cache.has_pending_manifests())
     )
-    if pending_cache:
-        recovery_dates.add(report_date)
-    for transaction_date in sorted(recovery_dates):
-        with _try_publication_lock(
-            root, transaction_date, cache=cache_lock
-        ) as acquired:
-            if acquired:
-                if service is not None:
-                    service.recover_pending_cache_manifests(
-                        publication_root=root
-                    )
-                elif cache is not None:
-                    cache.recover_pending_manifests(publication_root=root)
-                _recover_pending_publications(root, transaction_date)
-            elif pending_cache and cache_lock is not None:
-                recovery_path = getattr(cache_lock, "_directory", None)
-                raise CacheRollbackError(
-                    recovery_path,
-                    "Could not acquire recovery lock before fetching; "
-                    "pending cache recovery is a precondition",
-                )
+    if not transaction_paths and not pending_cache:
+        return
+    with _try_publication_recovery_lock(root, cache=cache_lock) as acquired:
+        if acquired:
+            if service is not None:
+                service.recover_pending_cache_manifests(publication_root=root)
+            elif cache is not None:
+                cache.recover_pending_manifests(publication_root=root)
+            _recover_pending_publications(root)
+        elif pending_cache and cache_lock is not None:
+            recovery_path = getattr(cache_lock, "_directory", None)
+            raise CacheRollbackError(
+                recovery_path,
+                "Could not acquire recovery lock before fetching; "
+                "pending cache recovery is a precondition",
+            )
 
 
 @contextmanager
@@ -945,14 +983,17 @@ def _replace_publication_target(source: Path, target: Path) -> None:
         shutil.rmtree(target)
     else:
         target.unlink(missing_ok=True)
-    os.replace(source, target)
+    _fsync_directory(target.parent)
+    _replace_and_fsync(source, target)
 
 
 def _remove_publication_target(target: Path) -> None:
+    target.parent.mkdir(parents=True, exist_ok=True)
     if target.is_dir() and not target.is_symlink():
         shutil.rmtree(target)
     else:
         target.unlink(missing_ok=True)
+    _fsync_directory(target.parent)
 
 
 def _write_publication_manifest(
@@ -963,6 +1004,38 @@ def _write_publication_manifest(
         json.dumps(manifest, ensure_ascii=False, sort_keys=True) + "\n",
     )
     _fsync_directory(transaction_root)
+
+
+@contextmanager
+def _try_publication_recovery_lock(
+    root: Path, *, cache: RawResponseCache | None = None
+):
+    root = Path(root).expanduser().resolve()
+    site_directory = root / "site"
+    site_directory.mkdir(parents=True, exist_ok=True)
+    site_lock = site_directory.joinpath(".publication.lock").open(
+        "a", encoding="utf-8"
+    )
+    site_acquired = False
+    try:
+        try:
+            fcntl.flock(site_lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            site_acquired = True
+        except BlockingIOError:
+            yield False
+            return
+        if cache is None:
+            yield True
+            return
+        with cache.transaction_lock(nonblocking=True) as cache_acquired:
+            if not cache_acquired:
+                yield False
+                return
+            yield True
+    finally:
+        if site_acquired:
+            fcntl.flock(site_lock.fileno(), fcntl.LOCK_UN)
+        site_lock.close()
 
 
 @contextmanager
@@ -1330,13 +1403,13 @@ class _PublicationTransaction:
             if self.report_dir.exists():
                 self._report_backup_intent = True
                 self._write_manifest("publishing")
-                os.replace(self.report_dir, self.backup_report_dir)
+                _replace_and_fsync(self.report_dir, self.backup_report_dir)
                 self._report_backed_up = True
                 self._write_manifest("publishing")
             self.report_dir.parent.mkdir(parents=True, exist_ok=True)
             self._report_publish_intent = True
             self._write_manifest("publishing")
-            os.replace(self.staged_report_dir, self.report_dir)
+            _replace_and_fsync(self.staged_report_dir, self.report_dir)
             self._report_published = True
             self._write_manifest("publishing")
 
@@ -1344,20 +1417,20 @@ class _PublicationTransaction:
                 self.snapshot_path.parent.mkdir(parents=True, exist_ok=True)
                 self._snapshot_publish_intent = True
                 self._write_manifest("publishing")
-                os.replace(self.staged_snapshot_path, self.snapshot_path)
+                _replace_and_fsync(self.staged_snapshot_path, self.snapshot_path)
                 self._snapshot_published = True
                 self._write_manifest("publishing")
 
             if self.site_index.exists():
                 self._site_index_backup_intent = True
                 self._write_manifest("publishing")
-                os.replace(self.site_index, self.backup_site_index)
+                _replace_and_fsync(self.site_index, self.backup_site_index)
                 self._site_index_backed_up = True
                 self._write_manifest("publishing")
             self.site_index.parent.mkdir(parents=True, exist_ok=True)
             self._site_index_publish_intent = True
             self._write_manifest("publishing")
-            os.replace(self.staged_site_index, self.site_index)
+            _replace_and_fsync(self.staged_site_index, self.site_index)
             self._site_index_published = True
             self._write_manifest("publishing")
 
@@ -1365,13 +1438,13 @@ class _PublicationTransaction:
                 if self.styles_path.exists():
                     self._styles_backup_intent = True
                     self._write_manifest("publishing")
-                    os.replace(self.styles_path, self.backup_styles)
+                    _replace_and_fsync(self.styles_path, self.backup_styles)
                     self._styles_backed_up = True
                     self._write_manifest("publishing")
                 self.styles_path.parent.mkdir(parents=True, exist_ok=True)
                 self._styles_publish_intent = True
                 self._write_manifest("publishing")
-                os.replace(self.staged_styles_path, self.styles_path)
+                _replace_and_fsync(self.staged_styles_path, self.styles_path)
                 self._styles_published = True
                 self._write_manifest("publishing")
         except BaseException:
@@ -1397,6 +1470,7 @@ class _PublicationTransaction:
         self._write_manifest("verified")
         if self.backup_root.exists():
             shutil.rmtree(self.backup_root)
+            _fsync_directory(self.backup_root.parent)
             if self.backup_root.exists():
                 raise OSError(
                     f"Could not remove publication backups: {self.backup_root}"
@@ -1509,10 +1583,12 @@ class _PublicationTransaction:
                     )
             if self.backup_root.exists():
                 shutil.rmtree(self.backup_root)
+                _fsync_directory(self.backup_root.parent)
             if self.backup_root.exists():
                 raise OSError(f"Could not remove publication backups: {self.backup_root}")
             if self.recovery_root.exists():
                 shutil.rmtree(self.recovery_root)
+                _fsync_directory(self.recovery_root.parent)
                 if self.recovery_root.exists():
                     raise OSError(
                         "Could not remove publication recovery copies: "
@@ -1589,14 +1665,16 @@ class _PublicationTransaction:
     def _replace_target(self, source: Path, target: Path) -> None:
         target.parent.mkdir(parents=True, exist_ok=True)
         self._remove_target(target)
-        os.replace(source, target)
+        _replace_and_fsync(source, target)
 
     @staticmethod
     def _remove_target(target: Path) -> None:
+        target.parent.mkdir(parents=True, exist_ok=True)
         if target.is_dir() and not target.is_symlink():
             shutil.rmtree(target)
         else:
             target.unlink(missing_ok=True)
+        _fsync_directory(target.parent)
 
     def _load_recovery_manifest(self) -> dict[str, dict[str, object]] | None:
         manifest_path = self.recovery_root / "manifest.json"
@@ -1668,16 +1746,18 @@ class _PublicationTransaction:
             else:
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(source, destination)
+            _fsync_tree(destination)
             if not _artifact_matches(destination, self._artifact_specs[name]):
                 raise OSError(
                     f"Publication recovery copy verification failed: {destination}"
                 )
+        _fsync_tree(self.recovery_root)
         manifest["state"] = "ready"
         _atomic_write(
             self.recovery_root / "manifest.json",
             json.dumps(manifest, ensure_ascii=False, sort_keys=True) + "\n",
         )
-        _fsync_directory(self.recovery_root)
+        _fsync_tree(self.recovery_root)
 
 
 def _fetch_direct(
@@ -1913,6 +1993,7 @@ def _atomic_write(path: Path, content: str) -> None:
             temporary.flush()
             os.fsync(temporary.fileno())
         os.replace(temporary_path, path)
+        _fsync_directory(path.parent)
     finally:
         if temporary_path is not None:
             temporary_path.unlink(missing_ok=True)
