@@ -1,11 +1,13 @@
 import hashlib
 import json
+import threading
 from datetime import UTC, date, datetime
 from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
 
+from stock_daily_report import snapshots
 from stock_daily_report.providers.base import DailyBar, MarketDataProvider
 from stock_daily_report.providers.fixture import (
     FixtureDataError,
@@ -204,6 +206,64 @@ def test_write_snapshot_reuses_existing_normalized_content(tmp_path, bars):
 
     assert second_path == first_path
     assert load_snapshot(second_path).generated_at == GENERATED_AT
+
+
+def test_write_snapshot_prevents_concurrent_different_content_overwrite(
+    tmp_path, bars, monkeypatch
+):
+    changed_bars = list(bars)
+    changed_bars[-1] = changed_bars[-1].model_copy(
+        update={"close": 1.0, "low": 1.0}
+    )
+    start_barrier = threading.Barrier(3)
+    atomic_write_barrier = threading.Barrier(2, timeout=0.25)
+    original_atomic_write = snapshots._atomic_write
+    outcomes: list[Path | SnapshotConflictError] = []
+    outcomes_lock = threading.Lock()
+
+    def synchronized_atomic_write(path: Path, content: str) -> None:
+        try:
+            atomic_write_barrier.wait()
+        except threading.BrokenBarrierError:
+            pass
+        original_atomic_write(path, content)
+
+    def write(bars_to_write):
+        start_barrier.wait()
+        try:
+            outcome: Path | SnapshotConflictError = write_snapshot(
+                tmp_path,
+                report_date=date(2026, 9, 4),
+                bars_by_code={"600519": bars_to_write},
+                generated_at=GENERATED_AT,
+            )
+        except SnapshotConflictError as error:
+            outcome = error
+        with outcomes_lock:
+            outcomes.append(outcome)
+
+    monkeypatch.setattr(snapshots, "_atomic_write", synchronized_atomic_write)
+    writers = [
+        threading.Thread(target=write, args=(bars,)),
+        threading.Thread(target=write, args=(changed_bars,)),
+    ]
+    for writer in writers:
+        writer.start()
+    start_barrier.wait()
+    for writer in writers:
+        writer.join(timeout=5)
+
+    assert not any(writer.is_alive() for writer in writers)
+    assert len([outcome for outcome in outcomes if isinstance(outcome, Path)]) == 1
+    conflicts = [
+        outcome for outcome in outcomes if isinstance(outcome, SnapshotConflictError)
+    ]
+    assert len(conflicts) == 1
+    snapshot = load_snapshot(
+        tmp_path / "snapshots" / "2026-09-04" / "input.json"
+    )
+    assert snapshot.content_hash
+    assert snapshot.bars_by_code["600519"][-1] in {bars[-1], changed_bars[-1]}
 
 
 def test_write_snapshot_rejects_non_string_code_keys(tmp_path, bars):

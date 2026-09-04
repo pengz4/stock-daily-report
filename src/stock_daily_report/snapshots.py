@@ -1,5 +1,6 @@
 """Deterministic, immutable JSON input snapshots for daily analysis."""
 
+import fcntl
 import hashlib
 import hmac
 import json
@@ -7,6 +8,7 @@ import os
 import re
 import tempfile
 from collections.abc import Mapping, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
@@ -77,25 +79,26 @@ def write_snapshot(
         / normalized_report_date.isoformat()
         / "input.json"
     )
-    if path.exists():
-        existing = load_snapshot(path)
-        existing_time_payload = _build_payload(
-            normalized_report_date, existing.generated_at, normalized_bars
-        )
-        if hmac.compare_digest(
-            existing.content_hash, _content_hash(existing_time_payload)
-        ):
-            return path
-        raise SnapshotConflictError(
-            f"Refusing to overwrite immutable snapshot with different content: {path}"
-        )
-
     payload = _build_payload(
         normalized_report_date, normalized_generated_at, normalized_bars
     )
     document = {**payload, "content_hash": _content_hash(payload)}
     path.parent.mkdir(parents=True, exist_ok=True)
-    _atomic_write(path, _canonical_json(document))
+    with _snapshot_write_lock(path.parent):
+        if path.exists():
+            existing = load_snapshot(path)
+            existing_time_payload = _build_payload(
+                normalized_report_date, existing.generated_at, normalized_bars
+            )
+            if hmac.compare_digest(
+                existing.content_hash, _content_hash(existing_time_payload)
+            ):
+                return path
+            raise SnapshotConflictError(
+                "Refusing to overwrite immutable snapshot with different content: "
+                f"{path}"
+            )
+        _atomic_write(path, _canonical_json(document))
     return path
 
 
@@ -286,6 +289,20 @@ def _content_hash(payload: Mapping[str, object]) -> str:
 
 def _canonical_json(document: Mapping[str, object]) -> str:
     return json.dumps(document, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+
+
+@contextmanager
+def _snapshot_write_lock(directory: Path):
+    lock_path = directory / ".input.lock"
+    try:
+        with lock_path.open("a", encoding="utf-8") as lock_file:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+    except OSError as error:
+        raise SnapshotError(f"Could not lock snapshot directory: {directory}") from error
 
 
 def _atomic_write(path: Path, content: str) -> None:
