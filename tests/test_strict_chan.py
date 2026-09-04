@@ -274,7 +274,7 @@ def test_strict_builds_segments_and_preserves_initial_central_range():
     assert result.central_candidates == ()
 
 
-def test_strict_replaces_emitted_stroke_endpoint_with_more_extreme_fractal():
+def test_strict_keeps_tradeable_stroke_endpoint_immutable():
     result = StrictChanAnalyzer(load_strict_profile()).analyze(
         _bars_from_ranges(
             [
@@ -294,7 +294,7 @@ def test_strict_replaces_emitted_stroke_endpoint_with_more_extreme_fractal():
     )
 
     assert len(result.strokes) == 2
-    assert result.strokes[0].high == result.strokes[1].high == 20
+    assert result.strokes[0].high == result.strokes[1].high == 17
 
 
 def test_strict_analyzer_rejects_unordered_input_without_mutating_it():

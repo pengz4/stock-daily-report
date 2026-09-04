@@ -16,7 +16,9 @@ The profile applies these rules:
   next supplied input bar, so a last-bar observation cannot be tradeable.
 - A stroke connects alternating confirmed fractals only when they are at least
   three processed bars apart. Same-kind fractals do not silently create a
-  stroke.
+  stroke. Once a stroke is tradeable, its endpoint is immutable in later
+  prefixes; a later same-kind extreme is retained as a fractal but cannot
+  rewrite that historical stroke.
 - A central area requires overlap across three consecutive confirmed strokes
   and may extend only while each following confirmed stroke overlaps the
   original area.
