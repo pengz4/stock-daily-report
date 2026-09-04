@@ -626,6 +626,106 @@ def test_finalize_failure_does_not_commit_new_cache_entries(
     assert not list((tmp_path / "cache").glob("*.json"))
 
 
+def test_cache_commit_failure_restores_preimage_and_publication(
+    tmp_path, fixture_settings, monkeypatch
+):
+    watchlist = Watchlist(
+        stocks=[
+            {"code": "000001", "name": "one"},
+            {"code": "600519", "name": "two"},
+        ]
+    )
+    cache_directory = tmp_path / "cache"
+    service = MarketDataService(
+        {
+            "fixture": RecordingProvider(
+                {"000001": make_bars("000001"), "600519": make_bars("600519")}
+            ),
+            "unused": RecordingProvider(
+                {"000001": make_bars("000001"), "600519": make_bars("600519")}
+            ),
+        },
+        primary_provider="fixture",
+        fallback_provider="unused",
+        cache_directory=cache_directory,
+        cache_ttl_seconds=3600,
+        quality_settings=DataQualitySettings(
+            minimum_history_bars=fixture_settings.market_data.minimum_history_bars,
+            max_completed_trading_day_lag=fixture_settings.market_data.max_completed_trading_day_lag,
+        ),
+    )
+    unrelated_dir = tmp_path / "reports/2026-09-03"
+    unrelated_dir.mkdir(parents=True)
+    unrelated_files = {
+        unrelated_dir / "report.json": b"unrelated json\n",
+        unrelated_dir / "report.md": b"unrelated markdown\n",
+        unrelated_dir / "index.html": b"unrelated html\n",
+    }
+    for path, content in unrelated_files.items():
+        path.write_bytes(content)
+
+    run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        service=service,
+        report_date=date(2026, 9, 4),
+    )
+    report_paths = [
+        tmp_path / "reports/2026-09-04/report.json",
+        tmp_path / "reports/2026-09-04/report.md",
+        tmp_path / "reports/2026-09-04/index.html",
+        tmp_path / "snapshots/2026-09-04/input.json",
+        tmp_path / "site/index.html",
+        tmp_path / "site/styles.css",
+    ]
+    before_reports = {path: path.read_bytes() for path in report_paths}
+    before_unrelated = {path: path.read_bytes() for path in unrelated_files}
+    existing_cache_path = service._cache._path_for(
+        "fixture", "000001", None, date(2026, 9, 4)
+    )
+    new_cache_path = service._cache._path_for(
+        "fixture", "600519", None, date(2026, 9, 4)
+    )
+    existing_cache_bytes = existing_cache_path.read_bytes()
+    new_cache_path.unlink()
+
+    monkeypatch.setattr(service._cache, "load", lambda *_args, **_kwargs: None)
+    original_store = service._cache._store_unlocked
+    store_calls = 0
+
+    def fail_during_second_cache_write(
+        provider_name, code, start, end, document
+    ):
+        nonlocal store_calls
+        store_calls += 1
+        if store_calls == 2:
+            raise OSError("injected cache commit failure after one entry")
+        original_store(provider_name, code, start, end, document)
+
+    monkeypatch.setattr(
+        service._cache, "_store_unlocked", fail_during_second_cache_write
+    )
+
+    with pytest.raises(PipelineError, match="cache commit failure"):
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=watchlist,
+            service=service,
+            report_date=date(2026, 9, 4),
+        )
+
+    assert store_calls == 2
+    assert existing_cache_path.read_bytes() == existing_cache_bytes
+    assert not new_cache_path.exists()
+    assert not list(
+        cache_directory.glob(f".{new_cache_path.name}.*.tmp")
+    )
+    assert {path: path.read_bytes() for path in report_paths} == before_reports
+    assert {path: path.read_bytes() for path in unrelated_files} == before_unrelated
+
+
 def test_failed_rerun_never_deletes_unrelated_dated_reports(tmp_path, fixture_settings):
     watchlist = Watchlist(stocks=[{"code": "600519", "name": "one"}])
     run_daily_report(

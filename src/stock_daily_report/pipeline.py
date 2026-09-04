@@ -279,8 +279,14 @@ def _publish_report_transaction(
         )
         publication.publish()
         publication.finalize()
-        if service is not None:
-            service.commit_staged_cache_writes()
+        try:
+            if service is not None:
+                service.commit_staged_cache_writes()
+        except Exception as error:
+            raise PipelineError(
+                [PipelineFailure("cache_commit", str(error))]
+            ) from error
+        publication.complete()
     except PipelineError:
         if service is not None:
             service.discard_staged_cache_writes()
@@ -439,6 +445,11 @@ class _PublicationTransaction:
             raise
 
     def finalize(self) -> None:
+        """Mark publication ready while retaining backups for cache commit."""
+
+    def complete(self) -> None:
+        """Discard rollback backups after every transactional step succeeds."""
+
         self._finished = True
         shutil.rmtree(self.backup_root, ignore_errors=True)
 
