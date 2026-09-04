@@ -66,3 +66,17 @@ def test_backtest_report_detects_versioned_strict_reference():
     )
 
     assert "simplified-v1" in report["comparisons"]
+
+
+def test_backtest_report_serializes_non_null_split_date(tmp_path):
+    report = build_report(
+        report_date=date(2026, 1, 3),
+        snapshot_hash="a" * 64,
+        events_by_analyzer={},
+        analyzer_profile_hashes={},
+        backtest_assumptions={"out_of_sample_start": date(2026, 1, 2)},
+    )
+
+    path = write_report(report, tmp_path)
+
+    assert '"out_of_sample_start": "2026-01-02"' in path.read_text(encoding="utf-8")

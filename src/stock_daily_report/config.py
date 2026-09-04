@@ -6,7 +6,7 @@ from typing import TypeVar
 import yaml
 from pydantic import BaseModel, ValidationError
 
-from stock_daily_report.models import Settings, Watchlist
+from stock_daily_report.models import BacktestSettings, Settings, Watchlist
 
 ConfigModel = TypeVar("ConfigModel", bound=BaseModel)
 
@@ -61,3 +61,9 @@ def load_settings(path: str | Path) -> Settings:
     """Load and validate YAML settings from a UTF-8 file."""
 
     return _load_model(path, Settings, "settings")
+
+
+def load_backtest_settings(path: str | Path) -> BacktestSettings:
+    """Load and validate execution-aware backtest assumptions."""
+
+    return _load_model(path, BacktestSettings, "backtest")

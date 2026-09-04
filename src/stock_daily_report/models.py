@@ -190,6 +190,66 @@ class Settings(BaseModel):
     risk_rules: RiskRulesSettings | None = None
 
 
+class BacktestCostsSettings(BaseModel):
+    """Validated transaction-cost assumptions for research backtests."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    commission_bps: float = Field(ge=0.0, lt=10_000)
+    slippage_bps: float = Field(ge=0.0, lt=10_000)
+    price_limit_pct: float = Field(gt=0.0, lt=1.0)
+    price_tick: float = Field(gt=0.0)
+
+    @field_validator(
+        "commission_bps",
+        "slippage_bps",
+        "price_limit_pct",
+        "price_tick",
+        mode="before",
+    )
+    @classmethod
+    def require_finite_values(cls, value: object) -> object:
+        if isinstance(value, bool):
+            raise ValueError(  # noqa: TRY004
+                "backtest cost values must be numeric"
+            )
+        try:
+            numeric_value = float(value)
+        except (TypeError, ValueError):
+            return value
+        if not math.isfinite(numeric_value):
+            raise ValueError("backtest cost values must be finite")
+        return value
+
+
+class BacktestSettings(BaseModel):
+    """Versioned execution and sample-split assumptions."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    rule_version: NonEmptyString
+    holding_days: int = Field(ge=1)
+    holding_periods: tuple[int, ...] | None = None
+    minimum_sample_count: int = Field(ge=1)
+    out_of_sample_start: date | None = None
+    costs: BacktestCostsSettings
+
+    @field_validator("holding_periods")
+    @classmethod
+    def require_unique_positive_holding_periods(
+        cls, value: tuple[int, ...] | None
+    ) -> tuple[int, ...] | None:
+        if value is None:
+            return None
+        if not value or any(
+            isinstance(period, bool) or period < 1 for period in value
+        ):
+            raise ValueError("holding_periods must contain positive integers")
+        if len(set(value)) != len(value):
+            raise ValueError("holding_periods must not contain duplicates")
+        return value
+
+
 class DailyBar(BaseModel):
     """One normalized daily OHLC bar from a named market-data provider.
 

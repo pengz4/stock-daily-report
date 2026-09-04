@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 from itertools import pairwise
 from typing import Literal, Protocol
@@ -11,6 +11,7 @@ from typing import Literal, Protocol
 from stock_daily_report.models import DailyBar
 
 ReplayStatus = Literal["candidate", "confirmed"]
+SIMPLIFIED_BREAKOUT_STRATEGY_VERSION = "simplified-breakout-v1"
 
 
 class Analyzer(Protocol):
@@ -40,6 +41,7 @@ class ReplayEvent:
     revision: int
     first_observed_at: date
     subtype: str | None = None
+    symbol: str | None = None
 
     def fingerprint(self) -> tuple[object, ...]:
         """Return fields whose changes constitute an event revision."""
@@ -81,6 +83,7 @@ class ReplayEvent:
             "revision": self.revision,
             "first_observed_at": self.first_observed_at.isoformat(),
             "subtype": self.subtype,
+            "symbol": self.symbol,
         }
 
 
@@ -200,6 +203,29 @@ def _analyzer_name(result: object) -> str | None:
     return None
 
 
+def execution_signals(
+    events: list[ReplayEvent] | tuple[ReplayEvent, ...],
+) -> tuple[ReplayEvent, ...]:
+    """Apply the explicitly versioned execution adapter to structural events."""
+
+    signals: list[ReplayEvent] = []
+    for event in events:
+        if event.kind == "signal":
+            signals.append(event)
+        elif (
+            event.kind == "observation"
+            and event.reason_code == "potential_central_breakout"
+        ):
+            signals.append(
+                replace(
+                    event,
+                    kind="signal",
+                    reason_code="simplified_breakout_up",
+                )
+            )
+    return tuple(signals)
+
+
 def _coalesce_visible(events: Iterable[ReplayEvent]) -> tuple[ReplayEvent, ...]:
     coalesced: dict[str, ReplayEvent] = {}
     for event in events:
@@ -237,4 +263,10 @@ def _subtype_for(item: object, kind: str, reason_code: str) -> str | None:
     return None
 
 
-__all__ = ["Analyzer", "ReplayEvent", "replay"]
+__all__ = [
+    "SIMPLIFIED_BREAKOUT_STRATEGY_VERSION",
+    "Analyzer",
+    "ReplayEvent",
+    "execution_signals",
+    "replay",
+]

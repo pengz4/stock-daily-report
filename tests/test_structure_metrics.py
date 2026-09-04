@@ -127,6 +127,15 @@ def test_compare_structures_uses_maximum_deterministic_matching():
     assert result.matched == 2
 
 
+def test_compare_structures_does_not_match_different_symbols():
+    reference = replace(_event("r1"), symbol="600519")
+    candidate = replace(_event("c1"), symbol="000001")
+
+    result = compare_structures([reference], [candidate])
+
+    assert result.matched == 0
+
+
 def test_compare_structures_excludes_non_structural_events():
     result = compare_structures(
         reference=[_event("strict-1"), _event("strict-signal", kind="signal")],

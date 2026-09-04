@@ -212,6 +212,55 @@ def test_two_overlapping_strokes_are_a_non_tradable_central_candidate():
     assert result.state.status == "candidate"
 
 
+def test_simplified_breakout_becomes_confirmed_after_two_closes():
+    from stock_daily_report.chan.common import CentralArea
+    from stock_daily_report.chan.simplified import SimplifiedChanAnalyzer
+
+    bars = case_bars("bottom")
+    bars.extend(
+        [
+            bars[-1].model_copy(
+                update={
+                    "trade_date": date(2026, 1, 5),
+                    "open": 16.0,
+                    "high": 17.0,
+                    "low": 15.0,
+                    "close": 16.0,
+                }
+            ),
+            bars[-1].model_copy(
+                update={
+                    "trade_date": date(2026, 1, 6),
+                    "open": 17.0,
+                    "high": 18.0,
+                    "low": 16.0,
+                    "close": 17.0,
+                }
+            ),
+        ]
+    )
+    area = CentralArea(
+        low=5,
+        high=15,
+        formed_at=date(2026, 1, 1),
+        confirmed_at=date(2026, 1, 1),
+        tradable_at=date(2026, 1, 2),
+        status="confirmed",
+        rule_version="simplified-v1",
+        start_stroke_index=0,
+        end_stroke_index=2,
+    )
+
+    observations = SimplifiedChanAnalyzer._find_observations(bars, [area])
+
+    assert len(observations) == 1
+    assert (
+        observations[0].formed_at,
+        observations[0].confirmed_at,
+        observations[0].status,
+    ) == (date(2026, 1, 5), date(2026, 1, 6), "confirmed")
+
+
 def test_support_and_resistance_levels_have_deterministic_sources_and_strengths():
     from stock_daily_report.chan.simplified import SimplifiedChanAnalyzer
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import date
 from numbers import Real
 
 from .replay import ReplayEvent
@@ -134,11 +135,17 @@ def _latest(events: Sequence[ReplayEvent]) -> dict[str, ReplayEvent]:
         for event in events
         if event.kind in {"fractal", "stroke", "central_area"}
     ]
-    if events:
-        latest_observation = max(event.observed_at for event in events)
-        events = [
-            event for event in events if event.observed_at == latest_observation
-        ]
+    latest_by_symbol: dict[str | None, date] = {}
+    for event in events:
+        latest_by_symbol[event.symbol] = max(
+            latest_by_symbol.get(event.symbol, event.observed_at),
+            event.observed_at,
+        )
+    events = [
+        event
+        for event in events
+        if event.observed_at == latest_by_symbol[event.symbol]
+    ]
     latest: dict[str, ReplayEvent] = {}
     for event in events:
         previous = latest.get(event.event_id)
@@ -224,6 +231,12 @@ def _matches(
     price_tolerance: float,
     time_tolerance_days: int,
 ) -> bool:
+    if (
+        reference.symbol is not None
+        and candidate.symbol is not None
+        and reference.symbol != candidate.symbol
+    ):
+        return False
     if reference.kind != candidate.kind:
         return False
     reference_subtype = _normalized_subtype(reference)

@@ -359,13 +359,39 @@ class SimplifiedChanAnalyzer:
         latest = central_areas[-1]
         if bars[-1].close <= latest.high:
             return []
+        eligible_indices = [
+            index
+            for index, bar in enumerate(bars)
+            if latest.confirmed_at is None or bar.trade_date > latest.confirmed_at
+        ]
+        if not eligible_indices:
+            return []
+        breakout_start = eligible_indices[-1]
+        while (
+            breakout_start > eligible_indices[0]
+            and bars[breakout_start - 1].close > latest.high
+        ):
+            breakout_start -= 1
+        confirmed = (
+            breakout_start in eligible_indices
+            and len(eligible_indices) - eligible_indices.index(breakout_start) >= 2
+        )
+        formed_at = bars[breakout_start].trade_date
+        confirmed_at = (
+            bars[breakout_start + 1].trade_date if confirmed else None
+        )
+        tradable_at = (
+            bars[breakout_start + 2].trade_date
+            if confirmed and breakout_start + 2 < len(bars)
+            else None
+        )
         return [
             Observation(
                 code="potential_central_breakout",
-                formed_at=bars[-1].trade_date,
-                confirmed_at=None,
-                tradable_at=None,
-                status="candidate",
+                formed_at=formed_at,
+                confirmed_at=confirmed_at,
+                tradable_at=tradable_at,
+                status="confirmed" if confirmed else "candidate",
                 rule_version=RULE_VERSION,
             )
         ]

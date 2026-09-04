@@ -1,6 +1,11 @@
 import pytest
 
-from stock_daily_report.config import ConfigurationError, load_settings, load_watchlist
+from stock_daily_report.config import (
+    ConfigurationError,
+    load_backtest_settings,
+    load_settings,
+    load_watchlist,
+)
 
 
 def test_load_watchlist_returns_valid_a_share_codes(tmp_path):
@@ -325,3 +330,42 @@ def test_load_watchlist_rejects_arbitrary_yaml_objects(tmp_path):
 
     with pytest.raises(ConfigurationError, match="Invalid YAML"):
         load_watchlist(path)
+
+
+def test_load_backtest_settings_validates_execution_assumptions(tmp_path):
+    path = tmp_path / "backtest.yaml"
+    path.write_text(
+        "rule_version: backtest-v1\n"
+        "holding_days: 5\n"
+        "minimum_sample_count: 20\n"
+        "out_of_sample_start: 2026-01-01\n"
+        "costs:\n"
+        "  commission_bps: 3\n"
+        "  slippage_bps: 5\n"
+        "  price_limit_pct: 0.1\n"
+        "  price_tick: 0.01\n",
+        encoding="utf-8",
+    )
+
+    settings = load_backtest_settings(path)
+
+    assert settings.holding_days == 5
+    assert settings.costs.price_tick == 0.01
+
+
+def test_load_backtest_settings_rejects_infinite_price_tick(tmp_path):
+    path = tmp_path / "backtest.yaml"
+    path.write_text(
+        "rule_version: backtest-v1\n"
+        "holding_days: 5\n"
+        "minimum_sample_count: 20\n"
+        "costs:\n"
+        "  commission_bps: 3\n"
+        "  slippage_bps: 5\n"
+        "  price_limit_pct: 0.1\n"
+        "  price_tick: .inf\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ConfigurationError, match="finite"):
+        load_backtest_settings(path)

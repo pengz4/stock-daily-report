@@ -1,0 +1,13 @@
+rule_version: backtest-v1
+holding_days: 5
+holding_periods:
+  - 1
+  - 5
+  - 20
+out_of_sample_start: null
+costs:
+  commission_bps: 3
+  slippage_bps: 5
+  price_limit_pct: 0.10
+  price_tick: 0.01
+minimum_sample_count: 20

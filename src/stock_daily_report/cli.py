@@ -10,13 +10,20 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from stock_daily_report.config import ConfigurationError, load_settings, load_watchlist
+from stock_daily_report.backtest.runner import run_backtest
+from stock_daily_report.config import (
+    ConfigurationError,
+    load_backtest_settings,
+    load_settings,
+    load_watchlist,
+)
 from stock_daily_report.notify import NotificationDeliveryError, NotificationService
 from stock_daily_report.pipeline import (
     PipelineError,
     PublicationRollbackError,
     run_daily_report,
 )
+from stock_daily_report.providers.base import ProviderError
 from stock_daily_report.providers.fixture import FixtureMarketDataProvider
 from stock_daily_report.providers.service import CacheRollbackError
 from stock_daily_report.report.models import ReportDocument
@@ -49,6 +56,18 @@ def main(argv: list[str] | None = None) -> int:
         "--settings", type=Path, default=_project_root() / "config/settings.yaml"
     )
     notify.add_argument("--report-url", required=True)
+    backtest = subparsers.add_parser(
+        "backtest", help="run structural and execution-aware comparisons"
+    )
+    backtest.add_argument(
+        "--settings", type=Path, default=_project_root() / "config/backtest.yaml"
+    )
+    backtest.add_argument(
+        "--watchlist", type=Path, default=_project_root() / "config/watchlist.yaml"
+    )
+    backtest.add_argument("--fixture-directory", type=Path, required=True)
+    backtest.add_argument("--output-root", type=Path, default=Path.cwd())
+    backtest.add_argument("--date", type=date.fromisoformat)
     args = parser.parse_args(argv)
 
     if args.command == "daily":
@@ -112,6 +131,22 @@ def main(argv: list[str] | None = None) -> int:
             print(error, file=sys.stderr)
             return 1
         print("Notifications delivered")
+        return 0
+    if args.command == "backtest":
+        try:
+            settings = load_backtest_settings(args.settings)
+            watchlist = load_watchlist(args.watchlist)
+            report_path = run_backtest(
+                settings,
+                watchlist,
+                FixtureMarketDataProvider(args.fixture_directory),
+                output_root=args.output_root,
+                report_date=args.date,
+            )
+        except (ConfigurationError, OSError, ProviderError, ValueError) as error:
+            print(error, file=sys.stderr)
+            return 1
+        print(report_path)
         return 0
     return 2
 

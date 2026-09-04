@@ -26,6 +26,8 @@ def build_report(
     reference_analyzer: str | None = None,
     price_tolerance: float = 0.0,
     time_tolerance_days: int = 0,
+    backtest_assumptions: Mapping[str, object] | None = None,
+    evaluations: Mapping[str, Mapping[str, object]] | None = None,
 ) -> dict[str, object]:
     """Build deterministic structural comparison report data."""
 
@@ -82,6 +84,10 @@ def build_report(
             "time_days": time_tolerance_days,
         },
         "comparisons": comparisons,
+        "backtest_assumptions": dict(backtest_assumptions or {}),
+        "evaluations": {
+            name: dict(value) for name, value in (evaluations or {}).items()
+        },
     }
 
 
@@ -100,6 +106,7 @@ def write_report(report: Mapping[str, object], output_dir: str | Path) -> Path:
         json.dumps(
             report,
             allow_nan=False,
+            default=_json_default,
             ensure_ascii=True,
             indent=2,
             sort_keys=True,
@@ -108,6 +115,12 @@ def write_report(report: Mapping[str, object], output_dir: str | Path) -> Path:
         encoding="utf-8",
     )
     return path
+
+
+def _json_default(value: object) -> str:
+    if isinstance(value, date):
+        return value.isoformat()
+    raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
 
 
 __all__ = ["REPORT_SCHEMA_VERSION", "build_report", "write_report"]

@@ -41,6 +41,28 @@ also retained on the `reports-history` branch, while snapshots are excluded
 from the Pages artifact. Run `stock-daily-report notify` locally to send an
 already published `report.json`.
 
+## Structural backtest
+
+Run the versioned, execution-aware comparison offline with the committed
+fixture data:
+
+```bash
+stock-daily-report backtest \
+  --settings config/backtest.yaml \
+  --watchlist config/watchlist.yaml \
+  --fixture-directory fixtures/bars \
+  --output-root .
+```
+
+The backtest replays both `simplified-v1` and `strict-v1` one bar at a time,
+then records structural agreement and long-only execution metrics under
+`reports/backtests/YYYY-MM-DD/report.json`. It models commission, slippage,
+daily price limits, suspensions, fixed holding horizons, and a configured
+out-of-sample split. Results below the configured minimum sample count are
+marked `not_enough_evidence`; they are research diagnostics, not return
+guarantees or trading instructions. GitHub Actions runs this separately from
+the daily report workflow and uploads the report as an artifact.
+
 ## GitHub Actions
 
 The workflow runs at 16:30 China Standard Time on Monday-Friday and supports

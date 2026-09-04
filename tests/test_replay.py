@@ -58,3 +58,13 @@ def test_replay_coalesces_candidate_and_confirmed_states_per_prefix():
         by_observation[event.observed_at].append(event.event_id)
 
     assert all(len(ids) == len(set(ids)) for ids in by_observation.values())
+
+
+def test_replay_preserves_descriptive_observations_for_execution_adapter():
+    events = replay(_bars(), analyzer=SimplifiedChanAnalyzer())
+
+    assert all(
+        event.kind != "signal"
+        or event.reason_code != "simplified_breakout_up"
+        for event in events
+    )
