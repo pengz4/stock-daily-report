@@ -112,7 +112,8 @@ class RawResponseCache:
     """A TTL cache of redacted provider responses below a configured local path.
 
     Atomic writes and staged batch commits use one stable cache lock so a
-    rollback cannot remove another writer's entry.
+    rollback cannot remove another writer's entry. Recovery is explicit by
+    default and must be invoked by the pipeline after its date and site locks.
     """
 
     def __init__(
@@ -122,11 +123,11 @@ class RawResponseCache:
         ttl_seconds: int,
         secrets: Sequence[str] = (),
         now: Callable[[], datetime] | None = None,
-        recover_pending: bool = True,
+        recover_pending: bool = False,
     ) -> None:
         if ttl_seconds < 0:
             raise ValueError("cache TTL must not be negative")
-        self._directory = Path(directory)
+        self._directory = Path(directory).expanduser().resolve()
         self._ttl_seconds = ttl_seconds
         self._secrets = tuple(secret for secret in secrets if secret)
         self._now = now or (lambda: datetime.now(UTC))
@@ -265,7 +266,9 @@ class RawResponseCache:
             return
         _fsync_directory(path.parent)
 
-    def _recover_pending_manifests(self) -> None:
+    def _recover_pending_manifests(
+        self, *, publication_root: Path | None = None
+    ) -> None:
         if not self._directory.exists():
             return
         with self._write_lock():
@@ -282,23 +285,29 @@ class RawResponseCache:
                         "recovery manifest path is not a directory",
                     )
                 try:
-                    self._replay_recovery_manifest(recovery_path)
+                    self._replay_recovery_manifest(
+                        recovery_path, publication_root=publication_root
+                    )
                 except CacheRollbackError:
                     raise
                 except Exception as error:
                     raise CacheRollbackError(recovery_path, str(error)) from error
 
-    def recover_pending_manifests(self) -> None:
+    def recover_pending_manifests(
+        self, *, publication_root: Path | None = None
+    ) -> None:
         """Recover cache journals while the caller holds its publication lock."""
 
-        self._recover_pending_manifests()
+        self._recover_pending_manifests(publication_root=publication_root)
 
     def has_pending_manifests(self) -> bool:
         return self._directory.exists() and any(
             self._directory.glob(".cache-recovery-*")
         )
 
-    def _replay_recovery_manifest(self, recovery_path: Path) -> None:
+    def _replay_recovery_manifest(
+        self, recovery_path: Path, *, publication_root: Path | None = None
+    ) -> None:
         manifest_path = recovery_path / "manifest.json"
         try:
             if manifest_path.is_symlink() or (
@@ -446,7 +455,9 @@ class RawResponseCache:
             shutil.rmtree(recovery_path)
             _fsync_directory(self._directory)
             return
-        if state == "committed" and self._publication_commit_is_durable(manifest):
+        if state == "committed" and self._publication_commit_is_durable(
+            manifest, publication_root=publication_root
+        ):
             shutil.rmtree(recovery_path)
             _fsync_directory(self._directory)
             return
@@ -482,17 +493,50 @@ class RawResponseCache:
         _fsync_directory(self._directory)
 
     @staticmethod
-    def _publication_commit_is_durable(manifest: Mapping[str, object]) -> bool:
+    def _publication_commit_is_durable(
+        manifest: Mapping[str, object],
+        *,
+        publication_root: Path | None = None,
+    ) -> bool:
         publication_manifest = manifest.get("publication_manifest")
         if publication_manifest is None:
             return True
         if not isinstance(publication_manifest, str):
             return False
+        publication_root_value = manifest.get("publication_root")
+        if not isinstance(publication_root_value, str):
+            return False
         try:
-            document = json.loads(
-                Path(publication_manifest).read_text(encoding="utf-8")
-            )
-        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            manifest_path = Path(publication_manifest)
+            persisted_root = Path(publication_root_value)
+            if not manifest_path.is_absolute() or not persisted_root.is_absolute():
+                return False
+            if (
+                manifest_path.is_symlink()
+                or manifest_path.parent.is_symlink()
+                or persisted_root.is_symlink()
+            ):
+                return False
+            persisted_root = persisted_root.resolve(strict=False)
+            manifest_path = manifest_path.resolve(strict=False)
+            if publication_root is not None:
+                expected_root = Path(publication_root).expanduser().resolve()
+                if persisted_root != expected_root:
+                    return False
+            if (
+                manifest_path.name != "manifest.json"
+                or not manifest_path.parent.name.startswith(".publication-")
+                or manifest_path.parent.parent != persisted_root
+            ):
+                return False
+            document = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (
+            OSError,
+            UnicodeDecodeError,
+            json.JSONDecodeError,
+            RuntimeError,
+            ValueError,
+        ):
             return False
         return isinstance(document, dict) and document.get("state") == "committed"
 
@@ -606,7 +650,7 @@ class MarketDataService:
         quality_settings: DataQualitySettings | None = None,
         secrets: Sequence[str] = (),
         now: Callable[[], datetime] | None = None,
-        recover_pending: bool = True,
+        recover_pending: bool = False,
     ) -> None:
         if primary_provider == fallback_provider:
             raise ConfigurationError("primary and fallback providers must differ")
@@ -628,11 +672,14 @@ class MarketDataService:
         self._staged_cache_writes: list[tuple[str, str, date | None, date | None, object]] = []
         self._cache_recovery_path: Path | None = None
         self._publication_manifest_path: Path | None = None
+        self._publication_root: Path | None = None
 
-    def recover_pending_cache_manifests(self) -> None:
+    def recover_pending_cache_manifests(
+        self, *, publication_root: Path | None = None
+    ) -> None:
         """Recover cache journals while publication locks are held."""
 
-        self._cache.recover_pending_manifests()
+        self._cache.recover_pending_manifests(publication_root=publication_root)
 
     def has_pending_cache_manifests(self) -> bool:
         return self._cache.has_pending_manifests()
@@ -645,7 +692,7 @@ class MarketDataService:
         *,
         secrets: Sequence[str] = (),
         now: Callable[[], datetime] | None = None,
-        recover_pending: bool = True,
+        recover_pending: bool = False,
     ) -> "MarketDataService":
         """Build the fixed provider selection directly from loaded settings."""
 
@@ -776,10 +823,15 @@ class MarketDataService:
                 raise
         self._staged_cache_writes = []
 
-    def set_publication_recovery_context(self, manifest_path: Path) -> None:
+    def set_publication_recovery_context(
+        self, manifest_path: Path, *, publication_root: Path | None = None
+    ) -> None:
         """Link cache recovery to the publication transaction journal."""
 
-        self._publication_manifest_path = manifest_path
+        self._publication_manifest_path = Path(manifest_path).expanduser().resolve()
+        if publication_root is None:
+            publication_root = self._publication_manifest_path.parent.parent
+        self._publication_root = Path(publication_root).expanduser().resolve()
 
     def finalize_staged_cache_commit(self) -> None:
         """Discard a committed cache recovery manifest after publication cleanup."""
@@ -844,6 +896,11 @@ class MarketDataService:
             "publication_manifest": (
                 str(self._publication_manifest_path)
                 if self._publication_manifest_path is not None
+                else None
+            ),
+            "publication_root": (
+                str(self._publication_root)
+                if self._publication_root is not None
                 else None
             ),
             "entries": [

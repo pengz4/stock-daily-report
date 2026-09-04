@@ -505,7 +505,8 @@ service.commit_staged_cache_writes()
     assert not new_path.exists()
     assert list(tmp_path.glob(".cache-recovery-*"))
 
-    RawResponseCache(tmp_path, ttl_seconds=30)
+    recovery_cache = RawResponseCache(tmp_path, ttl_seconds=30)
+    recovery_cache.recover_pending_manifests()
 
     assert existing_path.read_bytes() == b"old cache bytes"
     assert not new_path.exists()
@@ -539,7 +540,8 @@ def test_cache_startup_discards_pre_mutation_recovery_state(tmp_path):
         encoding="utf-8",
     )
 
-    RawResponseCache(tmp_path, ttl_seconds=30)
+    recovery_cache = RawResponseCache(tmp_path, ttl_seconds=30)
+    recovery_cache.recover_pending_manifests()
 
     assert existing_path.read_bytes() == b"unchanged cache bytes"
     assert not recovery_directory.exists()
@@ -583,7 +585,8 @@ def test_cache_recovery_streams_preimage_without_reading_it_all(
 
     monkeypatch.setattr(Path, "read_bytes", reject_full_preimage_read)
 
-    RawResponseCache(tmp_path, ttl_seconds=30)
+    recovery_cache = RawResponseCache(tmp_path, ttl_seconds=30)
+    recovery_cache.recover_pending_manifests()
 
     assert target.read_bytes() == previous
 
@@ -625,7 +628,8 @@ def test_cache_replays_ready_recovery_manifest_on_startup(tmp_path):
         encoding="utf-8",
     )
 
-    RawResponseCache(tmp_path, ttl_seconds=30)
+    recovery_cache = RawResponseCache(tmp_path, ttl_seconds=30)
+    recovery_cache.recover_pending_manifests()
 
     assert existing_path.read_bytes() == previous_bytes
     assert not new_path.exists()
@@ -658,8 +662,9 @@ def test_cache_recovery_manifest_failure_is_explicit_and_retained(tmp_path):
         encoding="utf-8",
     )
 
+    recovery_cache = RawResponseCache(tmp_path, ttl_seconds=30)
     with pytest.raises(CacheRollbackError, match="recovery"):
-        RawResponseCache(tmp_path, ttl_seconds=30)
+        recovery_cache.recover_pending_manifests()
 
     assert recovery_directory.exists()
 

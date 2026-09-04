@@ -284,6 +284,227 @@ def test_post_cache_publication_cleanup_failure_retains_committed_state(
     assert list(tmp_path.glob(".publication-*/recovery"))
 
 
+def test_cache_recovery_waits_for_publication_lock_before_replaying(
+    tmp_path, fixture_settings
+):
+    from stock_daily_report.providers.service import RawResponseCache
+
+    cache_directory = tmp_path / "cache"
+    cache = RawResponseCache(cache_directory, ttl_seconds=30, recover_pending=False)
+    target = cache._path_for("fixture", "600519", None, date(2026, 9, 4))
+    cache_directory.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(b"new cache bytes")
+    recovery = cache_directory / ".cache-recovery-pending"
+    recovery.mkdir()
+    previous = b"old cache bytes"
+    (recovery / target.name).write_bytes(previous)
+    (recovery / "manifest.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "state": "ready",
+                "entries": [
+                    {
+                        "path": target.name,
+                        "present": True,
+                        "size": len(previous),
+                        "sha256": hashlib.sha256(previous).hexdigest(),
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    service = MarketDataService(
+        {
+            "fixture": RecordingProvider({"600519": make_bars("600519")}),
+            "unused": RecordingProvider({"600519": make_bars("600519")}),
+        },
+        primary_provider="fixture",
+        fallback_provider="unused",
+        cache_directory=cache_directory,
+        cache_ttl_seconds=30,
+        quality_settings=DataQualitySettings(minimum_history_bars=60),
+    )
+
+    with pipeline_module._publication_lock(tmp_path, date(2026, 9, 4)):
+        pipeline_module._recover_pending_publications_if_idle(
+            tmp_path, date(2026, 9, 4), service=service
+        )
+        assert target.read_bytes() == b"new cache bytes"
+        assert recovery.exists()
+
+    pipeline_module._recover_pending_publications_if_idle(
+        tmp_path, date(2026, 9, 4), service=service
+    )
+
+    assert target.read_bytes() == previous
+    assert not recovery.exists()
+
+
+def test_restart_recovery_uses_absolute_publication_paths_from_another_cwd(
+    tmp_path, fixture_settings
+):
+    creator_cwd = tmp_path / "creator"
+    creator_cwd.mkdir()
+    repo_root = Path(__file__).parents[1]
+    child = f"""
+import os
+from datetime import date
+from pathlib import Path
+from datetime import UTC, datetime, timedelta
+
+from stock_daily_report.models import DailyBar, Settings, Watchlist
+from stock_daily_report.pipeline import run_daily_report
+from stock_daily_report.providers.service import MarketDataService
+
+creator_cwd = Path({str(creator_cwd)!r})
+os.chdir(creator_cwd)
+settings = Settings(
+    rule_version={{"name": "simplified", "version": "v1"}},
+    notifications={{"enabled_channels": []}},
+    market_data={{
+        "primary_provider": "fixture",
+        "fallback_provider": "akshare",
+        "minimum_history_bars": 60,
+        "max_completed_trading_day_lag": 1,
+    }},
+    risk_rules={{
+        "rule_version": "risk-v1",
+        "high_realized_volatility20": 0.45,
+        "overextension_ma20_distance": 0.20,
+        "large_drawdown60": -0.20,
+        "adverse_volume_ratio20": 0.50,
+        "minimum_history_bars": 61,
+    }},
+)
+
+def fail_after_publication_commit(self):
+    raise OSError("simulated restart")
+
+MarketDataService.finalize_staged_cache_commit = fail_after_publication_commit
+
+class FixtureProvider:
+    name = "fixture"
+
+    def get_daily_bars(self, code, *, start=None, end=None):
+        first_day = date(2026, 6, 17)
+        return [
+            DailyBar(
+                trade_date=first_day + timedelta(days=index),
+                open=100.0 + index,
+                high=102.0 + index,
+                low=99.0 + index,
+                close=101.0 + index,
+                volume=1000.0 + index,
+                amount=(101.0 + index) * 1000.0,
+                turnover_rate=0.1,
+                adjustment_mode="qfq",
+                provider_name="fixture",
+                source_timestamp=datetime(2026, 9, 4, 8, tzinfo=UTC),
+            )
+            for index in range(80)
+        ]
+
+class UnusedProvider:
+    name = "akshare"
+
+run_daily_report(
+    settings,
+    output_root=Path("../published"),
+    watchlist=Watchlist(stocks=[{{"code": "600519", "name": "one"}}]),
+    providers={{"fixture": FixtureProvider(), "akshare": UnusedProvider()}},
+    report_date=date(2026, 9, 4),
+)
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", child],
+        cwd=repo_root,
+        env={**os.environ, "PYTHONPATH": str(repo_root / "src")},
+        check=False,
+    )
+    assert result.returncode != 0
+
+    published = tmp_path / "published"
+    recovery_manifest = next(
+        (published / ".cache/stock-daily-report").glob(".cache-recovery-*")
+    ) / "manifest.json"
+    document = json.loads(recovery_manifest.read_text(encoding="utf-8"))
+    assert Path(document["publication_manifest"]).is_absolute()
+    assert Path(document["publication_root"]) == published.resolve()
+
+    restarted = MarketDataService(
+        {
+            "fixture": RecordingProvider({"600519": make_bars("600519")}),
+            "unused": RecordingProvider({"600519": make_bars("600519")}),
+        },
+        primary_provider="fixture",
+        fallback_provider="unused",
+        cache_directory=published / ".cache/stock-daily-report",
+        cache_ttl_seconds=3600,
+        quality_settings=DataQualitySettings(
+            minimum_history_bars=fixture_settings.market_data.minimum_history_bars,
+            max_completed_trading_day_lag=fixture_settings.market_data.max_completed_trading_day_lag,
+        ),
+    )
+    pipeline_module._recover_pending_publications_if_idle(
+        published, date(2026, 9, 4), service=restarted
+    )
+
+    cache_path = restarted._cache._path_for(
+        "fixture", "600519", None, date(2026, 9, 4)
+    )
+    assert cache_path.exists()
+    assert not list(published.glob(".publication-*"))
+
+
+def test_interrupted_cleanup_retries_from_cleanup_journal(
+    tmp_path, fixture_settings, monkeypatch
+):
+    watchlist = Watchlist(stocks=[{"code": "600519", "name": "one"}])
+    original_rmtree = pipeline_module.shutil.rmtree
+    interrupted = False
+
+    def interrupt_after_recovery_cleanup(path, *args, **kwargs):
+        nonlocal interrupted
+        path = Path(path)
+        if path.name == "recovery" and not interrupted:
+            original_rmtree(path, *args, **kwargs)
+            transaction_root = path.parent
+            journal = transaction_root / "cleanup.json"
+            assert json.loads(journal.read_text(encoding="utf-8"))["state"] == "cleaning"
+            (transaction_root / "manifest.json").unlink()
+            interrupted = True
+            raise KeyboardInterrupt
+        return original_rmtree(path, *args, **kwargs)
+
+    monkeypatch.setattr(
+        pipeline_module.shutil, "rmtree", interrupt_after_recovery_cleanup
+    )
+    with pytest.raises(KeyboardInterrupt):
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=watchlist,
+            provider=RecordingProvider({"600519": make_bars("600519")}),
+            report_date=date(2026, 9, 4),
+        )
+
+    assert interrupted
+    assert list(tmp_path.glob(".publication-*/cleanup.json"))
+    monkeypatch.undo()
+
+    run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        report_date=date(2026, 9, 4),
+    )
+
+    assert not list(tmp_path.glob(".publication-*"))
+
+
 def test_failed_rerun_preserves_existing_report_and_site_bytes(
     tmp_path, fixture_settings
 ):

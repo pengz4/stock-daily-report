@@ -144,7 +144,7 @@ def run_daily_report(
         active_report_date, datetime
     ):
         raise TypeError("report_date must be a date, not a datetime")
-    root = Path(output_root)
+    root = Path(output_root).expanduser().resolve()
     root.mkdir(parents=True, exist_ok=True)
     failures: list[PipelineFailure] = []
     fetched: dict[str, FetchedBars] = {}
@@ -209,9 +209,11 @@ def run_daily_report(
         html_path = report_dir / "index.html"
         with _publication_lock(root, active_report_date):
             if active_service is not None:
-                active_service.recover_pending_cache_manifests()
+                active_service.recover_pending_cache_manifests(
+                    publication_root=root
+                )
             elif recovery_cache is not None:
-                recovery_cache.recover_pending_manifests()
+                recovery_cache.recover_pending_manifests(publication_root=root)
             _recover_pending_publications(root, active_report_date)
             transaction_root = Path(tempfile.mkdtemp(prefix=".publication-", dir=root))
             try:
@@ -244,9 +246,30 @@ def _cleanup_transaction_root(transaction_root: Path, report_date: date) -> None
 
     backup_root = transaction_root / "backups"
     recovery_root = transaction_root / "recovery"
-    if backup_root.exists() or recovery_root.exists():
+    cleanup_journal = transaction_root / "cleanup.json"
+    manifest = transaction_root / "manifest.json"
+    if (
+        backup_root.exists()
+        or recovery_root.exists()
+    ):
+        return
+    if manifest.exists():
+        try:
+            manifest_state = _read_publication_manifest(transaction_root)["state"]
+        except PublicationRollbackError:
+            return
+        if manifest_state != "rolled_back":
+            return
+    elif cleanup_journal.exists():
         return
     shutil.rmtree(transaction_root, ignore_errors=True)
+    try:
+        transaction_root.rmdir()
+    except FileNotFoundError:
+        return
+    except OSError:
+        return
+    _fsync_directory(transaction_root.parent)
 
 
 def _recover_pending_publications(
@@ -254,6 +277,7 @@ def _recover_pending_publications(
 ) -> None:
     """Recover bounded orphan publication transactions before new work starts."""
 
+    root = Path(root).expanduser().resolve()
     transaction_paths = sorted(root.glob(".publication-*"))
     if len(transaction_paths) > _MAX_PUBLICATION_TRANSACTIONS:
         raise PublicationRollbackError(
@@ -270,6 +294,20 @@ def _recover_pending_publications(
         try:
             manifest = _read_publication_manifest(transaction_path)
         except PublicationRollbackError:
+            cleanup = _read_cleanup_journal(transaction_path)
+            if cleanup is not None:
+                try:
+                    transaction_date = date.fromisoformat(cleanup["report_date"])
+                except (KeyError, TypeError, ValueError) as error:
+                    raise PublicationRollbackError(
+                        "Invalid orphan cleanup report date retained at "
+                        f"{transaction_path}"
+                    ) from error
+                dated_transactions.append((transaction_date, transaction_path))
+                continue
+            if not any(transaction_path.iterdir()):
+                _recover_publication_transaction(transaction_path)
+                continue
             if requested_date is None:
                 raise
             if not (
@@ -303,6 +341,7 @@ def _recover_pending_publications_if_idle(
     service: MarketDataService | None = None,
     cache: RawResponseCache | None = None,
 ) -> None:
+    root = Path(root).expanduser().resolve()
     transaction_paths = sorted(root.glob(".publication-*"))
     recovery_dates: set[date] = set()
     for transaction_path in transaction_paths:
@@ -311,6 +350,15 @@ def _recover_pending_publications_if_idle(
             manifest = _read_publication_manifest(transaction_path)
             transaction_dates.add(date.fromisoformat(manifest["report_date"]))
         except PublicationRollbackError:
+            cleanup = _read_cleanup_journal(transaction_path)
+            if cleanup is not None:
+                try:
+                    transaction_dates.add(date.fromisoformat(cleanup["report_date"]))
+                except (KeyError, TypeError, ValueError) as error:
+                    raise PublicationRollbackError(
+                        "Invalid orphan cleanup report date retained at "
+                        f"{transaction_path}"
+                    ) from error
             report_directory = transaction_path / "reports"
             for candidate in (
                 report_directory.iterdir() if report_directory.exists() else ()
@@ -330,14 +378,17 @@ def _recover_pending_publications_if_idle(
         with _try_publication_lock(root, transaction_date) as acquired:
             if acquired:
                 if service is not None:
-                    service.recover_pending_cache_manifests()
+                    service.recover_pending_cache_manifests(
+                        publication_root=root
+                    )
                 elif cache is not None:
-                    cache.recover_pending_manifests()
+                    cache.recover_pending_manifests(publication_root=root)
                 _recover_pending_publications(root, transaction_date)
 
 
 @contextmanager
 def _try_publication_lock(root: Path, report_date: date):
+    root = Path(root).expanduser().resolve()
     snapshot_directory = root / "snapshots" / report_date.isoformat()
     snapshot_directory.mkdir(parents=True, exist_ok=True)
     site_directory = root / "site"
@@ -428,6 +479,191 @@ def _read_publication_manifest(transaction_root: Path) -> dict[str, object]:
     return manifest
 
 
+def _read_cleanup_journal(transaction_root: Path) -> dict[str, object] | None:
+    journal_path = transaction_root / "cleanup.json"
+    try:
+        if journal_path.is_symlink():
+            raise OSError("cleanup journal must not be a symlink")
+        if journal_path.stat().st_size > _MAX_PUBLICATION_MANIFEST_BYTES:
+            raise OSError("cleanup journal exceeds the size limit")
+        journal = json.loads(journal_path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return None
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise PublicationRollbackError(
+            "Could not read orphan cleanup journal; recovery artifacts "
+            f"retained at {transaction_root}"
+        ) from error
+    if (
+        not isinstance(journal, dict)
+        or journal.get("schema_version") != 1
+        or journal.get("state") != "cleaning"
+        or not isinstance(journal.get("report_date"), str)
+        or not isinstance(journal.get("artifacts"), dict)
+        or not isinstance(journal.get("published"), dict)
+    ):
+        raise PublicationRollbackError(
+            "Invalid orphan cleanup journal; recovery artifacts retained at "
+            f"{transaction_root}"
+        )
+    artifacts = journal["artifacts"]
+    published = journal["published"]
+    if any(
+        name not in artifacts
+        or not _valid_artifact_spec(artifacts[name])
+        or name not in published
+        or not _valid_artifact_spec(published[name])
+        for name in ("report", "snapshot", "site-index", "styles")
+    ):
+        raise PublicationRollbackError(
+            "Invalid orphan cleanup artifact metadata; recovery artifacts "
+            f"retained at {transaction_root}"
+        )
+    return journal
+
+
+def _ensure_cleanup_journal(
+    transaction_root: Path, manifest: Mapping[str, object]
+) -> None:
+    if _read_cleanup_journal(transaction_root) is not None:
+        return
+    artifacts = manifest.get("artifacts")
+    published = manifest.get("published")
+    if not isinstance(artifacts, dict) or not isinstance(published, dict):
+        raise PublicationRollbackError(
+            "Committed publication lacks cleanup metadata; recovery artifacts "
+            f"retained at {transaction_root}"
+        )
+    journal = {
+        "schema_version": 1,
+        "state": "cleaning",
+        "report_date": manifest.get("report_date"),
+        "artifacts": artifacts,
+        "published": published,
+    }
+    _write_cleanup_journal(transaction_root, journal)
+
+
+def _write_cleanup_journal(
+    transaction_root: Path, journal: Mapping[str, object]
+) -> None:
+    _atomic_write(
+        transaction_root / "cleanup.json",
+        json.dumps(journal, ensure_ascii=False, sort_keys=True) + "\n",
+    )
+    _fsync_directory(transaction_root)
+
+
+def _publication_targets(root: Path, report_date: date) -> dict[str, Path]:
+    return {
+        "report": root / "reports" / report_date.isoformat(),
+        "snapshot": root / "snapshots" / report_date.isoformat() / "input.json",
+        "site-index": root / "site" / "index.html",
+        "styles": root / "site" / "styles.css",
+    }
+
+
+def _recover_publication_cleanup(
+    transaction_root: Path, journal: Mapping[str, object]
+) -> None:
+    try:
+        report_date = date.fromisoformat(journal["report_date"])
+    except (KeyError, TypeError, ValueError) as error:
+        raise PublicationRollbackError(
+            "Invalid orphan cleanup report date; recovery artifacts retained at "
+            f"{transaction_root}"
+        ) from error
+    published = journal.get("published")
+    if not isinstance(published, dict):
+        raise PublicationRollbackError(
+            "Invalid orphan cleanup publication metadata; recovery artifacts "
+            f"retained at {transaction_root}"
+        )
+    targets = _publication_targets(transaction_root.parent, report_date)
+    if any(
+        not _valid_artifact_spec(published.get(name))
+        or not _artifact_matches(targets[name], published[name])
+        for name in targets
+    ):
+        raise PublicationRollbackError(
+            "Committed publication targets are not verified; recovery "
+            f"artifacts retained at {transaction_root}"
+        )
+    _finish_publication_cleanup(transaction_root)
+
+
+def _remove_recovery_payloads(recovery_root: Path) -> None:
+    if not recovery_root.exists():
+        return
+    if recovery_root.is_symlink() or not recovery_root.is_dir():
+        raise PublicationRollbackError(
+            "Invalid publication recovery directory retained at "
+            f"{recovery_root}"
+        )
+    recovery_manifest = recovery_root / "manifest.json"
+    for child in sorted(recovery_root.iterdir()):
+        if child == recovery_manifest:
+            continue
+        if child.is_symlink():
+            raise PublicationRollbackError(
+                "Invalid publication recovery payload retained at " f"{child}"
+            )
+        if child.is_dir():
+            shutil.rmtree(child)
+        elif child.is_file():
+            child.unlink()
+        else:
+            raise PublicationRollbackError(
+                "Invalid publication recovery payload retained at " f"{child}"
+            )
+        _fsync_directory(recovery_root)
+    remaining = set(recovery_root.iterdir())
+    if remaining - {recovery_manifest}:
+        raise PublicationRollbackError(
+            "Publication recovery payload cleanup was incomplete; recovery "
+            f"artifacts retained at {recovery_root}"
+        )
+    if recovery_manifest.exists():
+        shutil.rmtree(recovery_root)
+    else:
+        recovery_root.rmdir()
+    _fsync_directory(recovery_root.parent)
+
+
+def _finish_publication_cleanup(transaction_root: Path) -> None:
+    for name in ("recovery", "backups", "reports", "snapshots", "site"):
+        payload_root = transaction_root / name
+        if not payload_root.exists():
+            continue
+        if name == "recovery":
+            _remove_recovery_payloads(payload_root)
+        elif payload_root.is_symlink() or not payload_root.is_dir():
+            raise PublicationRollbackError(
+                "Invalid publication cleanup payload retained at "
+                f"{payload_root}"
+            )
+        else:
+            shutil.rmtree(payload_root)
+            _fsync_directory(transaction_root)
+
+    manifest_path = transaction_root / "manifest.json"
+    manifest_path.unlink(missing_ok=True)
+    _fsync_directory(transaction_root)
+    cleanup_journal = transaction_root / "cleanup.json"
+    cleanup_journal.unlink(missing_ok=True)
+    _fsync_directory(transaction_root)
+    try:
+        transaction_root.rmdir()
+    except FileNotFoundError:
+        return
+    except OSError as error:
+        raise PublicationRollbackError(
+            "Publication cleanup left unexpected transaction data; recovery "
+            f"artifacts retained at {transaction_root}"
+        ) from error
+    _fsync_directory(transaction_root.parent)
+
+
 def _valid_artifact_spec(spec: object) -> bool:
     if not isinstance(spec, dict):
         return False
@@ -448,9 +684,24 @@ def _valid_artifact_spec(spec: object) -> bool:
 
 
 def _recover_publication_transaction(transaction_root: Path) -> None:
+    manifest_path = transaction_root / "manifest.json"
+    if not manifest_path.exists():
+        cleanup = _read_cleanup_journal(transaction_root)
+        if cleanup is None:
+            if not any(transaction_root.iterdir()):
+                transaction_root.rmdir()
+                _fsync_directory(transaction_root.parent)
+                return
+            raise PublicationRollbackError(
+                "Orphan publication manifest is missing; recovery artifacts "
+                f"retained at {transaction_root}"
+            )
+        _recover_publication_cleanup(transaction_root, cleanup)
+        return
     manifest = _read_publication_manifest(transaction_root)
     allowed_transaction_entries = {
         "manifest.json",
+        "cleanup.json",
         "backups",
         "recovery",
         "reports",
@@ -485,6 +736,7 @@ def _recover_publication_transaction(transaction_root: Path) -> None:
         }
         if {path.name for path in transaction_root.iterdir()} - {
             "manifest.json",
+            "cleanup.json",
             "recovery",
             "reports",
             "snapshots",
@@ -503,8 +755,16 @@ def _recover_publication_transaction(transaction_root: Path) -> None:
                 "Committed publication targets are not verified; recovery "
                 f"artifacts retained at {transaction_root}"
             )
-        shutil.rmtree(transaction_root)
-        _fsync_directory(transaction_root.parent)
+        _ensure_cleanup_journal(transaction_root, manifest)
+        _recover_publication_cleanup(
+            transaction_root, _read_cleanup_journal(transaction_root)
+        )
+        return
+    if state == "cleaning":
+        _ensure_cleanup_journal(transaction_root, manifest)
+        _recover_publication_cleanup(
+            transaction_root, _read_cleanup_journal(transaction_root)
+        )
         return
     if state not in {
         "prepared",
@@ -680,8 +940,13 @@ def _write_publication_manifest(
 
 @contextmanager
 def _publication_lock(root: Path, report_date: date):
-    """Lock one date, then shared site files, always in that order."""
+    """Lock date, then shared site files; cache locks are acquired last.
 
+    Every pipeline-owned cache recovery or staged cache commit runs inside this
+    context, establishing the fixed date -> site -> cache lock order.
+    """
+
+    root = Path(root).expanduser().resolve()
     snapshot_directory = root / "snapshots" / report_date.isoformat()
     snapshot_directory.mkdir(parents=True, exist_ok=True)
     site_directory = root / "site"
@@ -771,7 +1036,10 @@ def _publish_report_transaction(
                     service, "set_publication_recovery_context", None
                 )
                 if set_context is not None:
-                    set_context(publication.manifest_path)
+                    set_context(
+                        publication.manifest_path,
+                        publication_root=root,
+                    )
                 service.commit_staged_cache_writes()
         except Exception as error:
             raise PipelineError(
@@ -1105,20 +1373,16 @@ class _PublicationTransaction:
 
         if not self._finished:
             raise OSError("Cannot clean up an uncommitted publication")
-        if self.recovery_root.exists():
-            shutil.rmtree(self.recovery_root)
-            if self.recovery_root.exists():
-                raise OSError(
-                    "Could not remove publication recovery copies: "
-                    f"{self.recovery_root}"
-                )
-            _fsync_directory(self.transaction_root)
-        shutil.rmtree(self.transaction_root)
-        _fsync_directory(self.transaction_root.parent)
-        if self.transaction_root.exists():
-            raise OSError(
-                f"Could not remove publication transaction: {self.transaction_root}"
-            )
+        self._write_manifest("cleaning")
+        cleanup_journal = {
+            "schema_version": 1,
+            "state": "cleaning",
+            "report_date": self.report_date.isoformat(),
+            "artifacts": self._artifact_specs,
+            "published": self._published_artifacts,
+        }
+        _write_cleanup_journal(self.transaction_root, cleanup_journal)
+        _recover_publication_cleanup(self.transaction_root, cleanup_journal)
 
     def rollback(self) -> None:
         if self._finished:
@@ -1565,6 +1829,7 @@ def _build_default_service(
     cache_directory = Path(settings.market_data.cache_directory)
     if not cache_directory.is_absolute():
         cache_directory = output_root / cache_directory
+    cache_directory = cache_directory.expanduser().resolve()
     active_settings = settings.market_data.model_copy(
         update={"cache_directory": str(cache_directory)}
     )
@@ -1580,6 +1845,7 @@ def _build_recovery_cache(settings: Settings, output_root: Path) -> RawResponseC
     cache_directory = Path(settings.market_data.cache_directory)
     if not cache_directory.is_absolute():
         cache_directory = output_root / cache_directory
+    cache_directory = cache_directory.expanduser().resolve()
     return RawResponseCache(
         cache_directory,
         ttl_seconds=settings.market_data.cache_ttl_seconds,
