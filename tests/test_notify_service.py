@@ -4,6 +4,7 @@ from http.client import IncompleteRead
 from urllib.error import URLError
 
 import pytest
+from test_report_render import _document
 
 from stock_daily_report.models import NotificationSettings
 from stock_daily_report.notify.base import (
@@ -153,6 +154,15 @@ def test_webhook_rejects_non_numeric_status_response():
         ).send(_summary())
 
 
+def test_webhook_rejects_boolean_status_response():
+    with pytest.raises(WebhookError, match="invalid errcode"):
+        WeComNotifier(
+            "https://wecom.example/hook",
+            transport=lambda url, body, timeout: (200, b'{"errcode":false}'),
+            max_attempts=1,
+        ).send(_summary())
+
+
 def test_feishu_status_code_failure_is_not_marked_delivered():
     attempts = []
 
@@ -223,3 +233,24 @@ def test_send_report_rejects_malformed_report_url_without_traceback():
 
     with pytest.raises(NotificationDeliveryError, match="absolute URL"):
         service.send_report(object(), report_url="https://[")
+
+
+def test_send_report_rejects_invalid_report_url_port():
+    service = NotificationService(NotificationSettings(enabled_channels={"wecom"}))
+
+    with pytest.raises(NotificationDeliveryError, match="absolute URL"):
+        service.send_report(
+            _document("visible"),
+            report_url="https://reports.example:notaport/report",
+        )
+
+
+def test_service_redacts_stripped_webhook_secret_from_failure(monkeypatch):
+    secret_url = "not-a-valid-url-secret"
+    monkeypatch.setenv("WECOM_WEBHOOK_URL", f" {secret_url} ")
+    service = NotificationService(NotificationSettings(enabled_channels={"wecom"}))
+
+    with pytest.raises(NotificationDeliveryError) as raised:
+        service.send(_summary())
+
+    assert secret_url not in str(raised.value)

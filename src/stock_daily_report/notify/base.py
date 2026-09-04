@@ -134,7 +134,7 @@ def _validate_webhook_response(response_body: bytes) -> None:
             continue
         value = document[key]
         status_found = True
-        if not isinstance(value, int):
+        if type(value) is not int:
             raise WebhookError(
                 f"webhook response had invalid {key}",
                 transient=False,

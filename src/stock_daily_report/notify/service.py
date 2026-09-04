@@ -60,8 +60,12 @@ class NotificationService:
 
         try:
             parsed_url = urlsplit(report_url)
-            valid_url = parsed_url.scheme in {"http", "https"} and bool(
-                parsed_url.netloc
+            hostname = parsed_url.hostname
+            port = parsed_url.port
+            valid_url = (
+                parsed_url.scheme in {"http", "https"}
+                and bool(hostname)
+                and (port is None or 1 <= port <= 65535)
             )
         except ValueError:
             valid_url = False
@@ -119,9 +123,10 @@ def _decision_counts(report: ReportDocument) -> dict[str, int]:
 def _safe_error_message(error: Exception) -> str:
     message = str(error)
     for environment_name in _ENVIRONMENT_URLS.values():
-        secret = os.environ.get(environment_name, "")
-        if secret:
-            message = message.replace(secret, "<redacted>")
+        raw_secret = os.environ.get(environment_name, "")
+        for secret in {raw_secret, raw_secret.strip()}:
+            if secret:
+                message = message.replace(secret, "<redacted>")
     return message[:300]
 
 
