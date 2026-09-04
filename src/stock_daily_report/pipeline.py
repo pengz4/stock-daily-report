@@ -68,6 +68,11 @@ from stock_daily_report.snapshots import (
 
 _MAX_PUBLICATION_TRANSACTIONS = 32
 _MAX_PUBLICATION_MANIFEST_BYTES = 1024 * 1024
+_PUBLICATION_QUARANTINE_NAME = "quarantine.json"
+_MANIFESTLESS_PAYLOAD_ROOTS = frozenset({"reports", "snapshots", "site"})
+_PUBLICATION_EVIDENCE_NAMES = frozenset(
+    {"backups", "recovery", "cache", "manifest.json", "cleanup.json", "quarantine.json"}
+)
 
 
 def _fsync_directory(directory: Path) -> None:
@@ -314,10 +319,15 @@ def run_daily_report(
 def _cleanup_transaction_root(transaction_root: Path, report_date: date) -> None:
     """Remove staging only when no unverified publication backup remains."""
 
+    if not transaction_root.exists():
+        return
     backup_root = transaction_root / "backups"
     recovery_root = transaction_root / "recovery"
     cleanup_journal = transaction_root / "cleanup.json"
     manifest = transaction_root / "manifest.json"
+    if not manifest.exists() and not cleanup_journal.exists():
+        _recover_manifestless_publication(transaction_root)
+        return
     if (
         backup_root.exists()
         or recovery_root.exists()
@@ -355,12 +365,18 @@ def _recover_pending_publications(
             f"retained under {root}"
         )
     dated_transactions: list[tuple[date, Path]] = []
+    manifestless_transactions: list[Path] = []
     for transaction_path in transaction_paths:
         if not transaction_path.is_dir() or transaction_path.is_symlink():
             raise PublicationRollbackError(
                 "Invalid orphan publication transaction retained at "
                 f"{transaction_path}"
             )
+        if not (transaction_path / "manifest.json").exists() and not (
+            transaction_path / "cleanup.json"
+        ).exists():
+            manifestless_transactions.append(transaction_path)
+            continue
         try:
             manifest = _read_publication_manifest(transaction_path)
         except PublicationRollbackError:
@@ -398,6 +414,8 @@ def _recover_pending_publications(
             ) from error
         dated_transactions.append((transaction_date, transaction_path))
 
+    for transaction_path in manifestless_transactions:
+        _recover_manifestless_publication(transaction_path)
     for transaction_date, transaction_path in dated_transactions:
         if requested_date is not None and transaction_date != requested_date:
             continue
@@ -432,12 +450,7 @@ def _recover_pending_publications_if_idle(
         if not (transaction_path / "manifest.json").exists() and not (
             transaction_path / "cleanup.json"
         ).exists():
-            if not _date_lock_available(root, report_date):
-                return
-            raise PublicationRollbackError(
-                "Could not derive orphan publication report date; "
-                f"recovery artifacts retained at {transaction_path}"
-            )
+            continue
         try:
             manifest = _read_publication_manifest(transaction_path)
             report_date_value = manifest["report_date"]
@@ -474,24 +487,6 @@ def _recover_pending_publications_if_idle(
                 "Could not acquire recovery lock before fetching; "
                 "pending cache recovery is a precondition",
             )
-
-
-def _date_lock_available(root: Path, report_date: date) -> bool:
-    snapshot_directory = root / "snapshots" / report_date.isoformat()
-    snapshot_directory.mkdir(parents=True, exist_ok=True)
-    _fsync_directory(snapshot_directory.parent)
-    lock_path = snapshot_directory / ".input.lock"
-    with lock_path.open("a", encoding="utf-8") as lock_file:
-        try:
-            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            return False
-        finally:
-            try:
-                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
-            except OSError:
-                pass
-    return True
 
 
 @contextmanager
@@ -802,19 +797,102 @@ def _valid_artifact_spec(spec: object) -> bool:
     )
 
 
+def _manifestless_payload_is_safe(transaction_root: Path) -> bool:
+    try:
+        transaction_root_resolved = transaction_root.resolve(strict=False)
+        entries = list(transaction_root.iterdir())
+    except (OSError, RuntimeError):
+        return False
+    if not entries:
+        return True
+    if any(entry.name not in _MANIFESTLESS_PAYLOAD_ROOTS for entry in entries):
+        return False
+    for payload_root in entries:
+        if payload_root.is_symlink() or not payload_root.is_dir():
+            return False
+        try:
+            payload_root.resolve(strict=False).relative_to(transaction_root_resolved)
+            descendants = payload_root.rglob("*")
+            for descendant in descendants:
+                if descendant.name in _PUBLICATION_EVIDENCE_NAMES:
+                    return False
+                if descendant.is_symlink() or not (
+                    descendant.is_dir() or descendant.is_file()
+                ):
+                    return False
+                descendant.resolve(strict=False).relative_to(transaction_root_resolved)
+        except (OSError, RuntimeError, ValueError):
+            return False
+    return True
+
+
+def _quarantine_manifestless_publication(
+    transaction_root: Path, *, reason: str
+) -> None:
+    quarantine_path = transaction_root / _PUBLICATION_QUARANTINE_NAME
+    if quarantine_path.exists() or quarantine_path.is_symlink():
+        raise PublicationRollbackError(
+            "Manifest-less publication transaction is quarantined; recovery "
+            f"artifacts retained at {transaction_root}"
+        )
+    try:
+        _atomic_write(
+            quarantine_path,
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "state": "quarantined",
+                    "reason": reason,
+                    "entries": sorted(
+                        path.name for path in transaction_root.iterdir()
+                    ),
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+            + "\n",
+        )
+        _fsync_directory(transaction_root)
+        _fsync_directory(transaction_root.parent)
+    except OSError as error:
+        raise PublicationRollbackError(
+            "Could not record manifest-less publication quarantine; recovery "
+            f"artifacts retained at {transaction_root}"
+        ) from error
+    raise PublicationRollbackError(
+        "Manifest-less publication transaction is ambiguous; recovery "
+        f"artifacts quarantined at {transaction_root}"
+    )
+
+
+def _recover_manifestless_publication(transaction_root: Path) -> None:
+    if not transaction_root.exists():
+        return
+    quarantine_path = transaction_root / _PUBLICATION_QUARANTINE_NAME
+    if quarantine_path.exists() or quarantine_path.is_symlink():
+        raise PublicationRollbackError(
+            "Manifest-less publication transaction is quarantined; recovery "
+            f"artifacts retained at {transaction_root}"
+        )
+    if not _manifestless_payload_is_safe(transaction_root):
+        _quarantine_manifestless_publication(
+            transaction_root,
+            reason=(
+                "Unexpected publication, backup, recovery, cache, or out-of-scope "
+                "transaction data"
+            ),
+        )
+    shutil.rmtree(transaction_root)
+    _fsync_directory(transaction_root.parent)
+
+
 def _recover_publication_transaction(transaction_root: Path) -> None:
     manifest_path = transaction_root / "manifest.json"
     if not manifest_path.exists():
         cleanup = _read_cleanup_journal(transaction_root)
         if cleanup is None:
-            if not any(transaction_root.iterdir()):
-                transaction_root.rmdir()
-                _fsync_directory(transaction_root.parent)
-                return
-            raise PublicationRollbackError(
-                "Orphan publication manifest is missing; recovery artifacts "
-                f"retained at {transaction_root}"
-            )
+            _recover_manifestless_publication(transaction_root)
+            return
         _recover_publication_cleanup(transaction_root, cleanup)
         return
     manifest = _read_publication_manifest(transaction_root)

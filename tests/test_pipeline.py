@@ -1320,6 +1320,48 @@ with lock_path.open("a", encoding="utf-8") as lock_file:
         holder.wait(timeout=5)
 
 
+def test_manifestless_recovery_does_not_probe_requested_date_lock(tmp_path):
+    transaction_root = tmp_path / ".publication-pre-manifest"
+    (transaction_root / "reports").mkdir(parents=True)
+    marker = tmp_path / "requested-date-lock-held"
+    holder = subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            f"""
+import fcntl
+import time
+from pathlib import Path
+
+lock_path = Path({str(tmp_path / "snapshots/2026-09-05/.input.lock")!r})
+lock_path.parent.mkdir(parents=True, exist_ok=True)
+with lock_path.open("a", encoding="utf-8") as lock_file:
+    fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+    Path({str(marker)!r}).write_text("held", encoding="utf-8")
+    time.sleep(5)
+""",
+        ],
+        cwd=Path(__file__).parents[1],
+        env={**os.environ, "PYTHONPATH": str(Path(__file__).parents[1] / "src")},
+    )
+    try:
+        for _ in range(100):
+            if marker.exists():
+                break
+            time.sleep(0.05)
+        assert marker.exists()
+
+        pipeline_module._recover_pending_publications_if_idle(
+            tmp_path,
+            date(2026, 9, 5),
+        )
+
+        assert not transaction_root.exists()
+    finally:
+        holder.terminate()
+        holder.wait(timeout=5)
+
+
 def test_later_date_recovers_older_orphan_before_touching_shared_site(
     tmp_path, fixture_settings
 ):
@@ -2403,6 +2445,111 @@ transaction.publish()
 
     assert {path.name: path.read_bytes() for path in report_dir.iterdir()} == before
     assert not list(tmp_path.glob(".publication-*"))
+
+
+def test_startup_cleans_payload_only_transaction_after_hard_exit_before_manifest(
+    tmp_path, fixture_settings
+):
+    repo_root = Path(__file__).parents[1]
+    child = f"""
+import os
+from datetime import UTC, date, datetime, timedelta
+from pathlib import Path
+
+import stock_daily_report.pipeline as pipeline
+from stock_daily_report.models import DailyBar, Settings, Watchlist
+from stock_daily_report.pipeline import run_daily_report
+
+root = Path({str(tmp_path)!r})
+original_transaction = pipeline._PublicationTransaction
+
+
+class HardExitBeforeManifest(original_transaction):
+    def __init__(self, *args, **kwargs):
+        os._exit(76)
+
+
+pipeline._PublicationTransaction = HardExitBeforeManifest
+bars = [
+    DailyBar(
+        trade_date=date(2026, 6, 17) + timedelta(days=index),
+        open=100.0 + index,
+        high=102.0 + index,
+        low=99.0 + index,
+        close=101.0 + index,
+        volume=1000.0 + index,
+        amount=(101.0 + index) * 1000.0,
+        turnover_rate=0.1,
+        adjustment_mode="qfq",
+        provider_name="fixture",
+        source_timestamp=datetime(2026, 9, 4, 8, tzinfo=UTC),
+    )
+    for index in range(80)
+]
+run_daily_report(
+    Settings.model_validate({fixture_settings.model_dump()!r}),
+    output_root=root,
+    watchlist=Watchlist(stocks=[{{"code": "600519", "name": "one"}}]),
+    provider=type(
+        "Provider",
+        (),
+        {{
+            "name": "fixture",
+            "get_daily_bars": lambda self, code, *, start=None, end=None: bars,
+        }},
+    )(),
+    report_date=date(2026, 9, 4),
+)
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", child],
+        cwd=repo_root,
+        env={**os.environ, "PYTHONPATH": str(repo_root / "src")},
+        check=False,
+    )
+    assert result.returncode == 76
+    transaction_paths = list(tmp_path.glob(".publication-*"))
+    assert len(transaction_paths) == 1
+    assert not (transaction_paths[0] / "manifest.json").exists()
+    assert (transaction_paths[0] / "reports/2026-09-04").is_dir()
+    assert (transaction_paths[0] / "snapshots/2026-09-04/input.json").exists()
+
+    with pytest.raises(PipelineError):
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+            provider=RecordingProvider(
+                {"600519": make_bars(600519)}, fail_code="600519"
+            ),
+            report_date=date(2026, 9, 4),
+        )
+
+    assert not list(tmp_path.glob(".publication-*"))
+
+
+def test_manifestless_transaction_with_mutation_evidence_is_quarantined(
+    tmp_path,
+):
+    transaction_root = tmp_path / ".publication-ambiguous"
+    backup_root = transaction_root / "backups"
+    backup_root.mkdir(parents=True)
+    (backup_root / "report").write_text("possible published preimage", encoding="utf-8")
+
+    with pytest.raises(
+        PublicationRollbackError, match="ambiguous|quarantined"
+    ):
+        pipeline_module._recover_pending_publications_if_idle(
+            tmp_path,
+            date(2026, 9, 4),
+        )
+
+    quarantine = transaction_root / "quarantine.json"
+    assert quarantine.exists()
+    assert json.loads(quarantine.read_text(encoding="utf-8"))["state"] == "quarantined"
+    assert (backup_root / "report").read_text(encoding="utf-8") == (
+        "possible published preimage"
+    )
 
 
 def test_restart_recovers_publication_and_cache_as_one_commit(

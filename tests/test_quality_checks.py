@@ -721,6 +721,113 @@ def test_legacy_ownerless_v2_cache_journal_is_migrated_safely(tmp_path):
     assert not recovery_directory.exists()
 
 
+def test_legacy_root_bound_v2_cache_journal_is_migrated_safely(
+    tmp_path, monkeypatch
+):
+    from stock_daily_report.providers.service import RawResponseCache
+
+    shared_cache = tmp_path / "shared-cache"
+    output_root = tmp_path / "output"
+    output_root.mkdir()
+    cache = RawResponseCache(shared_cache, ttl_seconds=30)
+    target = cache._path_for("primary", "600519", None, date(2026, 9, 4))
+    previous = b"legacy root-bound preimage"
+    shared_cache.mkdir()
+    target.write_bytes(b"new cache bytes")
+    recovery_directory = shared_cache / ".cache-recovery-legacy-root"
+    recovery_directory.mkdir()
+    (recovery_directory / target.name).write_bytes(previous)
+    (recovery_directory / "manifest.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "state": "ready",
+                "publication_manifest": None,
+                "publication_root": str(output_root),
+                "entries": [
+                    {
+                        "path": target.name,
+                        "present": True,
+                        "size": len(previous),
+                        "sha256": hashlib.sha256(previous).hexdigest(),
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    persisted: list[dict[str, object]] = []
+    original_persist = cache._persist_recovery_manifest
+
+    def record_persist(path, manifest):
+        persisted.append(dict(manifest))
+        return original_persist(path, manifest)
+
+    monkeypatch.setattr(cache, "_persist_recovery_manifest", record_persist)
+
+    cache.recover_pending_manifests(publication_root=output_root / ".")
+
+    assert target.read_bytes() == previous
+    assert not recovery_directory.exists()
+    assert persisted[0]["publication_root"] == str(output_root.resolve())
+    assert persisted[0]["publication_owner_token"] == hashlib.sha256(
+        str(output_root.resolve()).encode("utf-8")
+    ).hexdigest()
+
+
+def test_legacy_root_bound_v2_cache_journal_rejects_out_of_scope_manifest(
+    tmp_path,
+):
+    from stock_daily_report.providers.service import (
+        CacheRollbackError,
+        RawResponseCache,
+    )
+
+    shared_cache = tmp_path / "shared-cache"
+    output_root = tmp_path / "output"
+    other_root = tmp_path / "other-output"
+    output_root.mkdir()
+    shared_cache.mkdir()
+    cache = RawResponseCache(shared_cache, ttl_seconds=30)
+    target = cache._path_for("primary", "600519", None, date(2026, 9, 4))
+    target.write_bytes(b"new cache bytes")
+    recovery_directory = shared_cache / ".cache-recovery-legacy-out-of-scope"
+    recovery_directory.mkdir()
+    previous = b"legacy root-bound preimage"
+    (recovery_directory / target.name).write_bytes(previous)
+    manifest_path = other_root / ".publication-owner" / "manifest.json"
+    manifest_path.parent.mkdir(parents=True)
+    (recovery_directory / "manifest.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "state": "ready",
+                "publication_manifest": str(manifest_path),
+                "publication_root": str(output_root),
+                "entries": [
+                    {
+                        "path": target.name,
+                        "present": True,
+                        "size": len(previous),
+                        "sha256": hashlib.sha256(previous).hexdigest(),
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(CacheRollbackError, match="another publication root"):
+        cache.recover_pending_manifests(publication_root=output_root)
+
+    assert target.read_bytes() == b"new cache bytes"
+    assert recovery_directory.exists()
+    persisted_manifest = json.loads(
+        (recovery_directory / "manifest.json").read_text(encoding="utf-8")
+    )
+    assert "publication_owner_token" not in persisted_manifest
+
+
 def test_same_service_finalization_is_idempotent_after_recovery_cleanup(
     tmp_path, bars
 ):

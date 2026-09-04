@@ -694,6 +694,66 @@ class RawResponseCache:
     ) -> tuple[dict[str, object], str | None]:
         persisted_root_value = manifest.get("publication_root")
         owner_token = manifest.get("publication_owner_token")
+        if isinstance(persisted_root_value, str) and owner_token is None:
+            if publication_root is None:
+                return (
+                    manifest,
+                    (
+                        "Cache recovery lacks an expected publication root; "
+                        "recovery artifacts retained"
+                    ),
+                )
+            expected_root = Path(publication_root).expanduser().resolve()
+            try:
+                persisted_root = Path(persisted_root_value)
+                if (
+                    not persisted_root.is_absolute()
+                    or persisted_root.is_symlink()
+                    or persisted_root.resolve(strict=False) != expected_root
+                ):
+                    return (
+                        manifest,
+                        (
+                            "Cache recovery belongs to another publication root; "
+                            "recovery artifacts retained"
+                        ),
+                    )
+            except (OSError, RuntimeError, ValueError):
+                return manifest, "Cache recovery has an invalid publication root owner"
+            publication_manifest_value = manifest.get("publication_manifest")
+            if publication_manifest_value is not None:
+                if not isinstance(publication_manifest_value, str):
+                    return manifest, "Cache recovery has an invalid publication root owner"
+                publication_manifest = Path(publication_manifest_value)
+                try:
+                    if (
+                        not publication_manifest.is_absolute()
+                        or publication_manifest.is_symlink()
+                        or publication_manifest.parent.is_symlink()
+                        or publication_manifest.parent.parent.is_symlink()
+                        or publication_manifest.name != "manifest.json"
+                        or not publication_manifest.parent.name.startswith(
+                            ".publication-"
+                        )
+                        or publication_manifest.parent.parent.resolve(strict=False)
+                        != expected_root
+                    ):
+                        return (
+                            manifest,
+                            (
+                                "Cache recovery belongs to another publication root; "
+                                "recovery artifacts retained"
+                            ),
+                        )
+                except (OSError, RuntimeError, ValueError):
+                    return manifest, "Cache recovery has an invalid publication root owner"
+            migrated = dict(manifest)
+            migrated["publication_root"] = str(expected_root)
+            migrated["publication_owner_token"] = _publication_owner_token(
+                expected_root
+            )
+            self._persist_recovery_manifest(recovery_path, migrated)
+            return migrated, None
         if persisted_root_value is not None or owner_token is not None:
             return manifest, None
         expected_root = (
