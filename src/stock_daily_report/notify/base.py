@@ -121,17 +121,28 @@ def _urlopen_transport(url: str, body: bytes, timeout: float) -> tuple[int, byte
 
 def _validate_webhook_response(response_body: bytes) -> None:
     if not response_body:
-        return
+        raise WebhookError("webhook response was empty", transient=True)
     try:
         document = json.loads(response_body)
     except (UnicodeDecodeError, json.JSONDecodeError):
-        return
+        raise WebhookError("webhook response was not valid JSON", transient=True)
     if not isinstance(document, dict):
-        return
+        raise WebhookError("webhook response was not a JSON object", transient=True)
+    status_found = False
     for key in ("errcode", "code", "StatusCode"):
-        value = document.get(key)
+        if key not in document:
+            continue
+        value = document[key]
+        status_found = True
+        if not isinstance(value, int):
+            raise WebhookError(
+                f"webhook response had invalid {key}",
+                transient=False,
+            )
         if isinstance(value, int) and value != 0:
             raise WebhookError(f"webhook API returned {key}={value}", transient=False)
+    if not status_found:
+        raise WebhookError("webhook response had no status code", transient=True)
 
 
 class WebhookNotifier:

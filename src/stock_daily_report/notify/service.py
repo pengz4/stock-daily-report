@@ -58,8 +58,14 @@ class NotificationService:
     ) -> tuple[NotificationOutcome, ...]:
         """Build and deliver a summary only after report publication."""
 
-        parsed_url = urlsplit(report_url)
-        if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc:
+        try:
+            parsed_url = urlsplit(report_url)
+            valid_url = parsed_url.scheme in {"http", "https"} and bool(
+                parsed_url.netloc
+            )
+        except ValueError:
+            valid_url = False
+        if not valid_url:
             outcomes = tuple(
                 NotificationOutcome(
                     channel=channel,

@@ -46,18 +46,28 @@ class WeComNotifier(WebhookNotifier):
                 current_risks
                 and len(candidate.encode("utf-8")) > _WECOM_MARKDOWN_LIMIT
             ):
-                chunks.append(_payload("\n".join([*lines, *current_risks, suffix])))
+                chunks.append(
+                    _validated_payload(
+                        "\n".join([*lines, *current_risks, suffix])
+                    )
+                )
                 current_risks = []
             current_risks.append(risk_line)
         content = "\n".join([*lines, *current_risks, suffix])
         if len(content.encode("utf-8")) > _WECOM_MARKDOWN_LIMIT:
             raise ValueError("notification summary exceeds WeCom message limit")
-        chunks.append(_payload(content))
+        chunks.append(_validated_payload(content))
         return tuple(chunks)
 
 
 def _payload(content: str) -> dict[str, object]:
     return {"msgtype": "markdown", "markdown": {"content": content}}
+
+
+def _validated_payload(content: str) -> dict[str, object]:
+    if len(content.encode("utf-8")) > _WECOM_MARKDOWN_LIMIT:
+        raise ValueError("notification summary exceeds WeCom message limit")
+    return _payload(content)
 
 
 __all__ = ["WeComNotifier"]

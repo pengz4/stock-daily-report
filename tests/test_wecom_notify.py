@@ -1,5 +1,7 @@
 from datetime import UTC, datetime
 
+import pytest
+
 from stock_daily_report.notify.base import NotificationSummary
 from stock_daily_report.notify.wecom import WeComNotifier
 
@@ -74,3 +76,17 @@ def test_wecom_uses_utf8_byte_limit_and_splits_all_high_risks():
     ]
     assert all(len(content.encode("utf-8")) <= 4096 for content in contents)
     assert all(f"风险-{index}-" in "\n".join(contents) for index in range(15))
+
+
+def test_wecom_rejects_a_fixed_section_that_cannot_fit():
+    summary = _summary()
+    summary = NotificationSummary(
+        **{
+            **summary.__dict__,
+            "report_url": "https://e/" + "a" * 3545,
+            "high_risks": ("风险" * 1000, "x"),
+        }
+    )
+
+    with pytest.raises(ValueError, match="exceeds"):
+        WeComNotifier("https://example.invalid").build_payloads(summary)

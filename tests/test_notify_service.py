@@ -134,6 +134,25 @@ def test_webhook_does_not_retry_certificate_failure():
     assert attempts == [1]
 
 
+def test_webhook_rejects_malformed_success_response():
+    with pytest.raises(WebhookError, match="response"):
+        WeComNotifier(
+            "https://wecom.example/hook",
+            transport=lambda url, body, timeout: (200, b'{"errcode":'),
+            max_attempts=1,
+            sleep=lambda _: pytest.fail("malformed response was retried"),
+        ).send(_summary())
+
+
+def test_webhook_rejects_non_numeric_status_response():
+    with pytest.raises(WebhookError, match="invalid errcode"):
+        WeComNotifier(
+            "https://wecom.example/hook",
+            transport=lambda url, body, timeout: (200, b'{"errcode":"0"}'),
+            max_attempts=1,
+        ).send(_summary())
+
+
 def test_feishu_status_code_failure_is_not_marked_delivered():
     attempts = []
 
@@ -197,3 +216,10 @@ def test_send_report_rejects_relative_report_url():
 
     with pytest.raises(NotificationDeliveryError, match="absolute URL"):
         service.send_report(object(), report_url="reports/2026-09-04/index.html")
+
+
+def test_send_report_rejects_malformed_report_url_without_traceback():
+    service = NotificationService(NotificationSettings(enabled_channels={"wecom"}))
+
+    with pytest.raises(NotificationDeliveryError, match="absolute URL"):
+        service.send_report(object(), report_url="https://[")

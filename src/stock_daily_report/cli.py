@@ -31,7 +31,7 @@ def main(argv: list[str] | None = None) -> int:
     daily.add_argument("--fixture-directory", type=Path)
     daily.add_argument(
         "--report-url",
-        help="Absolute published report URL; defaults to REPORT_BASE_URL or a relative link",
+        help="Final absolute published report URL; otherwise REPORT_BASE_URL is used",
     )
     args = parser.parse_args(argv)
 
@@ -52,13 +52,15 @@ def main(argv: list[str] | None = None) -> int:
                 report_date=args.date,
             )
             if settings.notifications.enabled_channels:
-                report_url = args.report_url or os.environ.get("REPORT_BASE_URL", "")
-                report_url = (
-                    report_url.rstrip("/")
-                    + f"/reports/{args.date.isoformat()}/"
-                    if report_url
-                    else f"reports/{args.date.isoformat()}/index.html"
-                )
+                if args.report_url:
+                    report_url = args.report_url
+                else:
+                    report_base_url = os.environ.get("REPORT_BASE_URL", "").rstrip("/")
+                    report_url = (
+                        f"{report_base_url}/reports/{args.date.isoformat()}/"
+                        if report_base_url
+                        else ""
+                    )
                 NotificationService(settings.notifications).send_report(
                     outputs.report,
                     report_url=report_url,
