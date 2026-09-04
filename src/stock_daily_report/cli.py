@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from datetime import date
 from pathlib import Path
 
 from stock_daily_report.config import ConfigurationError, load_settings, load_watchlist
+from stock_daily_report.notify import NotificationDeliveryError, NotificationService
 from stock_daily_report.pipeline import (
     PipelineError,
     PublicationRollbackError,
@@ -27,6 +29,10 @@ def main(argv: list[str] | None = None) -> int:
     daily.add_argument("--watchlist", type=Path, default=_project_root() / "config/watchlist.yaml")
     daily.add_argument("--output-root", type=Path, default=Path.cwd())
     daily.add_argument("--fixture-directory", type=Path)
+    daily.add_argument(
+        "--report-url",
+        help="Absolute published report URL; defaults to REPORT_BASE_URL or a relative link",
+    )
     args = parser.parse_args(argv)
 
     if args.command == "daily":
@@ -45,9 +51,22 @@ def main(argv: list[str] | None = None) -> int:
                 provider=provider,
                 report_date=args.date,
             )
+            if settings.notifications.enabled_channels:
+                report_url = args.report_url or os.environ.get("REPORT_BASE_URL", "")
+                report_url = (
+                    report_url.rstrip("/")
+                    + f"/reports/{args.date.isoformat()}/"
+                    if report_url
+                    else f"reports/{args.date.isoformat()}/index.html"
+                )
+                NotificationService(settings.notifications).send_report(
+                    outputs.report,
+                    report_url=report_url,
+                )
         except (
             CacheRollbackError,
             ConfigurationError,
+            NotificationDeliveryError,
             PipelineError,
             PublicationRollbackError,
             SnapshotError,

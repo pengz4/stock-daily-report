@@ -6,7 +6,6 @@ from datetime import UTC, date, datetime
 from typing import Annotated, Literal
 
 from pydantic import (
-    AnyHttpUrl,
     BaseModel,
     ConfigDict,
     Field,
@@ -94,13 +93,17 @@ class RuleVersion(BaseModel):
 
 
 class NotificationSettings(BaseModel):
-    """Webhook configuration for optional report summary delivery."""
+    """Non-secret settings for optional report summary delivery.
+
+    Webhook URLs are deliberately not model fields. They are supplied through
+    process environment variables at delivery time.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
     enabled_channels: set[Literal["wecom", "feishu"]] = Field(default_factory=set)
-    wecom_webhook_url: AnyHttpUrl | None = None
-    feishu_webhook_url: AnyHttpUrl | None = None
+    timeout_seconds: int = Field(default=10, gt=0)
+    max_attempts: int = Field(default=3, ge=1, le=5)
 
     @field_validator("enabled_channels", mode="before")
     @classmethod
@@ -119,22 +122,6 @@ class NotificationSettings(BaseModel):
                     f"{', '.join(sorted(duplicates))}"
                 )
         return value
-
-    @field_validator("wecom_webhook_url", "feishu_webhook_url", mode="before")
-    @classmethod
-    def normalize_blank_webhook_urls(cls, value: object) -> object:
-        if isinstance(value, str) and not value.strip():
-            return None
-        return value
-
-    @model_validator(mode="after")
-    def require_webhooks_for_enabled_channels(self) -> "NotificationSettings":
-        if "wecom" in self.enabled_channels and self.wecom_webhook_url is None:
-            raise ValueError("wecom webhook URL is required when wecom is enabled")
-        if "feishu" in self.enabled_channels and self.feishu_webhook_url is None:
-            raise ValueError("feishu webhook URL is required when feishu is enabled")
-        return self
-
 
 class MarketDataSettings(BaseModel):
     """Provider order, cache path, and weekday-only pre-analysis gate settings.

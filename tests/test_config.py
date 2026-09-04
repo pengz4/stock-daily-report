@@ -173,32 +173,8 @@ def test_load_watchlist_normalizes_valid_tags_by_stripping_whitespace(tmp_path):
     assert watchlist.stocks[0].tags == ["value", "Growth"]
 
 
-@pytest.mark.parametrize(
-    ("channel", "webhook"),
-    [
-        ("wecom", ""),
-        ("wecom", "  "),
-        ("feishu", ""),
-        ("feishu", "  "),
-    ],
-)
-def test_load_settings_rejects_enabled_channel_without_webhook(
-    tmp_path, channel, webhook
-):
-    path = tmp_path / "settings.yaml"
-    path.write_text(
-        f"rule_version:\n  name: simplified\n  version: v1\n"
-        f"notifications:\n  enabled_channels: ['{channel}']\n"
-        f"  {channel}_webhook_url: '{webhook}'\n",
-        encoding="utf-8",
-    )
-
-    with pytest.raises(ConfigurationError, match=f"{channel} webhook URL"):
-        load_settings(path)
-
-
 @pytest.mark.parametrize("channel", ["wecom", "feishu"])
-def test_load_settings_rejects_enabled_channel_with_missing_webhook(tmp_path, channel):
+def test_load_settings_allows_enabled_channel_without_secret_in_file(tmp_path, channel):
     path = tmp_path / "settings.yaml"
     path.write_text(
         f"rule_version:\n  name: simplified\n  version: v1\n"
@@ -206,7 +182,24 @@ def test_load_settings_rejects_enabled_channel_with_missing_webhook(tmp_path, ch
         encoding="utf-8",
     )
 
-    with pytest.raises(ConfigurationError, match=f"{channel} webhook URL"):
+    assert channel in load_settings(path).notifications.enabled_channels
+
+
+@pytest.mark.parametrize("channel", ["wecom", "feishu"])
+def test_load_settings_rejects_webhook_secret_fields(tmp_path, channel):
+    path = tmp_path / "settings.yaml"
+    path.write_text(
+        f"rule_version:\n  name: simplified\n  version: v1\n"
+        f"notifications:\n  enabled_channels: ['{channel}']\n",
+        encoding="utf-8",
+    )
+    path.write_text(
+        path.read_text(encoding="utf-8")
+        + f"  {channel}_webhook_url: https://example.invalid/hook\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ConfigurationError, match="Extra inputs are not permitted"):
         load_settings(path)
 
 
@@ -277,9 +270,7 @@ def test_load_settings_accepts_unique_enabled_channels(tmp_path):
     path.write_text(
         "rule_version:\n  name: simplified\n  version: v1\n"
         "notifications:\n"
-        "  enabled_channels: [wecom, feishu]\n"
-        "  wecom_webhook_url: https://example.com/wecom\n"
-        "  feishu_webhook_url: https://example.com/feishu\n",
+        "  enabled_channels: [wecom, feishu]\n",
         encoding="utf-8",
     )
 

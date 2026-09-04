@@ -7,12 +7,17 @@ import threading
 import time
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 import stock_daily_report.cli as cli_module
 import stock_daily_report.pipeline as pipeline_module
 from stock_daily_report.models import DailyBar, Settings, Watchlist
+from stock_daily_report.notify.base import (
+    NotificationDeliveryError,
+    NotificationOutcome,
+)
 from stock_daily_report.pipeline import (
     PipelineError,
     PipelineFailure,
@@ -1904,6 +1909,92 @@ def test_cli_handles_pipeline_failure_without_traceback(
     assert "Traceback" not in captured.err
 
 
+def test_cli_notifies_only_after_report_pipeline_returns(
+    fixture_settings, monkeypatch, capsys
+):
+    settings_data = fixture_settings.model_dump()
+    settings_data["notifications"] = {"enabled_channels": ["wecom"]}
+    settings = Settings.model_validate(settings_data)
+    report = object()
+    calls = []
+
+    class FakeNotificationService:
+        def __init__(self, configured_settings):
+            assert configured_settings is settings.notifications
+
+        def send_report(self, published_report, *, report_url):
+            calls.append((published_report, report_url))
+
+    monkeypatch.setattr(cli_module, "load_settings", lambda _path: settings)
+    monkeypatch.setattr(
+        cli_module,
+        "load_watchlist",
+        lambda _path: Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "run_daily_report",
+        lambda *args, **kwargs: SimpleNamespace(
+            report=report, html_path="/tmp/reports/2026-09-04/index.html"
+        ),
+    )
+    monkeypatch.setattr(cli_module, "NotificationService", FakeNotificationService)
+    monkeypatch.setenv("REPORT_BASE_URL", "https://reports.example")
+
+    result = cli_module.main(["daily", "--date", "2026-09-04"])
+
+    assert result == 0
+    assert calls == [(report, "https://reports.example/reports/2026-09-04/")]
+    assert capsys.readouterr().out.endswith("\n")
+
+
+def test_cli_reports_notification_failure_without_traceback(
+    fixture_settings, monkeypatch, capsys
+):
+    settings_data = fixture_settings.model_dump()
+    settings_data["notifications"] = {"enabled_channels": ["wecom"]}
+    settings = Settings.model_validate(settings_data)
+
+    class FailingNotificationService:
+        def __init__(self, _configured_settings):
+            pass
+
+        def send_report(self, _published_report, *, report_url):
+            raise NotificationDeliveryError(
+                (
+                    NotificationOutcome(
+                        channel="wecom",
+                        status="failed",
+                        error="WECOM_WEBHOOK_URL is required",
+                    ),
+                )
+            )
+
+    monkeypatch.setattr(cli_module, "load_settings", lambda _path: settings)
+    monkeypatch.setattr(
+        cli_module,
+        "load_watchlist",
+        lambda _path: Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "run_daily_report",
+        lambda *args, **kwargs: SimpleNamespace(
+            report=object(), html_path="/tmp/reports/2026-09-04/index.html"
+        ),
+    )
+    monkeypatch.setattr(
+        cli_module, "NotificationService", FailingNotificationService
+    )
+
+    result = cli_module.main(["daily", "--date", "2026-09-04"])
+
+    captured = capsys.readouterr()
+    assert result == 1
+    assert "wecom" in captured.err
+    assert "Traceback" not in captured.err
+
+
 def test_cli_handles_publication_rollback_failure_without_traceback(
     fixture_settings, monkeypatch, capsys
 ):
@@ -2933,10 +3024,7 @@ def test_report_json_is_deterministic_and_contains_auditing_metadata(
 def test_report_artifacts_do_not_leak_notification_webhooks(tmp_path, fixture_settings):
     settings = fixture_settings.model_copy(
         update={
-            "notifications": {
-                "enabled_channels": ["wecom"],
-                "wecom_webhook_url": "https://secret.example/webhook",
-            }
+            "notifications": {"enabled_channels": ["wecom"]},
         }
     )
     outputs = run_daily_report(

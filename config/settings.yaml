@@ -3,6 +3,8 @@ rule_version:
   version: v1
 notifications:
   enabled_channels: []
+  timeout_seconds: 10
+  max_attempts: 3
 market_data:
   primary_provider: akshare
   fallback_provider: fixture
