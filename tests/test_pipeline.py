@@ -1,6 +1,9 @@
+import hashlib
 import json
 import subprocess
 import sys
+import threading
+import time
 from datetime import UTC, date, datetime, timedelta
 
 import pytest
@@ -15,6 +18,7 @@ from stock_daily_report.pipeline import (
 )
 from stock_daily_report.providers.service import MarketDataService
 from stock_daily_report.quality.checks import DataQualitySettings
+from stock_daily_report.snapshots import load_snapshot
 
 
 class RecordingProvider:
@@ -208,6 +212,141 @@ def test_snapshot_conflict_is_a_typed_pipeline_failure_and_preserves_outputs(
         )
 
     assert {path: path.read_bytes() for path in report_paths} == before
+
+
+def test_concurrent_conflicting_runs_publish_only_one_immutable_result(
+    tmp_path, fixture_settings, monkeypatch
+):
+    watchlist = Watchlist(stocks=[{"code": "600519", "name": "one"}])
+    original_bars = make_bars("600519")
+    changed_bars = list(original_bars)
+    changed_bars[-1] = changed_bars[-1].model_copy(
+        update={"close": 1.0, "low": 1.0}
+    )
+    first_resolved = threading.Event()
+    second_resolved = threading.Event()
+    release_first = threading.Event()
+    resolution_lock = threading.Lock()
+    resolution_count = 0
+    original_resolve = pipeline_module._resolve_snapshot_for_publication
+
+    def pause_after_first_resolution(snapshot_target, staged_snapshot):
+        nonlocal resolution_count
+        resolved = original_resolve(snapshot_target, staged_snapshot)
+        with resolution_lock:
+            resolution_count += 1
+            is_first = resolution_count == 1
+        if is_first:
+            first_resolved.set()
+            assert release_first.wait(timeout=5)
+        else:
+            second_resolved.set()
+        return resolved
+
+    monkeypatch.setattr(
+        pipeline_module,
+        "_resolve_snapshot_for_publication",
+        pause_after_first_resolution,
+    )
+    outcomes: list[object] = []
+    outcomes_lock = threading.Lock()
+
+    def run(bars):
+        try:
+            outcome = run_daily_report(
+                fixture_settings,
+                output_root=tmp_path,
+                watchlist=watchlist,
+                provider=RecordingProvider({"600519": bars}),
+                report_date=date(2026, 9, 4),
+                now=lambda: datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
+            )
+        except PipelineError as error:
+            outcome = error
+        with outcomes_lock:
+            outcomes.append(outcome)
+
+    first = threading.Thread(target=run, args=(original_bars,))
+    second = threading.Thread(target=run, args=(changed_bars,))
+    first.start()
+    assert first_resolved.wait(timeout=5)
+    second.start()
+    second_resolved.wait(timeout=1)
+    time.sleep(0.05)
+    release_first.set()
+    first.join(timeout=5)
+    second.join(timeout=5)
+
+    assert not first.is_alive()
+    assert not second.is_alive()
+    successes = [outcome for outcome in outcomes if not isinstance(outcome, Exception)]
+    failures = [outcome for outcome in outcomes if isinstance(outcome, PipelineError)]
+    assert len(successes) == 1
+    assert len(failures) == 1
+    assert failures[0].failures[0].code == "snapshot_conflict"
+    snapshot = load_snapshot(tmp_path / "snapshots/2026-09-04/input.json")
+    report_document = json.loads(
+        (tmp_path / "reports/2026-09-04/report.json").read_text(encoding="utf-8")
+    )
+    assert report_document["metadata"]["snapshot_hash"] == snapshot.content_hash
+
+
+def test_existing_stylesheet_is_published_without_touching_unrelated_site_files(
+    tmp_path, fixture_settings
+):
+    site_directory = tmp_path / "site"
+    site_directory.mkdir()
+    stylesheet = site_directory / "styles.css"
+    stylesheet.write_bytes(b"old stylesheet")
+    unrelated = site_directory / "favicon.ico"
+    unrelated.write_bytes(b"unrelated")
+
+    run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        report_date=date(2026, 9, 4),
+    )
+
+    assert stylesheet.read_bytes() == (
+        pipeline_module._project_root() / "site" / "styles.css"
+    ).read_bytes()
+    assert unrelated.read_bytes() == b"unrelated"
+
+
+def test_stylesheet_is_restored_when_publication_finalize_fails(
+    tmp_path, fixture_settings, monkeypatch
+):
+    site_directory = tmp_path / "site"
+    site_directory.mkdir()
+    stylesheet = site_directory / "styles.css"
+    stylesheet.write_bytes(b"existing stylesheet")
+
+    def fail_finalize(transaction):
+        raise OSError("injected finalize failure")
+
+    monkeypatch.setattr(
+        pipeline_module._PublicationTransaction, "finalize", fail_finalize
+    )
+    with pytest.raises(OSError, match="injected finalize failure"):
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+            provider=RecordingProvider({"600519": make_bars("600519")}),
+            report_date=date(2026, 9, 4),
+        )
+
+    assert stylesheet.read_bytes() == b"existing stylesheet"
+    monkeypatch.undo()
+    run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        report_date=date(2026, 9, 4),
+    )
 
 
 @pytest.mark.parametrize("failure_kind", ["render", "site_index"])
@@ -497,26 +636,50 @@ def test_quality_failure_leaves_no_success_artifacts(
 def test_report_json_is_deterministic_and_contains_auditing_metadata(
     tmp_path, fixture_settings
 ):
-    watchlist = Watchlist(stocks=[{"code": "600519", "name": "贵州茅台"}])
-    provider = RecordingProvider({"600519": make_bars("600519")})
-    outputs = run_daily_report(
+    first_watchlist = Watchlist(
+        stocks=[
+            {"code": "600519", "name": "贵州茅台"},
+            {"code": "000001", "name": "平安银行"},
+        ]
+    )
+    second_watchlist = Watchlist(
+        stocks=[
+            {"code": "000001", "name": "平安银行"},
+            {"code": "600519", "name": "贵州茅台"},
+        ]
+    )
+    first_outputs = run_daily_report(
         fixture_settings,
-        output_root=tmp_path,
-        watchlist=watchlist,
-        provider=provider,
+        output_root=tmp_path / "first",
+        watchlist=first_watchlist,
+        provider=RecordingProvider(
+            {"600519": make_bars("600519"), "000001": make_bars("000001")}
+        ),
         report_date=date(2026, 9, 4),
         now=lambda: datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
     )
-    first = outputs.json_path.read_bytes()
+    second_outputs = run_daily_report(
+        fixture_settings,
+        output_root=tmp_path / "second",
+        watchlist=second_watchlist,
+        provider=RecordingProvider(
+            {"000001": make_bars("000001"), "600519": make_bars("600519")}
+        ),
+        report_date=date(2026, 9, 4),
+        now=lambda: datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
+    )
+    first = first_outputs.json_path.read_bytes()
+    second = second_outputs.json_path.read_bytes()
     document = json.loads(first)
 
-    assert first == outputs.json_path.read_bytes()
+    assert first == second
+    assert hashlib.sha256(first).hexdigest() == hashlib.sha256(second).hexdigest()
     assert document["schema_version"] == 1
     assert document["metadata"]["snapshot_path"] == "snapshots/2026-09-04/input.json"
-    assert document["metadata"]["config_hash"] == outputs.report.metadata.config_hash
+    assert document["metadata"]["config_hash"] == first_outputs.report.metadata.config_hash
     assert document["metadata"]["analyzer_versions"]["structural"] == "simplified-v1"
-    assert document["metadata"]["stock_count"] == 1
-    assert "webhook" not in outputs.json_path.read_text(encoding="utf-8")
+    assert document["metadata"]["stock_count"] == 2
+    assert "webhook" not in first_outputs.json_path.read_text(encoding="utf-8")
 
 
 def test_report_artifacts_do_not_leak_notification_webhooks(tmp_path, fixture_settings):

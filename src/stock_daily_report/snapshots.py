@@ -295,14 +295,22 @@ def _canonical_json(document: Mapping[str, object]) -> str:
 def _snapshot_write_lock(directory: Path):
     lock_path = directory / ".input.lock"
     try:
-        with lock_path.open("a", encoding="utf-8") as lock_file:
-            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
-            try:
-                yield
-            finally:
-                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+        lock_file = lock_path.open("a", encoding="utf-8")
     except OSError as error:
         raise SnapshotError(f"Could not lock snapshot directory: {directory}") from error
+    try:
+        try:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        except OSError as error:
+            raise SnapshotError(
+                f"Could not lock snapshot directory: {directory}"
+            ) from error
+        try:
+            yield
+        finally:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+    finally:
+        lock_file.close()
 
 
 def _atomic_write(path: Path, content: str) -> None:

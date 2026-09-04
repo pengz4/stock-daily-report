@@ -6,6 +6,7 @@ import os
 import shutil
 import tempfile
 from collections.abc import Callable, Mapping, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from math import fsum
@@ -52,6 +53,7 @@ from stock_daily_report.snapshots import (
     InputSnapshot,
     SnapshotConflictError,
     SnapshotError,
+    _snapshot_write_lock,
     load_snapshot,
     write_snapshot,
 )
@@ -169,36 +171,81 @@ def run_daily_report(
     markdown_path = report_dir / "report.md"
     html_path = report_dir / "index.html"
     transaction_root = Path(tempfile.mkdtemp(prefix=".publication-", dir=root))
+    try:
+        with _publication_lock(root, active_report_date):
+            return _publish_report_transaction(
+                root=root,
+                transaction_root=transaction_root,
+                report_date=active_report_date,
+                generated_at=generated_at,
+                settings=active_settings,
+                watchlist=active_watchlist,
+                fetched=fetched,
+                bars_by_code=bars_by_code,
+                service=active_service,
+                json_path=json_path,
+                markdown_path=markdown_path,
+                html_path=html_path,
+            )
+    finally:
+        shutil.rmtree(transaction_root, ignore_errors=True)
+
+
+@contextmanager
+def _publication_lock(root: Path, report_date: date):
+    snapshot_directory = root / "snapshots" / report_date.isoformat()
+    snapshot_directory.mkdir(parents=True, exist_ok=True)
+    try:
+        with _snapshot_write_lock(snapshot_directory):
+            yield
+    finally:
+        if not (snapshot_directory / "input.json").exists():
+            (snapshot_directory / ".input.lock").unlink(missing_ok=True)
+            try:
+                snapshot_directory.rmdir()
+            except OSError:
+                pass
+
+
+def _publish_report_transaction(
+    *,
+    root: Path,
+    transaction_root: Path,
+    report_date: date,
+    generated_at: datetime,
+    settings: Settings,
+    watchlist: Watchlist,
+    fetched: Mapping[str, FetchedBars],
+    bars_by_code: Mapping[str, Sequence[DailyBar]],
+    service: MarketDataService | None,
+    json_path: Path,
+    markdown_path: Path,
+    html_path: Path,
+) -> ReportOutputs:
     publication: _PublicationTransaction | None = None
     try:
         staged_snapshot_path = write_snapshot(
             transaction_root,
-            report_date=active_report_date,
+            report_date=report_date,
             bars_by_code=bars_by_code,
             generated_at=generated_at,
         )
         staged_snapshot = load_snapshot(staged_snapshot_path)
-        snapshot_target = (
-            root
-            / "snapshots"
-            / active_report_date.isoformat()
-            / "input.json"
-        )
+        snapshot_target = root / "snapshots" / report_date.isoformat() / "input.json"
         snapshot = _resolve_snapshot_for_publication(
             snapshot_target, staged_snapshot
         )
-        snapshot_path = snapshot_target
         report = _build_report(
-            active_settings,
-            active_watchlist,
+            settings,
+            watchlist,
             fetched,
-            snapshot_path=snapshot_path,
+            snapshot_path=snapshot_target,
             snapshot_hash=snapshot.content_hash,
-            report_date=active_report_date,
+            report_date=report_date,
             generated_at=generated_at,
         )
 
-        staged_report_dir = transaction_root / "reports" / active_report_date.isoformat()
+        staged_report_dir = transaction_root / "reports" / report_date.isoformat()
         staged_report_dir.mkdir(parents=True, exist_ok=True)
         _atomic_write(
             staged_report_dir / "report.json",
@@ -212,18 +259,17 @@ def run_daily_report(
         staged_site_dir.mkdir(parents=True, exist_ok=True)
         _atomic_write(
             staged_site_dir / "index.html",
-            _render_site_index_for_publication(root, active_report_date),
+            _render_site_index_for_publication(root, report_date),
         )
         staged_styles_path: Path | None = None
         styles_source = _project_root() / "site" / "styles.css"
-        styles_target = root / "site" / "styles.css"
-        if styles_source.exists() and not styles_target.exists():
+        if styles_source.exists():
             staged_styles_path = staged_site_dir / "styles.css"
             _atomic_write(staged_styles_path, styles_source.read_text(encoding="utf-8"))
 
         publication = _PublicationTransaction(
             root=root,
-            report_date=active_report_date,
+            report_date=report_date,
             staged_report_dir=staged_report_dir,
             staged_snapshot_path=(
                 None if snapshot_target.exists() else staged_snapshot_path
@@ -232,45 +278,43 @@ def run_daily_report(
             staged_styles_path=staged_styles_path,
         )
         publication.publish()
-        if active_service is not None:
-            active_service.commit_staged_cache_writes()
+        if service is not None:
+            service.commit_staged_cache_writes()
         publication.finalize()
     except PipelineError:
-        if active_service is not None:
-            active_service.discard_staged_cache_writes()
+        if service is not None:
+            service.discard_staged_cache_writes()
         if publication is not None:
             publication.rollback()
         raise
     except SnapshotConflictError as error:
-        if active_service is not None:
-            active_service.discard_staged_cache_writes()
+        if service is not None:
+            service.discard_staged_cache_writes()
         if publication is not None:
             publication.rollback()
         raise PipelineError(
             [PipelineFailure("snapshot_conflict", str(error))]
         ) from error
     except SnapshotError as error:
-        if active_service is not None:
-            active_service.discard_staged_cache_writes()
+        if service is not None:
+            service.discard_staged_cache_writes()
         if publication is not None:
             publication.rollback()
         raise PipelineError(
             [PipelineFailure("snapshot_error", f"Could not prepare snapshot: {error}")]
         ) from error
     except Exception:
-        if active_service is not None:
-            active_service.discard_staged_cache_writes()
+        if service is not None:
+            service.discard_staged_cache_writes()
         if publication is not None:
             publication.rollback()
         raise
-    finally:
-        shutil.rmtree(transaction_root, ignore_errors=True)
 
     return ReportOutputs(
         json_path=json_path,
         markdown_path=markdown_path,
         html_path=html_path,
-        snapshot_path=snapshot_path,
+        snapshot_path=snapshot_target,
         report=report,
     )
 
@@ -357,6 +401,7 @@ class _PublicationTransaction:
         self._snapshot_published = False
         self._site_index_backed_up = False
         self._site_index_published = False
+        self._styles_backed_up = False
         self._styles_published = False
         self._finished = False
 
@@ -383,6 +428,9 @@ class _PublicationTransaction:
             self._site_index_published = True
 
             if self.staged_styles_path is not None:
+                if self.styles_path.exists():
+                    os.replace(self.styles_path, self.backup_styles)
+                    self._styles_backed_up = True
                 self.styles_path.parent.mkdir(parents=True, exist_ok=True)
                 os.replace(self.staged_styles_path, self.styles_path)
                 self._styles_published = True
@@ -399,6 +447,9 @@ class _PublicationTransaction:
             return
         if self._styles_published:
             self.styles_path.unlink(missing_ok=True)
+        if self._styles_backed_up and self.backup_styles.exists():
+            self.styles_path.parent.mkdir(parents=True, exist_ok=True)
+            os.replace(self.backup_styles, self.styles_path)
         if self._site_index_published:
             self.site_index.unlink(missing_ok=True)
         if self._site_index_backed_up and self.backup_site_index.exists():
