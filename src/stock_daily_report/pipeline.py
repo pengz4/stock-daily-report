@@ -106,6 +106,8 @@ def run_daily_report(
 
     Retrieval and quality validation complete for every watchlist code before
     the immutable snapshot or any success-shaped report artifact is written.
+    Publication acquires the date lock before the site-wide lock; deferred
+    cache writes commit only after publication finalization succeeds.
     """
 
     active_settings = (
@@ -193,18 +195,16 @@ def run_daily_report(
 
 @contextmanager
 def _publication_lock(root: Path, report_date: date):
+    """Lock one date, then shared site files, always in that order."""
+
     snapshot_directory = root / "snapshots" / report_date.isoformat()
     snapshot_directory.mkdir(parents=True, exist_ok=True)
-    try:
-        with _snapshot_write_lock(snapshot_directory):
-            yield
-    finally:
-        if not (snapshot_directory / "input.json").exists():
-            (snapshot_directory / ".input.lock").unlink(missing_ok=True)
-            try:
-                snapshot_directory.rmdir()
-            except OSError:
-                pass
+    site_directory = root / "site"
+    site_directory.mkdir(parents=True, exist_ok=True)
+    with _snapshot_write_lock(snapshot_directory), _snapshot_write_lock(
+        site_directory, lock_name=".publication.lock"
+    ):
+        yield
 
 
 def _publish_report_transaction(
@@ -278,9 +278,9 @@ def _publish_report_transaction(
             staged_styles_path=staged_styles_path,
         )
         publication.publish()
+        publication.finalize()
         if service is not None:
             service.commit_staged_cache_writes()
-        publication.finalize()
     except PipelineError:
         if service is not None:
             service.discard_staged_cache_writes()

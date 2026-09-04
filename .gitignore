@@ -2,3 +2,4 @@
 .cache/
 /reports/
 /snapshots/
+site/.publication.lock

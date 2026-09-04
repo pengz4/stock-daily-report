@@ -349,6 +349,180 @@ def test_stylesheet_is_restored_when_publication_finalize_fails(
     )
 
 
+def test_date_lock_file_remains_stable_after_failed_publication(
+    tmp_path, fixture_settings, monkeypatch
+):
+    monkeypatch.setattr(
+        pipeline_module,
+        "render_html",
+        lambda _report: (_ for _ in ()).throw(OSError("injected render failure")),
+    )
+
+    with pytest.raises(OSError, match="injected render failure"):
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+            provider=RecordingProvider({"600519": make_bars("600519")}),
+            report_date=date(2026, 9, 4),
+        )
+
+    lock_path = tmp_path / "snapshots/2026-09-04/.input.lock"
+    assert lock_path.exists()
+    lock_inode = lock_path.stat().st_ino
+
+    monkeypatch.undo()
+    run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        report_date=date(2026, 9, 4),
+    )
+
+    assert lock_path.stat().st_ino == lock_inode
+
+
+def test_concurrent_different_dates_preserve_all_site_index_entries(
+    tmp_path, fixture_settings, monkeypatch
+):
+    watchlist = Watchlist(stocks=[{"code": "600519", "name": "one"}])
+    first_publish_entered = threading.Event()
+    release_first_publish = threading.Event()
+    second_publish_finished = threading.Event()
+    original_publish = pipeline_module._PublicationTransaction.publish
+
+    def pause_first_publish(transaction):
+        if transaction.report_date == date(2026, 9, 4):
+            first_publish_entered.set()
+            assert release_first_publish.wait(timeout=5)
+        result = original_publish(transaction)
+        if transaction.report_date == date(2026, 9, 5):
+            second_publish_finished.set()
+        return result
+
+    monkeypatch.setattr(
+        pipeline_module._PublicationTransaction, "publish", pause_first_publish
+    )
+    second_fetched = threading.Event()
+    outcomes: list[object] = []
+    outcomes_lock = threading.Lock()
+
+    def run(report_date, *, fetched_event=None):
+        provider = RecordingProvider(
+            {"600519": make_bars("600519")},
+            on_call=lambda _code: fetched_event.set() if fetched_event else None,
+        )
+        try:
+            outcome = run_daily_report(
+                fixture_settings,
+                output_root=tmp_path,
+                watchlist=watchlist,
+                provider=provider,
+                report_date=report_date,
+            )
+        except (AssertionError, OSError, PipelineError) as error:
+            outcome = error
+        with outcomes_lock:
+            outcomes.append(outcome)
+
+    first = threading.Thread(target=run, args=(date(2026, 9, 4),))
+    first.start()
+    assert first_publish_entered.wait(timeout=5)
+
+    second = threading.Thread(
+        target=run,
+        args=(date(2026, 9, 5),),
+        kwargs={"fetched_event": second_fetched},
+    )
+    second.start()
+    assert second_fetched.wait(timeout=5)
+    second_publish_finished.wait(timeout=1)
+    release_first_publish.set()
+
+    first.join(timeout=5)
+    second.join(timeout=5)
+    assert not first.is_alive()
+    assert not second.is_alive()
+    assert not [outcome for outcome in outcomes if isinstance(outcome, Exception)]
+
+    site_index = (tmp_path / "site/index.html").read_text(encoding="utf-8")
+    assert "../reports/2026-09-04/index.html" in site_index
+    assert "../reports/2026-09-05/index.html" in site_index
+
+
+def test_failed_date_publication_cannot_rollback_another_date(
+    tmp_path, fixture_settings, monkeypatch
+):
+    watchlist = Watchlist(stocks=[{"code": "600519", "name": "one"}])
+    first_finalize_entered = threading.Event()
+    second_started = threading.Event()
+    second_published = threading.Event()
+    original_finalize = pipeline_module._PublicationTransaction.finalize
+    original_publish = pipeline_module._PublicationTransaction.publish
+
+    def track_publish(transaction):
+        result = original_publish(transaction)
+        if transaction.report_date == date(2026, 9, 5):
+            second_published.set()
+        return result
+
+    def fail_first_finalize(transaction):
+        if transaction.report_date == date(2026, 9, 4):
+            first_finalize_entered.set()
+            assert second_started.wait(timeout=5)
+            second_published.wait(timeout=1)
+            raise OSError("injected first-date finalize failure")
+        return original_finalize(transaction)
+
+    monkeypatch.setattr(
+        pipeline_module._PublicationTransaction, "publish", track_publish
+    )
+    monkeypatch.setattr(
+        pipeline_module._PublicationTransaction, "finalize", fail_first_finalize
+    )
+    outcomes: list[object] = []
+    outcomes_lock = threading.Lock()
+
+    def run(report_date):
+        provider = RecordingProvider(
+            {"600519": make_bars("600519")},
+            on_call=lambda _code: (
+                second_started.set() if report_date == date(2026, 9, 5) else None
+            ),
+        )
+        try:
+            outcome = run_daily_report(
+                fixture_settings,
+                output_root=tmp_path,
+                watchlist=watchlist,
+                provider=provider,
+                report_date=report_date,
+            )
+        except (AssertionError, OSError, PipelineError) as error:
+            outcome = error
+        with outcomes_lock:
+            outcomes.append(outcome)
+
+    first = threading.Thread(target=run, args=(date(2026, 9, 4),))
+    first.start()
+    assert first_finalize_entered.wait(timeout=5)
+    second = threading.Thread(target=run, args=(date(2026, 9, 5),))
+    second.start()
+    first.join(timeout=5)
+    second.join(timeout=5)
+
+    assert not first.is_alive()
+    assert not second.is_alive()
+    failures = [outcome for outcome in outcomes if isinstance(outcome, OSError)]
+    assert len(failures) == 1
+    assert str(failures[0]) == "injected first-date finalize failure"
+    assert (tmp_path / "reports/2026-09-05/index.html").exists()
+    site_index = (tmp_path / "site/index.html").read_text(encoding="utf-8")
+    assert "../reports/2026-09-05/index.html" in site_index
+    assert not (tmp_path / "reports/2026-09-04").exists()
+
+
 @pytest.mark.parametrize("failure_kind", ["render", "site_index"])
 def test_publication_failure_restores_old_state_and_discards_staged_cache(
     tmp_path, fixture_settings, monkeypatch, failure_kind
@@ -413,6 +587,43 @@ def test_publication_failure_restores_old_state_and_discards_staged_cache(
 
     assert {path: path.read_bytes() for path in report_paths} == before
     assert not list(cache_directory.glob("*.json"))
+
+
+def test_finalize_failure_does_not_commit_new_cache_entries(
+    tmp_path, fixture_settings, monkeypatch
+):
+    service = MarketDataService(
+        {
+            "fixture": RecordingProvider({"600519": make_bars("600519")}),
+            "unused": RecordingProvider({"600519": make_bars("600519")}),
+        },
+        primary_provider="fixture",
+        fallback_provider="unused",
+        cache_directory=tmp_path / "cache",
+        cache_ttl_seconds=3600,
+        quality_settings=DataQualitySettings(
+            minimum_history_bars=fixture_settings.market_data.minimum_history_bars,
+            max_completed_trading_day_lag=fixture_settings.market_data.max_completed_trading_day_lag,
+        ),
+    )
+
+    monkeypatch.setattr(
+        pipeline_module._PublicationTransaction,
+        "finalize",
+        lambda _transaction: (_ for _ in ()).throw(
+            OSError("injected finalize failure")
+        ),
+    )
+    with pytest.raises(OSError, match="injected finalize failure"):
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+            service=service,
+            report_date=date(2026, 9, 4),
+        )
+
+    assert not list((tmp_path / "cache").glob("*.json"))
 
 
 def test_failed_rerun_never_deletes_unrelated_dated_reports(tmp_path, fixture_settings):

@@ -292,8 +292,8 @@ def _canonical_json(document: Mapping[str, object]) -> str:
 
 
 @contextmanager
-def _snapshot_write_lock(directory: Path):
-    lock_path = directory / ".input.lock"
+def _snapshot_write_lock(directory: Path, *, lock_name: str = ".input.lock"):
+    lock_path = directory / lock_name
     try:
         lock_file = lock_path.open("a", encoding="utf-8")
     except OSError as error:

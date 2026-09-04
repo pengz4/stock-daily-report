@@ -389,6 +389,13 @@ Expected: FAIL because the pipeline does not exist.
 
 The CLI command is `python -m stock_daily_report.cli daily --date YYYY-MM-DD`. It must fetch/validate all watchlist data before publishing any artifact. Write `reports/YYYY-MM-DD/report.json`, `report.md`, and `index.html`, referencing `snapshots/YYYY-MM-DD/input.json`, provider metadata, data timestamp, config hash, and analyzer versions. Render a market-summary placeholder only from available validated inputs; do not invent breadth or sector figures. Create a static index that links dated reports.
 
+Task 7 publication transactions acquire the stable per-date `.input.lock`
+before the stable site-wide `site/.publication.lock`, and never remove either
+lock file. Report, snapshot, and shared-site updates are rolled back while
+those locks are held. Deferred cache responses are committed only after
+publication finalization and are protected by a stable cache lock with
+preimage restoration for partial failures.
+
 **Step 4: Run tests to verify they pass**
 
 Run: `pytest tests/test_pipeline.py tests/test_report_render.py -v`

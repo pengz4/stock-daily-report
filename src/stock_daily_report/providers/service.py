@@ -1,11 +1,13 @@
 """Configured provider selection, validated retrieval, and safe local caching."""
 
+import fcntl
 import hashlib
 import json
 import os
 import re
 import tempfile
 from collections.abc import Callable, Mapping, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
@@ -78,7 +80,11 @@ class FetchedBars:
 
 
 class RawResponseCache:
-    """A TTL cache of redacted provider responses below a configured local path."""
+    """A TTL cache of redacted provider responses below a configured local path.
+
+    Atomic writes and staged batch commits use one stable cache lock so a
+    rollback cannot remove another writer's entry.
+    """
 
     def __init__(
         self,
@@ -100,22 +106,32 @@ class RawResponseCache:
     ) -> object | None:
         """Load only a well-formed, unexpired response for this exact request."""
 
+        if not self._directory.exists():
+            return None
         path = self._path_for(provider, code, start, end)
-        try:
-            document = json.loads(path.read_text(encoding="utf-8"))
-            cached_at = datetime.fromisoformat(document["cached_at"])
-            if cached_at.tzinfo is None or document["key"] != self._key(
-                provider, code, start, end
+        with self._write_lock():
+            try:
+                document = json.loads(path.read_text(encoding="utf-8"))
+                cached_at = datetime.fromisoformat(document["cached_at"])
+                if cached_at.tzinfo is None or document["key"] != self._key(
+                    provider, code, start, end
+                ):
+                    raise ValueError("invalid cache metadata")
+                age = (self._now() - cached_at).total_seconds()
+                if age < 0 or age > self._ttl_seconds:
+                    path.unlink(missing_ok=True)
+                    return None
+                return document["response"]
+            except (
+                FileNotFoundError,
+                OSError,
+                ValueError,
+                KeyError,
+                TypeError,
+                json.JSONDecodeError,
             ):
-                raise ValueError("invalid cache metadata")
-            age = (self._now() - cached_at).total_seconds()
-            if age < 0 or age > self._ttl_seconds:
                 path.unlink(missing_ok=True)
                 return None
-            return document["response"]
-        except (FileNotFoundError, OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
-            path.unlink(missing_ok=True)
-            return None
 
     def store(
         self,
@@ -127,12 +143,37 @@ class RawResponseCache:
     ) -> None:
         """Persist canonical redacted JSON for a response already quality-gated."""
 
-        self._directory.mkdir(parents=True, exist_ok=True)
         document = {
             "cached_at": self._now().astimezone(UTC).isoformat(),
             "key": self._key(provider, code, start, end),
             "response": _redact(response, self._secrets),
         }
+        with self._write_lock():
+            self._store_unlocked(provider, code, start, end, document)
+
+    @contextmanager
+    def _write_lock(self):
+        self._directory.mkdir(parents=True, exist_ok=True)
+        lock_path = self._directory / ".cache.lock"
+        lock_file = lock_path.open("a", encoding="utf-8")
+        try:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+        finally:
+            lock_file.close()
+
+    def _store_unlocked(
+        self,
+        provider: str,
+        code: str,
+        start: date | None,
+        end: date | None,
+        document: Mapping[str, object],
+    ) -> None:
+        self._directory.mkdir(parents=True, exist_ok=True)
         path = self._path_for(provider, code, start, end)
         content = json.dumps(
             document, ensure_ascii=False, separators=(",", ":"), sort_keys=True
@@ -296,22 +337,34 @@ class MarketDataService:
         raise AllProvidersFailedError(failures)
 
     def commit_staged_cache_writes(self) -> None:
-        """Persist deferred responses after a complete batch validates."""
+        """Persist deferred responses after publication finalization succeeds.
+
+        All entries are written under the cache lock with per-path preimages,
+        so a partial commit restores existing bytes and removes new entries.
+        """
 
         staged_writes = tuple(self._staged_cache_writes)
         backups: list[tuple[Path, bytes | None]] = []
-        try:
-            for provider_name, code, start, end, response in staged_writes:
-                path = self._cache._path_for(provider_name, code, start, end)
-                backups.append((path, path.read_bytes() if path.exists() else None))
-                self._cache.store(provider_name, code, start, end, response)
-        except Exception:
-            for path, previous in reversed(backups):
-                if previous is None:
-                    path.unlink(missing_ok=True)
-                else:
-                    path.write_bytes(previous)
-            raise
+        with self._cache._write_lock():
+            try:
+                for provider_name, code, start, end, response in staged_writes:
+                    path = self._cache._path_for(provider_name, code, start, end)
+                    backups.append((path, path.read_bytes() if path.exists() else None))
+                    document = {
+                        "cached_at": self._cache._now().astimezone(UTC).isoformat(),
+                        "key": self._cache._key(provider_name, code, start, end),
+                        "response": _redact(response, self._cache._secrets),
+                    }
+                    self._cache._store_unlocked(
+                        provider_name, code, start, end, document
+                    )
+            except Exception:
+                for path, previous in reversed(backups):
+                    if previous is None:
+                        path.unlink(missing_ok=True)
+                    else:
+                        path.write_bytes(previous)
+                raise
         self._staged_cache_writes = []
 
     def discard_staged_cache_writes(self) -> None:
