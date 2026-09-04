@@ -7,6 +7,7 @@ import pytest
 from stock_daily_report.chan.strict import (
     StrictChanAnalyzer,
     StrictEvent,
+    _StrokeCandidate,
     load_strict_profile,
 )
 from stock_daily_report.models import DailyBar
@@ -195,6 +196,43 @@ def test_strict_retains_signals_for_older_central_areas():
     assert signals[0].confirmed_at == date(2026, 1, 3)
 
 
+def test_strict_orders_signals_by_event_time_across_areas():
+    areas = [
+        StrictEvent(
+            kind="central_area",
+            formed_at=date(2026, 1, 1),
+            confirmed_at=date(2026, 1, 1),
+            tradable_at=date(2026, 1, 2),
+            status="confirmed",
+            reason_code="strict_three_stroke_overlap",
+            low=5,
+            high=30,
+        ),
+        StrictEvent(
+            kind="central_area",
+            formed_at=date(2026, 1, 2),
+            confirmed_at=date(2026, 1, 2),
+            tradable_at=date(2026, 1, 3),
+            status="confirmed",
+            reason_code="strict_three_stroke_overlap",
+            low=10,
+            high=20,
+        ),
+    ]
+
+    signals = StrictChanAnalyzer._find_signals(
+        _bars_from_ranges(
+            [[16, 14], [16, 14], [26, 24], [36, 34], [36, 34], [36, 34]]
+        ),
+        areas,
+    )
+
+    assert [(signal.formed_at, signal.confirmed_at) for signal in signals] == [
+        (date(2026, 1, 3), date(2026, 1, 4)),
+        (date(2026, 1, 4), date(2026, 1, 5)),
+    ]
+
+
 def test_strict_segment_requires_third_stroke_to_extend_sequence():
     result = StrictChanAnalyzer(load_strict_profile()).analyze(
         _bars_from_ranges(
@@ -216,6 +254,40 @@ def test_strict_segment_requires_third_stroke_to_extend_sequence():
     )
 
     assert result.segments == ()
+
+
+def test_strict_segment_scans_past_nonqualifying_prefix():
+    def stroke(start_price: float, end_price: float, index: int) -> _StrokeCandidate:
+        event = StrictEvent(
+            kind="stroke",
+            formed_at=date(2026, 1, index),
+            confirmed_at=date(2026, 1, index),
+            tradable_at=date(2026, 1, index),
+            status="confirmed",
+            reason_code="fixture",
+            low=min(start_price, end_price),
+            high=max(start_price, end_price),
+        )
+        return _StrokeCandidate(
+            event=event,
+            start_index=index,
+            end_index=index + 1,
+            start_price=start_price,
+            end_price=end_price,
+        )
+
+    segments = StrictChanAnalyzer._find_segments(
+        [
+            stroke(17, 5, 1),
+            stroke(5, 15, 2),
+            stroke(15, 6, 3),
+            stroke(6, 19, 4),
+            stroke(19, 3, 5),
+        ]
+    )
+
+    assert len(segments) == 1
+    assert segments[0].formed_at == date(2026, 1, 2)
 
 
 def test_strict_central_candidate_does_not_crash_on_overlapping_strokes():

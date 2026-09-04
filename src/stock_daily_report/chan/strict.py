@@ -423,19 +423,20 @@ class StrictChanAnalyzer:
     @staticmethod
     def _find_segments(strokes: list[_StrokeCandidate]) -> list[StrictEvent]:
         segments: list[StrictEvent] = []
-        for start in range(0, len(strokes) - 2, 3):
+        start = 0
+        while start + 2 < len(strokes):
             group = strokes[start : start + 3]
-            if len(group) < 3:
-                break
             first, third = group[0], group[2]
             first_is_up = first.end_price > first.start_price
             third_is_up = third.end_price > third.start_price
             if first_is_up != third_is_up:
+                start += 1
                 continue
             if (
                 (first_is_up and third.end_price <= first.end_price)
                 or (not first_is_up and third.end_price >= first.end_price)
             ):
+                start += 1
                 continue
             events = [stroke.event for stroke in group]
             segments.append(
@@ -452,6 +453,7 @@ class StrictChanAnalyzer:
                     ),
                 )
             )
+            start += 3
         return segments
 
     @staticmethod
@@ -467,9 +469,16 @@ class StrictChanAnalyzer:
             if signal.status == "confirmed":
                 if signal not in confirmed:
                     confirmed.append(signal)
-            else:
+            elif candidate is None or signal.formed_at >= candidate.formed_at:
                 candidate = signal
-        return [*confirmed, *([candidate] if candidate is not None else [])]
+        signals = [*confirmed, *([candidate] if candidate is not None else [])]
+        return sorted(
+            signals,
+            key=lambda event: (
+                event.formed_at,
+                event.confirmed_at or event.formed_at,
+            ),
+        )
 
     @staticmethod
     def _find_signal_for_area(
