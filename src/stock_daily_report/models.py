@@ -159,6 +159,19 @@ class MarketDataSettings(BaseModel):
         return self
 
 
+class RiskRulesSettings(BaseModel):
+    """Versioned thresholds consumed by the risk-first decision layer."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    rule_version: NonEmptyString
+    high_realized_volatility20: float = Field(gt=0.0)
+    overextension_ma20_distance: float = Field(gt=0.0)
+    large_drawdown60: float = Field(gt=-1.0, lt=0.0)
+    adverse_volume_ratio20: float = Field(ge=0.0)
+    minimum_history_bars: int = Field(ge=1)
+
+
 class Settings(BaseModel):
     """Top-level deterministic report settings."""
 
@@ -167,6 +180,9 @@ class Settings(BaseModel):
     rule_version: RuleVersion
     notifications: NotificationSettings
     market_data: MarketDataSettings = Field(default_factory=MarketDataSettings)
+    # Optional here preserves compatibility with Task 1-5 ad-hoc settings
+    # documents; decision evaluation requires an explicit risk configuration.
+    risk_rules: RiskRulesSettings | None = None
 
 
 class DailyBar(BaseModel):

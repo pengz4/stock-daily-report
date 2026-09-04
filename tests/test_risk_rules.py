@@ -1,0 +1,237 @@
+from datetime import date
+
+import pytest
+from pydantic import ValidationError
+
+from stock_daily_report.chan.common import SimplifiedChanResult, StructureState
+from stock_daily_report.indicators.technical import TechnicalMetrics
+from stock_daily_report.models import RiskRulesSettings, Settings
+from stock_daily_report.quality.checks import DataQualityIssue, DataQualityResult
+
+
+def valid_quality() -> DataQualityResult:
+    return DataQualityResult(
+        code="600519",
+        as_of=date(2026, 9, 4),
+        issues=(),
+        bar_count=80,
+        analysis_allowed=True,
+    )
+
+
+def metrics(**overrides: float | None) -> TechnicalMetrics:
+    values: dict[str, object] = {
+        "as_of": date(2026, 9, 4),
+        "bar_count": 80,
+        "close": 120.0,
+        "ma5": 111.0,
+        "ma10": 109.0,
+        "ma20": 100.0,
+        "ma60": 90.0,
+        "ma120": None,
+        "macd_line": 2.0,
+        "macd_signal": 1.0,
+        "macd_histogram": 1.0,
+        "rsi14": 60.0,
+        "return20": 0.10,
+        "return60": 0.20,
+        "return120": None,
+        "realized_volatility20": 0.20,
+        "drawdown60": -0.05,
+        "volume_ratio20": 1.2,
+        "recent_high20": 125.0,
+        "recent_low20": 95.0,
+    }
+    values.update(overrides)
+    return TechnicalMetrics(**values)
+
+
+def structure(*, status: str = "confirmed", label: str = "confirmed_upward"):
+    return SimplifiedChanResult(
+        processed_bars=(),
+        fractals=(),
+        strokes=(),
+        central_candidates=(),
+        central_areas=(),
+        support_resistance=(),
+        observations=(),
+        state=StructureState(
+            label=label,  # type: ignore[arg-type]
+            formed_at=date(2026, 9, 1),
+            confirmed_at=date(2026, 9, 3) if status == "confirmed" else None,
+            tradable_at=date(2026, 9, 4) if status == "confirmed" else None,
+            status=status,  # type: ignore[arg-type]
+            rule_version="simplified-v1",
+        ),
+    )
+
+
+def test_overextension_marks_risk_increased():
+    from stock_daily_report.decision import decide
+
+    decision = decide(
+        metrics=metrics(close=125.0, ma20=100.0),
+        structure=structure(),
+        quality=valid_quality(),
+    )
+
+    assert decision.label == "风险升高"
+    assert "overextended_from_ma20" in decision.risk_codes
+
+
+@pytest.mark.parametrize(
+    ("metric", "value", "code"),
+    [
+        ("realized_volatility20", 0.50, "high_realized_volatility20"),
+        ("drawdown60", -0.25, "large_drawdown60"),
+        ("volume_ratio20", 0.20, "adverse_volume_behavior"),
+    ],
+)
+def test_each_named_market_risk_overrides_bullish_label(metric, value, code):
+    from stock_daily_report.decision import decide
+
+    decision = decide(
+        metrics=metrics(**{metric: value}),
+        structure=structure(),
+        quality=valid_quality(),
+    )
+
+    assert decision.label == "风险升高"
+    assert code in decision.risk_codes
+
+
+def test_incomplete_structure_waits_for_confirmation():
+    from stock_daily_report.decision import decide
+
+    decision = decide(
+        metrics=metrics(close=105.0, ma20=100.0),
+        structure=structure(status="candidate", label="candidate_upward"),
+        quality=valid_quality(),
+    )
+
+    assert decision.label == "等待确认"
+    assert "incomplete_structure" in decision.risk_codes
+
+
+@pytest.mark.parametrize(
+    "issues",
+    [
+        (DataQualityIssue("missing_ohlc", "close is missing", 0),),
+        (DataQualityIssue("stale_last_trade_date", "stale", None),),
+        (DataQualityIssue("insufficient_history", "too short", None),),
+    ],
+)
+def test_data_quality_failures_never_receive_bullish_label(issues):
+    from stock_daily_report.decision import decide
+
+    quality = DataQualityResult(
+        code="600519",
+        as_of=date(2026, 9, 4),
+        issues=issues,
+        bar_count=20,
+        analysis_allowed=False,
+    )
+
+    decision = decide(
+        metrics=metrics(),
+        structure=structure(),
+        quality=quality,
+    )
+
+    assert decision.label in {"风险升高", "等待确认"}
+    assert decision.label != "偏强"
+    assert decision.risk_codes
+
+
+def test_missing_metrics_are_not_treated_as_zero_or_bullish():
+    from stock_daily_report.decision import decide
+
+    decision = decide(
+        metrics=metrics(close=None, ma20=None, realized_volatility20=None),
+        structure=structure(),
+        quality=valid_quality(),
+    )
+
+    assert decision.label == "等待确认"
+    assert "insufficient_metric_data" in decision.risk_codes
+    assert all("nan" not in text.lower() for text in decision.evidence)
+
+
+def test_zero_volume_is_explicitly_adverse_and_outputs_are_deduplicated():
+    from stock_daily_report.decision import decide
+
+    decision = decide(
+        metrics=metrics(volume_ratio20=0.0),
+        structure=structure(),
+        quality=valid_quality(),
+    )
+
+    assert decision.label == "风险升高"
+    assert decision.risk_codes.count("adverse_volume_behavior") == 1
+    assert len(decision.evidence) == len(set(decision.evidence))
+    assert len(decision.risk_codes) == len(set(decision.risk_codes))
+
+
+def test_decision_is_deterministic_immutable_and_json_serializable():
+    from stock_daily_report.decision import decide
+
+    first = decide(metrics=metrics(), structure=structure(), quality=valid_quality())
+    second = decide(metrics=metrics(), structure=structure(), quality=valid_quality())
+
+    assert first == second
+    assert first.model_dump_json()
+    with pytest.raises(ValidationError):
+        first.label = "偏弱"  # type: ignore[misc]
+    assert first.rule_version
+    assert len(first.config_hash) == 64
+    assert first.key_levels[0].source == "technical_ma20"
+
+
+def test_custom_thresholds_change_behavior_and_configuration_hash():
+    from stock_daily_report.decision import decide
+
+    settings = Settings(
+        rule_version={"name": "simplified", "version": "v1"},
+        notifications={"enabled_channels": []},
+        risk_rules=RiskRulesSettings(
+            rule_version="risk-test-v1",
+            high_realized_volatility20=0.80,
+            overextension_ma20_distance=0.30,
+            large_drawdown60=-0.40,
+            adverse_volume_ratio20=0.20,
+            minimum_history_bars=60,
+        ),
+    )
+
+    decision = decide(
+        metrics=metrics(close=120.0, ma20=100.0),
+        structure=structure(),
+        quality=valid_quality(),
+        settings=settings,
+    )
+
+    assert decision.label == "偏强"
+    assert decision.risk_codes == ()
+    assert decision.rule_version == "risk-test-v1"
+    assert decision.config_hash != decide(
+        metrics=metrics(close=120.0, ma20=100.0),
+        structure=structure(),
+        quality=valid_quality(),
+    ).config_hash
+
+
+def test_supplied_settings_without_risk_rules_are_rejected():
+    from stock_daily_report.decision import decide
+
+    settings = Settings(
+        rule_version={"name": "simplified", "version": "v1"},
+        notifications={"enabled_channels": []},
+    )
+
+    with pytest.raises(ValueError, match="risk_rules configuration is required"):
+        decide(
+            metrics=metrics(),
+            structure=structure(),
+            quality=valid_quality(),
+            settings=settings,
+        )

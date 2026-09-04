@@ -11,3 +11,10 @@ market_data:
   cache_ttl_seconds: 3600
   minimum_history_bars: 60
   max_completed_trading_day_lag: 1
+risk_rules:
+  rule_version: risk-v1
+  high_realized_volatility20: 0.45
+  overextension_ma20_distance: 0.20
+  large_drawdown60: -0.20
+  adverse_volume_ratio20: 0.50
+  minimum_history_bars: 61
