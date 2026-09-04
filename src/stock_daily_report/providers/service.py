@@ -52,6 +52,7 @@ _MAX_RECOVERY_ENTRIES = 256
 _MAX_RECOVERY_ENTRY_BYTES = 64 * 1024 * 1024
 _MAX_RECOVERY_TOTAL_BYTES = 256 * 1024 * 1024
 _MAX_RECOVERY_MANIFEST_BYTES = 1024 * 1024
+_RECOVERY_CHUNK_BYTES = 1024 * 1024
 
 
 def _fsync_directory(directory: Path) -> None:
@@ -299,31 +300,43 @@ class RawResponseCache:
             ) from error
         if (
             not isinstance(manifest, dict)
-            or set(manifest) != {"schema_version", "state", "entries"}
+            or not {"schema_version", "state", "entries"} <= set(manifest)
             or manifest["schema_version"] != 2
-            or manifest["state"] != "ready"
             or not isinstance(manifest["entries"], list)
         ):
             raise OSError(f"Invalid cache recovery manifest: {manifest_path}")
+        state = manifest["state"]
+        if state not in {
+            "copying",
+            "preparing",
+            "prepared",
+            "committing",
+            "ready",
+            "restoring",
+            "committed",
+            "rolled_back",
+        }:
+            raise OSError(f"Invalid cache recovery state: {state!r}")
         if len(manifest["entries"]) > _MAX_RECOVERY_ENTRIES:
             raise OSError(
                 f"Too many cache recovery entries (limit {_MAX_RECOVERY_ENTRIES})"
             )
 
-        entries: list[tuple[Path, bool, bytes | None, str]] = []
+        entries: list[tuple[Path, bool, Path | None, int | None, str | None, str]] = []
         recovery_names = {"manifest.json"}
         entry_names: set[str] = set()
         total_bytes = 0
         for raw_entry in manifest["entries"]:
             if (
                 not isinstance(raw_entry, dict)
-                or set(raw_entry) != {"path", "present", "size", "sha256"}
+                or not {"path", "present", "size", "sha256"} <= set(raw_entry)
             ):
                 raise OSError(f"Invalid cache recovery entry: {manifest_path}")
             name = raw_entry["path"]
             present = raw_entry["present"]
             size = raw_entry["size"]
             digest = raw_entry["sha256"]
+            status = raw_entry.get("status", "pending")
             if (
                 not isinstance(name, str)
                 or not name
@@ -333,6 +346,7 @@ class RawResponseCache:
                 or name == ".cache.lock"
                 or Path(name).is_absolute()
                 or not isinstance(present, bool)
+                or status not in {"pending", "committed", "restored"}
             ):
                 raise OSError(f"Invalid cache recovery path: {name!r}")
             entry_names.add(name)
@@ -348,27 +362,25 @@ class RawResponseCache:
                 ):
                     raise OSError(f"Invalid cache recovery metadata: {name}")
                 source = recovery_path / name
-                if not source.is_file() or source.is_symlink():
-                    raise OSError(f"Missing cache recovery preimage: {source}")
-                content = source.read_bytes()
-                if (
-                    len(content) != size
-                    or hashlib.sha256(content).hexdigest() != digest
-                ):
-                    raise OSError(
-                        f"Cache recovery preimage verification failed: {source}"
-                    )
-                recovery_names.add(name)
                 total_bytes += size
                 if total_bytes > _MAX_RECOVERY_TOTAL_BYTES:
                     raise OSError(
                         "Cache recovery preimages exceed the total size limit"
                     )
+                if not source.is_file() or source.is_symlink():
+                    raise OSError(f"Missing cache recovery preimage: {source}")
+                if source.stat().st_size != size:
+                    raise OSError(f"Cache recovery preimage size mismatch: {source}")
+                if not self._verify_file(source, size, digest):
+                    raise OSError(
+                        f"Cache recovery preimage verification failed: {source}"
+                    )
+                recovery_names.add(name)
             else:
                 if size is not None or digest is not None:
                     raise OSError(f"Invalid absent cache recovery entry: {name}")
-                content = None
-            entries.append((self._directory / name, present, content, name))
+                source = None
+            entries.append((self._directory / name, present, source, size, digest, name))
 
         actual_names = {path.name for path in recovery_path.iterdir()}
         if actual_names != recovery_names:
@@ -376,20 +388,128 @@ class RawResponseCache:
                 f"Unexpected files in cache recovery directory: {recovery_path}"
             )
 
-        for target, present, content, name in entries:
+        if state in {"copying", "preparing"}:
+            shutil.rmtree(recovery_path)
+            _fsync_directory(self._directory)
+            return
+        if state == "committed" and self._publication_commit_is_durable(manifest):
+            shutil.rmtree(recovery_path)
+            _fsync_directory(self._directory)
+            return
+        if state == "rolled_back":
+            shutil.rmtree(recovery_path)
+            _fsync_directory(self._directory)
+            return
+
+        manifest["state"] = "restoring"
+        self._persist_recovery_manifest(recovery_path, manifest)
+        for target, present, source, size, digest, name in entries:
             if present:
-                assert content is not None
-                self._write_bytes_atomic(target, content)
+                assert source is not None and size is not None and digest is not None
+                self._restore_file_from_source(
+                    source, target, expected_size=size, expected_digest=digest
+                )
+                if not self._verify_file(target, size, digest):
+                    raise OSError(f"Cache recovery verification failed: {target}")
             else:
                 self._unlink_and_fsync(target)
-            if present:
-                if target.read_bytes() != content:
-                    raise OSError(f"Cache recovery verification failed: {target}")
-            elif target.exists():
-                raise OSError(f"Cache entry remains after recovery cleanup: {name}")
+                if target.exists():
+                    raise OSError(f"Cache entry remains after recovery cleanup: {name}")
+            for raw_entry in manifest["entries"]:
+                if raw_entry["path"] == name:
+                    raw_entry["status"] = "restored"
+                    break
+            self._persist_recovery_manifest(recovery_path, manifest)
+
+        manifest["state"] = "rolled_back"
+        self._persist_recovery_manifest(recovery_path, manifest)
 
         shutil.rmtree(recovery_path)
         _fsync_directory(self._directory)
+
+    @staticmethod
+    def _publication_commit_is_durable(manifest: Mapping[str, object]) -> bool:
+        publication_manifest = manifest.get("publication_manifest")
+        if publication_manifest is None:
+            return True
+        if not isinstance(publication_manifest, str):
+            return False
+        try:
+            document = json.loads(
+                Path(publication_manifest).read_text(encoding="utf-8")
+            )
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            return False
+        return isinstance(document, dict) and document.get("state") == "committed"
+
+    def _persist_recovery_manifest(
+        self, recovery_path: Path, manifest: Mapping[str, object]
+    ) -> None:
+        self._write_bytes_atomic(
+            recovery_path / "manifest.json",
+            json.dumps(manifest, sort_keys=True).encode("utf-8"),
+        )
+
+    @staticmethod
+    def _verify_file(path: Path, expected_size: int, expected_digest: str) -> bool:
+        if path.is_symlink() or not path.is_file():
+            return False
+        try:
+            if path.stat().st_size != expected_size:
+                return False
+            digest = hashlib.sha256()
+            size = 0
+            with path.open("rb") as source:
+                while chunk := source.read(_RECOVERY_CHUNK_BYTES):
+                    size += len(chunk)
+                    digest.update(chunk)
+            return size == expected_size and digest.hexdigest() == expected_digest
+        except OSError:
+            return False
+
+    def _restore_file_from_source(
+        self,
+        source: Path,
+        target: Path,
+        *,
+        expected_size: int,
+        expected_digest: str,
+    ) -> None:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        temporary_path: Path | None = None
+        digest = hashlib.sha256()
+        copied = 0
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="wb",
+                dir=target.parent,
+                delete=False,
+                prefix=f".{target.name}.",
+                suffix=".restore.tmp",
+            ) as temporary:
+                temporary_path = Path(temporary.name)
+                with source.open("rb") as source_file:
+                    while chunk := source_file.read(_RECOVERY_CHUNK_BYTES):
+                        copied += len(chunk)
+                        if copied > expected_size:
+                            raise OSError(f"Cache recovery preimage exceeds declared size: {source}")
+                        digest.update(chunk)
+                        temporary.write(chunk)
+                if (
+                    copied != expected_size
+                    or digest.hexdigest() != expected_digest
+                ):
+                    raise OSError(
+                        f"Cache recovery preimage verification failed: {source}"
+                    )
+                temporary.flush()
+                os.fsync(temporary.fileno())
+            os.replace(temporary_path, target)
+            _fsync_directory(target.parent)
+        finally:
+            if temporary_path is not None and temporary_path.exists():
+                temporary_path.unlink()
+                _fsync_directory(target.parent)
 
     def _restore_bytes_atomic(self, path: Path, content: bytes) -> None:
         """Restore bytes with an atomic replacement and content verification."""
@@ -451,6 +571,7 @@ class MarketDataService:
         )
         self._staged_cache_writes: list[tuple[str, str, date | None, date | None, object]] = []
         self._cache_recovery_path: Path | None = None
+        self._publication_manifest_path: Path | None = None
 
     @classmethod
     def from_settings(
@@ -543,15 +664,25 @@ class MarketDataService:
 
         All entries are written under the cache lock with per-path preimages,
         so a partial commit restores existing bytes and removes new entries.
+        The recovery manifest is durable before the first cache mutation.
         """
 
         staged_writes = tuple(self._staged_cache_writes)
-        backups: list[tuple[Path, bytes | None]] = []
+        if not staged_writes:
+            return
         with self._cache._write_lock():
+            paths = [
+                self._cache._path_for(provider_name, code, start, end)
+                for provider_name, code, start, end, _ in staged_writes
+            ]
+            self._cache_recovery_path = self._create_cache_recovery(paths)
+            recovery_path = self._cache_recovery_path
             try:
+                manifest = self._load_recovery_manifest_for_update(recovery_path)
+                manifest["state"] = "committing"
+                self._cache._persist_recovery_manifest(recovery_path, manifest)
                 for provider_name, code, start, end, response in staged_writes:
                     path = self._cache._path_for(provider_name, code, start, end)
-                    backups.append((path, path.read_bytes() if path.exists() else None))
                     document = {
                         "cached_at": self._cache._now().astimezone(UTC).isoformat(),
                         "key": self._cache._key(provider_name, code, start, end),
@@ -560,9 +691,17 @@ class MarketDataService:
                     self._cache._store_unlocked(
                         provider_name, code, start, end, document
                     )
+                    for entry in manifest["entries"]:
+                        if entry["path"] == path.name:
+                            entry["status"] = "committed"
+                            break
+                    self._cache._persist_recovery_manifest(recovery_path, manifest)
+                manifest["state"] = "committed"
+                self._cache._persist_recovery_manifest(recovery_path, manifest)
             except BaseException as commit_error:
                 try:
-                    self._restore_cache_preimages(backups)
+                    self._cache._replay_recovery_manifest(recovery_path)
+                    self._cache_recovery_path = None
                 except BaseException as restore_error:
                     raise CacheRollbackError(
                         self._cache_recovery_path,
@@ -571,73 +710,151 @@ class MarketDataService:
                 raise
         self._staged_cache_writes = []
 
+    def set_publication_recovery_context(self, manifest_path: Path) -> None:
+        """Link cache recovery to the publication transaction journal."""
+
+        self._publication_manifest_path = manifest_path
+
+    def finalize_staged_cache_commit(self) -> None:
+        """Discard a committed cache recovery manifest after publication cleanup."""
+
+        recovery_path = self._cache_recovery_path
+        if recovery_path is None:
+            return
+        with self._cache._write_lock():
+            manifest = self._load_recovery_manifest_for_update(recovery_path)
+            if manifest["state"] != "committed":
+                raise CacheRollbackError(
+                    recovery_path,
+                    f"cannot finalize cache state {manifest['state']!r}",
+                )
+            manifest["publication_manifest"] = None
+            self._cache._persist_recovery_manifest(recovery_path, manifest)
+            shutil.rmtree(recovery_path)
+            _fsync_directory(self._cache._directory)
+            if recovery_path.exists():
+                raise CacheRollbackError(
+                    recovery_path,
+                    "cache recovery artifacts could not be removed",
+                )
+        self._cache_recovery_path = None
+
+    def rollback_staged_cache_commit(self) -> None:
+        """Restore cache preimages after a later publication cleanup failure."""
+
+        recovery_path = self._cache_recovery_path
+        if recovery_path is None:
+            return
+        with self._cache._write_lock():
+            manifest = self._load_recovery_manifest_for_update(recovery_path)
+            manifest["state"] = "restoring"
+            self._cache._persist_recovery_manifest(recovery_path, manifest)
+            self._cache._replay_recovery_manifest(recovery_path)
+        self._cache_recovery_path = None
+
     def discard_staged_cache_writes(self) -> None:
         """Drop deferred responses when a batch cannot be completed."""
 
         self._staged_cache_writes.clear()
 
-    def _restore_cache_preimages(
-        self, backups: Sequence[tuple[Path, bytes | None]]
-    ) -> None:
-        self._cache_recovery_path = self._create_cache_recovery(backups)
-        for path, previous in reversed(backups):
-            if previous is None:
-                self._cache._unlink_and_fsync(path)
-                if path.exists():
-                    raise OSError(f"Cache entry remains after removal: {path}")
-            else:
-                self._cache._restore_bytes_atomic(path, previous)
-        recovery_path = self._cache_recovery_path
-        shutil.rmtree(recovery_path)
-        _fsync_directory(self._cache._directory)
-        if recovery_path.exists():
-            raise OSError(
-                f"Could not remove cache recovery artifacts: "
-                f"{recovery_path}"
-            )
-        self._cache_recovery_path = None
+    def _load_recovery_manifest_for_update(self, recovery_path: Path) -> dict[str, object]:
+        manifest_path = recovery_path / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        if not isinstance(manifest, dict) or not isinstance(
+            manifest.get("entries"), list
+        ):
+            raise OSError(f"Invalid cache recovery manifest: {manifest_path}")
+        return manifest
 
-    def _create_cache_recovery(
-        self, backups: Sequence[tuple[Path, bytes | None]]
-    ) -> Path:
+    def _create_cache_recovery(self, paths: Sequence[Path]) -> Path:
         recovery_path = Path(
             tempfile.mkdtemp(prefix=".cache-recovery-", dir=self._cache._directory)
         )
         _fsync_directory(self._cache._directory)
         self._cache_recovery_path = recovery_path
-        manifest_path = recovery_path / "manifest.json"
         manifest = {
             "schema_version": 2,
-            "state": "copying",
+            "state": "preparing",
+            "publication_manifest": (
+                str(self._publication_manifest_path)
+                if self._publication_manifest_path is not None
+                else None
+            ),
             "entries": [
                 {
                     "path": path.name,
-                    "present": previous is not None,
-                    "size": len(previous) if previous is not None else None,
-                    "sha256": (
-                        hashlib.sha256(previous).hexdigest()
-                        if previous is not None
-                        else None
-                    ),
+                    "present": False,
+                    "size": None,
+                    "sha256": None,
+                    "status": "pending",
                 }
-                for path, previous in backups
+                for path in paths
             ],
         }
-        self._cache._write_bytes_atomic(
-            manifest_path,
-            json.dumps(manifest, sort_keys=True).encode("utf-8"),
-        )
-        for path, previous in backups:
-            if previous is not None:
-                self._cache._write_bytes_atomic(
-                    recovery_path / path.name, previous
+        self._cache._persist_recovery_manifest(recovery_path, manifest)
+        seen_names: set[str] = set()
+        total_bytes = 0
+        for entry, path in zip(manifest["entries"], paths, strict=True):
+            if path.name in seen_names:
+                raise OSError(f"Duplicate cache preimage path: {path}")
+            seen_names.add(path.name)
+            if path.is_symlink():
+                raise OSError(f"Invalid cache preimage path: {path}")
+            if path.exists():
+                if path.is_symlink() or not path.is_file():
+                    raise OSError(f"Invalid cache preimage path: {path}")
+                size = path.stat().st_size
+                if size > _MAX_RECOVERY_ENTRY_BYTES:
+                    raise OSError(f"Cache preimage exceeds the size limit: {path}")
+                total_bytes += size
+                if total_bytes > _MAX_RECOVERY_TOTAL_BYTES:
+                    raise OSError("Cache recovery preimages exceed the total size limit")
+                size, digest = self._copy_cache_preimage(
+                    path, recovery_path / path.name
                 )
+                entry["present"] = True
+                entry["size"] = size
+                entry["sha256"] = digest
+            self._cache._persist_recovery_manifest(recovery_path, manifest)
         manifest["state"] = "ready"
-        self._cache._write_bytes_atomic(
-            manifest_path,
-            json.dumps(manifest, sort_keys=True).encode("utf-8"),
-        )
+        self._cache._persist_recovery_manifest(recovery_path, manifest)
         return recovery_path
+
+    def _copy_cache_preimage(self, source: Path, destination: Path) -> tuple[int, str]:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        declared_size = source.stat().st_size
+        if declared_size > _MAX_RECOVERY_ENTRY_BYTES:
+            raise OSError(
+                f"Cache preimage exceeds the size limit: {source}"
+            )
+        temporary_path: Path | None = None
+        digest = hashlib.sha256()
+        copied = 0
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="wb",
+                dir=destination.parent,
+                delete=False,
+                prefix=f".{destination.name}.",
+                suffix=".preimage.tmp",
+            ) as temporary:
+                temporary_path = Path(temporary.name)
+                with source.open("rb") as source_file:
+                    while chunk := source_file.read(_RECOVERY_CHUNK_BYTES):
+                        copied += len(chunk)
+                        digest.update(chunk)
+                        temporary.write(chunk)
+                if copied != declared_size:
+                    raise OSError(f"Cache preimage changed during copy: {source}")
+                temporary.flush()
+                os.fsync(temporary.fileno())
+            os.replace(temporary_path, destination)
+            _fsync_directory(destination.parent)
+        finally:
+            if temporary_path is not None and temporary_path.exists():
+                temporary_path.unlink()
+                _fsync_directory(destination.parent)
+        return copied, digest.hexdigest()
 
 
 def _require_sequence(

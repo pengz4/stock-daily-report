@@ -1,5 +1,8 @@
 import hashlib
 import json
+import os
+import subprocess
+import sys
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
@@ -443,6 +446,146 @@ def test_cache_restore_failure_is_atomic_and_retains_recovery_state(
     assert (recovery_directory / "manifest.json").exists()
     assert (recovery_directory / existing_path.name).read_bytes() == existing_bytes
     assert existing_path.read_bytes() != b""
+
+
+def test_cache_batch_recovery_survives_hard_exit_after_first_write(tmp_path):
+    from stock_daily_report.providers.service import RawResponseCache
+
+    cache = RawResponseCache(tmp_path, ttl_seconds=30)
+    existing_path = cache._path_for("primary", "600519", None, date(2026, 9, 4))
+    new_path = cache._path_for("primary", "000001", None, date(2026, 9, 4))
+    existing_path.write_bytes(b"old cache bytes")
+    repo_root = Path(__file__).parents[1]
+    child = f"""
+import os
+from datetime import date
+from pathlib import Path
+from stock_daily_report.providers.service import MarketDataService
+
+class Provider:
+    def get_daily_bars(self, code, *, start=None, end=None):
+        return []
+
+root = Path({str(tmp_path)!r})
+service = MarketDataService(
+    {{"primary": Provider(), "fallback": Provider()}},
+    primary_provider="primary",
+    fallback_provider="fallback",
+    cache_directory=root,
+    cache_ttl_seconds=30,
+)
+service._staged_cache_writes = [
+    ("primary", "600519", None, date(2026, 9, 4), [{{"close": 2}}]),
+    ("primary", "000001", None, date(2026, 9, 4), [{{"close": 3}}]),
+]
+original_store = service._cache._store_unlocked
+calls = 0
+
+def interrupt_after_first_write(*args):
+    global calls
+    calls += 1
+    original_store(*args)
+    if calls == 1:
+        os._exit(74)
+
+service._cache._store_unlocked = interrupt_after_first_write
+service.commit_staged_cache_writes()
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", child],
+        cwd=repo_root,
+        env={
+            **os.environ,
+            "PYTHONPATH": str(repo_root / "src"),
+        },
+        check=False,
+    )
+    assert result.returncode == 74
+    assert existing_path.read_bytes() != b"old cache bytes"
+    assert not new_path.exists()
+    assert list(tmp_path.glob(".cache-recovery-*"))
+
+    RawResponseCache(tmp_path, ttl_seconds=30)
+
+    assert existing_path.read_bytes() == b"old cache bytes"
+    assert not new_path.exists()
+    assert not list(tmp_path.glob(".cache-recovery-*"))
+
+
+def test_cache_startup_discards_pre_mutation_recovery_state(tmp_path):
+    from stock_daily_report.providers.service import RawResponseCache
+
+    cache = RawResponseCache(tmp_path, ttl_seconds=30)
+    existing_path = cache._path_for("primary", "600519", None, date(2026, 9, 4))
+    existing_path.write_bytes(b"unchanged cache bytes")
+    recovery_directory = tmp_path / ".cache-recovery-preparing"
+    recovery_directory.mkdir()
+    (recovery_directory / "manifest.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "state": "preparing",
+                "entries": [
+                    {
+                        "path": existing_path.name,
+                        "present": False,
+                        "size": None,
+                        "sha256": None,
+                        "status": "pending",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    RawResponseCache(tmp_path, ttl_seconds=30)
+
+    assert existing_path.read_bytes() == b"unchanged cache bytes"
+    assert not recovery_directory.exists()
+
+
+def test_cache_recovery_streams_preimage_without_reading_it_all(
+    tmp_path, monkeypatch
+):
+    from stock_daily_report.providers.service import RawResponseCache
+
+    cache = RawResponseCache(tmp_path, ttl_seconds=30)
+    target = cache._path_for("primary", "600519", None, date(2026, 9, 4))
+    recovery = tmp_path / ".cache-recovery-stream"
+    recovery.mkdir()
+    preimage = recovery / target.name
+    previous = b"streamed preimage"
+    preimage.write_bytes(previous)
+    (recovery / "manifest.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "state": "ready",
+                "entries": [
+                    {
+                        "path": target.name,
+                        "present": True,
+                        "size": len(previous),
+                        "sha256": hashlib.sha256(previous).hexdigest(),
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    original_read_bytes = Path.read_bytes
+
+    def reject_full_preimage_read(path):
+        if path == preimage:
+            raise AssertionError("recovery preimage was read into memory")
+        return original_read_bytes(path)
+
+    monkeypatch.setattr(Path, "read_bytes", reject_full_preimage_read)
+
+    RawResponseCache(tmp_path, ttl_seconds=30)
+
+    assert target.read_bytes() == previous
 
 
 def test_cache_replays_ready_recovery_manifest_on_startup(tmp_path):

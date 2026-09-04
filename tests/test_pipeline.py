@@ -1,5 +1,6 @@
 import hashlib
 import json
+import os
 import subprocess
 import sys
 import threading
@@ -147,6 +148,140 @@ def test_successful_publication_commits_cache_after_all_outputs_exist(
 
     assert observed == [(True, True, True, True)]
     assert list((tmp_path / "cache").glob("*.json"))
+
+
+def test_publication_completion_precedes_cache_commit(
+    tmp_path, fixture_settings, monkeypatch
+):
+    service = MarketDataService(
+        {
+            "fixture": RecordingProvider({"600519": make_bars("600519")}),
+            "unused": RecordingProvider({"600519": make_bars("600519")}),
+        },
+        primary_provider="fixture",
+        fallback_provider="unused",
+        cache_directory=tmp_path / "cache",
+        cache_ttl_seconds=3600,
+        quality_settings=DataQualitySettings(
+            minimum_history_bars=fixture_settings.market_data.minimum_history_bars,
+            max_completed_trading_day_lag=fixture_settings.market_data.max_completed_trading_day_lag,
+        ),
+    )
+    events: list[str] = []
+    original_complete = pipeline_module._PublicationTransaction.complete
+    original_commit = service.commit_staged_cache_writes
+
+    def record_complete(transaction):
+        events.append("publication.complete")
+        return original_complete(transaction)
+
+    def record_commit():
+        events.append("cache.commit")
+        return original_commit()
+
+    monkeypatch.setattr(
+        pipeline_module._PublicationTransaction, "complete", record_complete
+    )
+    monkeypatch.setattr(service, "commit_staged_cache_writes", record_commit)
+
+    run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+        service=service,
+        report_date=date(2026, 9, 4),
+    )
+
+    assert events == ["publication.complete", "cache.commit"]
+
+
+def test_publication_completion_failure_does_not_commit_cache(
+    tmp_path, fixture_settings, monkeypatch
+):
+    service = MarketDataService(
+        {
+            "fixture": RecordingProvider({"600519": make_bars("600519")}),
+            "unused": RecordingProvider({"600519": make_bars("600519")}),
+        },
+        primary_provider="fixture",
+        fallback_provider="unused",
+        cache_directory=tmp_path / "cache",
+        cache_ttl_seconds=3600,
+        quality_settings=DataQualitySettings(
+            minimum_history_bars=fixture_settings.market_data.minimum_history_bars,
+            max_completed_trading_day_lag=fixture_settings.market_data.max_completed_trading_day_lag,
+        ),
+    )
+    monkeypatch.setattr(
+        pipeline_module._PublicationTransaction,
+        "complete",
+        lambda _transaction: (_ for _ in ()).throw(
+            OSError("injected completion failure")
+        ),
+    )
+
+    with pytest.raises(OSError, match="injected completion failure"):
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+            service=service,
+            report_date=date(2026, 9, 4),
+        )
+
+    assert not list((tmp_path / "cache").glob("*.json"))
+
+
+def test_post_cache_publication_cleanup_failure_retains_committed_state(
+    tmp_path, fixture_settings, monkeypatch
+):
+    watchlist = Watchlist(stocks=[{"code": "600519", "name": "one"}])
+    run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        report_date=date(2026, 9, 4),
+    )
+    service = MarketDataService(
+        {
+            "fixture": RecordingProvider({"600519": make_bars("600519")}),
+            "unused": RecordingProvider({"600519": make_bars("600519")}),
+        },
+        primary_provider="fixture",
+        fallback_provider="unused",
+        cache_directory=tmp_path / "cache",
+        cache_ttl_seconds=3600,
+        quality_settings=DataQualitySettings(
+            minimum_history_bars=fixture_settings.market_data.minimum_history_bars,
+            max_completed_trading_day_lag=fixture_settings.market_data.max_completed_trading_day_lag,
+        ),
+    )
+    original_rmtree = pipeline_module.shutil.rmtree
+    failed = False
+
+    def fail_recovery_cleanup(path, *args, **kwargs):
+        nonlocal failed
+        if Path(path).name == "recovery" and not failed:
+            failed = True
+            raise OSError("injected post-cache cleanup failure")
+        return original_rmtree(path, *args, **kwargs)
+
+    monkeypatch.setattr(pipeline_module.shutil, "rmtree", fail_recovery_cleanup)
+
+    with pytest.raises(OSError, match="injected post-cache cleanup failure"):
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=watchlist,
+            service=service,
+            report_date=date(2026, 9, 4),
+        )
+
+    assert failed
+    assert (tmp_path / "reports/2026-09-04/report.json").exists()
+    assert list((tmp_path / "cache").glob("*.json"))
+    assert list(tmp_path.glob(".publication-*/recovery"))
 
 
 def test_failed_rerun_preserves_existing_report_and_site_bytes(
@@ -1362,6 +1497,82 @@ def test_interrupt_after_report_backup_rename_restores_old_report(
         )
 
     assert {path: path.read_bytes() for path in report_dir.iterdir()} == before
+    assert not list(tmp_path.glob(".publication-*"))
+
+
+def test_startup_recovers_orphan_publication_after_hard_exit(
+    tmp_path, fixture_settings
+):
+    watchlist = Watchlist(stocks=[{"code": "600519", "name": "one"}])
+    run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        report_date=date(2026, 9, 4),
+    )
+    report_dir = tmp_path / "reports/2026-09-04"
+    before = {path.name: path.read_bytes() for path in report_dir.iterdir()}
+    orphan = tmp_path / ".publication-hard-exit"
+    staged_report = orphan / "reports/2026-09-04"
+    staged_report.mkdir(parents=True)
+    (staged_report / "report.json").write_text("new", encoding="utf-8")
+    (staged_report / "report.md").write_text("new", encoding="utf-8")
+    (staged_report / "index.html").write_text("new", encoding="utf-8")
+    staged_site = orphan / "site"
+    staged_site.mkdir()
+    (staged_site / "index.html").write_text("new", encoding="utf-8")
+    repo_root = Path(__file__).parents[1]
+    child = f"""
+import os
+from pathlib import Path
+from datetime import date
+import stock_daily_report.pipeline as pipeline
+
+root = Path({str(tmp_path)!r})
+transaction_root = root / ".publication-hard-exit"
+transaction = pipeline._PublicationTransaction(
+    root=root,
+    report_date=date(2026, 9, 4),
+    staged_report_dir=transaction_root / "reports/2026-09-04",
+    staged_snapshot_path=None,
+    staged_site_index=transaction_root / "site/index.html",
+    staged_styles_path=None,
+)
+original_replace = pipeline.os.replace
+
+def hard_exit_after_report_backup(source, destination):
+    original_replace(source, destination)
+    if Path(destination) == transaction.backup_report_dir:
+        os._exit(73)
+
+pipeline.os.replace = hard_exit_after_report_backup
+transaction.publish()
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", child],
+        cwd=repo_root,
+        env={
+            **os.environ,
+            "PYTHONPATH": str(repo_root / "src"),
+        },
+        check=False,
+    )
+    assert result.returncode == 73
+    assert not report_dir.exists()
+
+    with pytest.raises(PipelineError):
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=watchlist,
+            provider=RecordingProvider(
+                {"600519": make_bars("600519")}, fail_code="600519"
+            ),
+            report_date=date(2026, 9, 4),
+        )
+
+    assert {path.name: path.read_bytes() for path in report_dir.iterdir()} == before
     assert not list(tmp_path.glob(".publication-*"))
 
 

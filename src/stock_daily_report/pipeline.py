@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import fcntl
 import hashlib
 import json
 import os
@@ -29,7 +30,11 @@ from stock_daily_report.models import DailyBar, Settings, Watchlist
 from stock_daily_report.providers.akshare import AkShareMarketDataProvider
 from stock_daily_report.providers.base import MarketDataProvider, ProviderError
 from stock_daily_report.providers.fixture import FixtureMarketDataProvider
-from stock_daily_report.providers.service import FetchedBars, MarketDataService
+from stock_daily_report.providers.service import (
+    CacheRollbackError,
+    FetchedBars,
+    MarketDataService,
+)
 from stock_daily_report.quality.checks import (
     DataQualityResult,
     DataQualitySettings,
@@ -59,6 +64,18 @@ from stock_daily_report.snapshots import (
     load_snapshot,
     write_snapshot,
 )
+
+_MAX_PUBLICATION_TRANSACTIONS = 32
+_MAX_PUBLICATION_MANIFEST_BYTES = 1024 * 1024
+
+
+def _fsync_directory(directory: Path) -> None:
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+    descriptor = os.open(directory, flags)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
 
 
 @dataclass(frozen=True)
@@ -127,6 +144,8 @@ def run_daily_report(
     ):
         raise TypeError("report_date must be a date, not a datetime")
     root = Path(output_root)
+    root.mkdir(parents=True, exist_ok=True)
+    _recover_pending_publications_if_idle(root, active_report_date)
     failures: list[PipelineFailure] = []
     fetched: dict[str, FetchedBars] = {}
 
@@ -175,27 +194,31 @@ def run_daily_report(
             raise PipelineError(failures)
 
         bars_by_code = {code: result.bars for code, result in fetched.items()}
-        root.mkdir(parents=True, exist_ok=True)
         report_dir = root / "reports" / active_report_date.isoformat()
         json_path = report_dir / "report.json"
         markdown_path = report_dir / "report.md"
         html_path = report_dir / "index.html"
-        transaction_root = Path(tempfile.mkdtemp(prefix=".publication-", dir=root))
         with _publication_lock(root, active_report_date):
-            return _publish_report_transaction(
-                root=root,
-                transaction_root=transaction_root,
-                report_date=active_report_date,
-                generated_at=generated_at,
-                settings=active_settings,
-                watchlist=active_watchlist,
-                fetched=fetched,
-                bars_by_code=bars_by_code,
-                service=active_service,
-                json_path=json_path,
-                markdown_path=markdown_path,
-                html_path=html_path,
-            )
+            _recover_pending_publications(root, active_report_date)
+            transaction_root = Path(tempfile.mkdtemp(prefix=".publication-", dir=root))
+            try:
+                return _publish_report_transaction(
+                    root=root,
+                    transaction_root=transaction_root,
+                    report_date=active_report_date,
+                    generated_at=generated_at,
+                    settings=active_settings,
+                    watchlist=active_watchlist,
+                    fetched=fetched,
+                    bars_by_code=bars_by_code,
+                    service=active_service,
+                    json_path=json_path,
+                    markdown_path=markdown_path,
+                    html_path=html_path,
+                )
+            finally:
+                _cleanup_transaction_root(transaction_root, active_report_date)
+                transaction_root = None
     finally:
         if active_service is not None:
             active_service.discard_staged_cache_writes()
@@ -211,6 +234,403 @@ def _cleanup_transaction_root(transaction_root: Path, report_date: date) -> None
     if backup_root.exists() or recovery_root.exists():
         return
     shutil.rmtree(transaction_root, ignore_errors=True)
+
+
+def _recover_pending_publications(
+    root: Path, requested_date: date | None = None
+) -> None:
+    """Recover bounded orphan publication transactions before new work starts."""
+
+    transaction_paths = sorted(root.glob(".publication-*"))
+    if len(transaction_paths) > _MAX_PUBLICATION_TRANSACTIONS:
+        raise PublicationRollbackError(
+            "Too many orphan publication transactions; recovery artifacts "
+            f"retained under {root}"
+        )
+    dated_transactions: list[tuple[date, Path]] = []
+    for transaction_path in transaction_paths:
+        if not transaction_path.is_dir() or transaction_path.is_symlink():
+            raise PublicationRollbackError(
+                "Invalid orphan publication transaction retained at "
+                f"{transaction_path}"
+            )
+        try:
+            manifest = _read_publication_manifest(transaction_path)
+        except PublicationRollbackError:
+            if requested_date is None:
+                raise
+            if not (
+                transaction_path / "reports" / requested_date.isoformat()
+            ).exists():
+                report_directory = transaction_path / "reports"
+                if report_directory.exists() and any(
+                    candidate.is_dir() for candidate in report_directory.iterdir()
+                ):
+                    continue
+            raise
+        try:
+            transaction_date = date.fromisoformat(manifest["report_date"])
+        except (KeyError, TypeError, ValueError) as error:
+            raise PublicationRollbackError(
+                "Invalid orphan publication report date retained at "
+                f"{transaction_path}"
+            ) from error
+        dated_transactions.append((transaction_date, transaction_path))
+
+    for transaction_date, transaction_path in dated_transactions:
+        if requested_date is not None and transaction_date != requested_date:
+            continue
+        _recover_publication_transaction(transaction_path)
+
+
+def _recover_pending_publications_if_idle(root: Path, report_date: date) -> None:
+    transaction_paths = sorted(root.glob(".publication-*"))
+    for transaction_path in transaction_paths:
+        transaction_dates: set[date] = set()
+        try:
+            manifest = _read_publication_manifest(transaction_path)
+            transaction_dates.add(date.fromisoformat(manifest["report_date"]))
+        except PublicationRollbackError:
+            report_directory = transaction_path / "reports"
+            for candidate in (
+                report_directory.iterdir() if report_directory.exists() else ()
+            ):
+                try:
+                    transaction_dates.add(date.fromisoformat(candidate.name))
+                except ValueError:
+                    continue
+            if not transaction_dates:
+                transaction_dates.add(report_date)
+        for transaction_date in sorted(transaction_dates):
+            with _try_publication_lock(root, transaction_date) as acquired:
+                if acquired:
+                    _recover_pending_publications(root, transaction_date)
+
+
+@contextmanager
+def _try_publication_lock(root: Path, report_date: date):
+    snapshot_directory = root / "snapshots" / report_date.isoformat()
+    snapshot_directory.mkdir(parents=True, exist_ok=True)
+    site_directory = root / "site"
+    site_directory.mkdir(parents=True, exist_ok=True)
+    date_lock = (snapshot_directory / ".input.lock").open("a", encoding="utf-8")
+    site_lock = site_directory.joinpath(".publication.lock").open(
+        "a", encoding="utf-8"
+    )
+    date_acquired = False
+    site_acquired = False
+    try:
+        try:
+            fcntl.flock(date_lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            date_acquired = True
+            fcntl.flock(site_lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            site_acquired = True
+        except BlockingIOError:
+            yield False
+            return
+        yield True
+    finally:
+        if site_acquired:
+            fcntl.flock(site_lock.fileno(), fcntl.LOCK_UN)
+        if date_acquired:
+            fcntl.flock(date_lock.fileno(), fcntl.LOCK_UN)
+        site_lock.close()
+        date_lock.close()
+
+
+def _read_publication_manifest(transaction_root: Path) -> dict[str, object]:
+    manifest_path = transaction_root / "manifest.json"
+    try:
+        if manifest_path.is_symlink() or (
+            manifest_path.stat().st_size > _MAX_PUBLICATION_MANIFEST_BYTES
+        ):
+            raise OSError("publication manifest exceeds the size limit")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise PublicationRollbackError(
+            "Could not read orphan publication manifest; recovery artifacts "
+            f"retained at {transaction_root}"
+        ) from error
+    if (
+        not isinstance(manifest, dict)
+        or manifest.get("schema_version") != 1
+        or not isinstance(manifest.get("report_date"), str)
+        or not isinstance(manifest.get("state"), str)
+        or not isinstance(manifest.get("artifacts"), dict)
+        or not isinstance(manifest.get("restore_candidates"), dict)
+        or not isinstance(manifest.get("progress"), dict)
+    ):
+        raise PublicationRollbackError(
+            "Invalid orphan publication manifest; recovery artifacts retained at "
+            f"{transaction_root}"
+        )
+    artifacts = manifest["artifacts"]
+    if any(
+        name not in artifacts or not _valid_artifact_spec(artifacts[name])
+        for name in ("report", "snapshot", "site-index", "styles")
+    ):
+        raise PublicationRollbackError(
+            "Invalid orphan publication artifact metadata; recovery artifacts "
+            f"retained at {transaction_root}"
+        )
+    for field in (
+        "report_backed_up",
+        "report_published",
+        "snapshot_published",
+        "site_index_backed_up",
+        "site_index_published",
+        "styles_backed_up",
+        "styles_published",
+    ):
+        if not isinstance(manifest["progress"].get(field), bool):
+            raise PublicationRollbackError(
+                "Invalid orphan publication progress metadata; recovery "
+                f"artifacts retained at {transaction_root}"
+            )
+    return manifest
+
+
+def _valid_artifact_spec(spec: object) -> bool:
+    if not isinstance(spec, dict):
+        return False
+    if not isinstance(spec.get("present"), bool):
+        return False
+    if spec.get("kind") not in {"file", "directory", None}:
+        return False
+    files = spec.get("files")
+    if not isinstance(files, list):
+        return False
+    return all(
+        isinstance(entry, dict)
+        and isinstance(entry.get("path"), str)
+        and isinstance(entry.get("size"), int)
+        and isinstance(entry.get("sha256"), str)
+        for entry in files
+    )
+
+
+def _recover_publication_transaction(transaction_root: Path) -> None:
+    manifest = _read_publication_manifest(transaction_root)
+    allowed_transaction_entries = {
+        "manifest.json",
+        "backups",
+        "recovery",
+        "reports",
+        "snapshots",
+        "site",
+    }
+    if {
+        path.name for path in transaction_root.iterdir()
+    } - allowed_transaction_entries:
+        raise PublicationRollbackError(
+            "Orphan publication contains unexpected transaction data; recovery "
+            f"artifacts retained at {transaction_root}"
+        )
+    state = manifest["state"]
+    if state == "committed":
+        published = manifest.get("published")
+        if not isinstance(published, dict):
+            raise PublicationRollbackError(
+                "Committed publication lacks verification metadata; recovery "
+                f"artifacts retained at {transaction_root}"
+            )
+        targets = {
+            "report": transaction_root.parents[0]
+            / "reports"
+            / manifest["report_date"],
+            "snapshot": transaction_root.parents[0]
+            / "snapshots"
+            / manifest["report_date"]
+            / "input.json",
+            "site-index": transaction_root.parents[0] / "site" / "index.html",
+            "styles": transaction_root.parents[0] / "site" / "styles.css",
+        }
+        if {path.name for path in transaction_root.iterdir()} - {
+            "manifest.json",
+            "recovery",
+            "reports",
+            "snapshots",
+            "site",
+        }:
+            raise PublicationRollbackError(
+                "Committed publication contains unverified transaction data; "
+                f"recovery artifacts retained at {transaction_root}"
+            )
+        if any(
+            not _valid_artifact_spec(published.get(name))
+            or not _artifact_matches(targets[name], published[name])
+            for name in targets
+        ):
+            raise PublicationRollbackError(
+                "Committed publication targets are not verified; recovery "
+                f"artifacts retained at {transaction_root}"
+            )
+        shutil.rmtree(transaction_root)
+        _fsync_directory(transaction_root.parent)
+        return
+    if state not in {
+        "prepared",
+        "publishing",
+        "finalizing",
+        "verified",
+        "committing",
+        "rolling_back",
+        "rolled_back",
+    }:
+        raise PublicationRollbackError(
+            f"Unsupported orphan publication state {state!r}; recovery "
+            f"artifacts retained at {transaction_root}"
+        )
+
+    report_date = date.fromisoformat(manifest["report_date"])
+    artifacts = manifest["artifacts"]
+    restore_candidates = manifest["restore_candidates"]
+    progress = manifest["progress"]
+    restore_plan = (
+        (
+            "styles",
+            transaction_root.parents[0] / "site" / "styles.css",
+            transaction_root / "backups" / "styles.css",
+            transaction_root / "recovery" / "styles.css",
+            bool(progress.get("styles_published")),
+            bool(progress.get("styles_backed_up")),
+        ),
+        (
+            "site-index",
+            transaction_root.parents[0] / "site" / "index.html",
+            transaction_root / "backups" / "site-index.html",
+            transaction_root / "recovery" / "site-index.html",
+            bool(progress.get("site_index_published")),
+            bool(progress.get("site_index_backed_up")),
+        ),
+        (
+            "snapshot",
+            transaction_root.parents[0]
+            / "snapshots"
+            / report_date.isoformat()
+            / "input.json",
+            transaction_root / "backups" / "snapshot.json",
+            transaction_root / "recovery" / "snapshot.json",
+            bool(progress.get("snapshot_published")),
+            False,
+        ),
+        (
+            "report",
+            transaction_root.parents[0]
+            / "reports"
+            / report_date.isoformat(),
+            transaction_root / "backups" / "report",
+            transaction_root / "recovery" / "report",
+            bool(progress.get("report_published")),
+            bool(progress.get("report_backed_up")),
+        ),
+    )
+    manifest["state"] = "rolling_back"
+    _write_publication_manifest(transaction_root, manifest)
+    recovery_manifest = _load_publication_recovery_manifest(
+        transaction_root / "recovery" / "manifest.json"
+    )
+    if (transaction_root / "recovery").exists() and recovery_manifest is None:
+        raise PublicationRollbackError(
+            "Invalid orphan publication recovery manifest; recovery artifacts "
+            f"retained at {transaction_root}"
+        )
+    for name, target, backup, recovery, published, backed_up in restore_plan:
+        expected = artifacts.get(name)
+        if not isinstance(expected, dict):
+            raise PublicationRollbackError(
+                f"Invalid orphan publication artifact metadata for {name}; "
+                f"recovery artifacts retained at {transaction_root}"
+            )
+        if _artifact_matches(target, expected):
+            continue
+        should_restore = bool(restore_candidates.get(name)) and (
+            backed_up or backup.exists() or published
+        )
+        source = None
+        if should_restore:
+            if recovery_manifest is not None:
+                entry = recovery_manifest.get(name)
+                if (
+                    entry is not None
+                    and entry.get("expected") == expected
+                    and _artifact_matches(recovery, expected)
+                ):
+                    source = recovery
+            if source is None and _artifact_matches(backup, expected):
+                source = backup
+            if source is None:
+                raise PublicationRollbackError(
+                    f"No complete orphan publication recovery source for {name}; "
+                    f"recovery artifacts retained at {transaction_root}"
+                )
+            _replace_publication_target(source, target)
+        elif not expected.get("present") and (published or backed_up):
+            _remove_publication_target(target)
+        if not _artifact_matches(target, expected):
+            raise PublicationRollbackError(
+                f"Orphan publication target was not restored for {name}; "
+                f"recovery artifacts retained at {transaction_root}"
+            )
+    shutil.rmtree(transaction_root)
+    _fsync_directory(transaction_root.parent)
+
+
+def _load_publication_recovery_manifest(
+    manifest_path: Path,
+) -> dict[str, dict[str, object]] | None:
+    try:
+        if manifest_path.is_symlink() or (
+            manifest_path.stat().st_size > _MAX_PUBLICATION_MANIFEST_BYTES
+        ):
+            return None
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        return None
+    if (
+        not isinstance(manifest, dict)
+        or manifest.get("schema_version") != 2
+        or manifest.get("state") not in {"ready", "copying"}
+        or not isinstance(manifest.get("entries"), list)
+    ):
+        return None
+    entries: dict[str, dict[str, object]] = {}
+    for entry in manifest["entries"]:
+        if (
+            not isinstance(entry, dict)
+            or not isinstance(entry.get("name"), str)
+            or not isinstance(entry.get("expected"), dict)
+            or entry["name"] in entries
+        ):
+            return None
+        entries[entry["name"]] = entry
+    return entries
+
+
+def _replace_publication_target(source: Path, target: Path) -> None:
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if target.is_dir() and not target.is_symlink():
+        shutil.rmtree(target)
+    else:
+        target.unlink(missing_ok=True)
+    os.replace(source, target)
+
+
+def _remove_publication_target(target: Path) -> None:
+    if target.is_dir() and not target.is_symlink():
+        shutil.rmtree(target)
+    else:
+        target.unlink(missing_ok=True)
+
+
+def _write_publication_manifest(
+    transaction_root: Path, manifest: Mapping[str, object]
+) -> None:
+    _atomic_write(
+        transaction_root / "manifest.json",
+        json.dumps(manifest, ensure_ascii=False, sort_keys=True) + "\n",
+    )
+    _fsync_directory(transaction_root)
 
 
 @contextmanager
@@ -299,23 +719,54 @@ def _publish_report_transaction(
         )
         publication.publish()
         publication.finalize()
+        publication.complete()
         try:
             if service is not None:
+                set_context = getattr(
+                    service, "set_publication_recovery_context", None
+                )
+                if set_context is not None:
+                    set_context(publication.manifest_path)
                 service.commit_staged_cache_writes()
         except Exception as error:
             raise PipelineError(
                 [PipelineFailure("cache_commit", str(error))]
             ) from error
-        publication.complete()
+        publication.commit()
+        if service is not None:
+            finalize_cache = getattr(
+                service, "finalize_staged_cache_commit", None
+            )
+            if finalize_cache is not None:
+                finalize_cache()
     except BaseException as error:
         if service is not None:
             service.discard_staged_cache_writes()
+        cache_rollback_error: Exception | None = None
+        if (
+            service is not None
+            and publication is not None
+            and not publication._finished
+        ):
+            try:
+                rollback_cache = getattr(
+                    service, "rollback_staged_cache_commit", None
+                )
+                if rollback_cache is not None:
+                    rollback_cache()
+            except (CacheRollbackError, OSError, TypeError, ValueError) as rollback_error:
+                cache_rollback_error = rollback_error
         if (
             publication is not None
             and not publication._finished
             and not publication._rollback_attempted
         ):
             publication.rollback()
+        if cache_rollback_error is not None and isinstance(error, Exception):
+            raise CacheRollbackError(
+                getattr(service, "_cache_recovery_path", None),
+                str(cache_rollback_error),
+            ) from error
         if isinstance(error, SnapshotConflictError):
             raise PipelineError(
                 [PipelineFailure("snapshot_conflict", str(error))]
@@ -449,6 +900,8 @@ class _PublicationTransaction:
         self.staged_snapshot_path = staged_snapshot_path
         self.staged_site_index = staged_site_index
         self.staged_styles_path = staged_styles_path
+        self.transaction_root = staged_report_dir.parents[1]
+        self.manifest_path = self.transaction_root / "manifest.json"
         self.report_dir = root / "reports" / report_date.isoformat()
         self.snapshot_path = (
             root / "snapshots" / report_date.isoformat() / "input.json"
@@ -490,36 +943,59 @@ class _PublicationTransaction:
             "site-index": self._site_index_was_present,
             "styles": self._styles_was_present,
         }
+        self._published_artifacts = {
+            "report": _describe_artifact(self.staged_report_dir),
+            "snapshot": (
+                _describe_artifact(self.staged_snapshot_path)
+                if self.staged_snapshot_path is not None
+                else _describe_artifact(self.snapshot_path)
+            ),
+            "site-index": _describe_artifact(self.staged_site_index),
+            "styles": (
+                _describe_artifact(self.staged_styles_path)
+                if self.staged_styles_path is not None
+                else _describe_artifact(self.styles_path)
+            ),
+        }
+        self._write_manifest("prepared")
 
     def publish(self) -> None:
+        self._write_manifest("publishing")
         try:
             self.backup_root.mkdir(parents=True, exist_ok=True)
             if self.report_dir.exists():
                 os.replace(self.report_dir, self.backup_report_dir)
                 self._report_backed_up = True
+                self._write_manifest("publishing")
             self.report_dir.parent.mkdir(parents=True, exist_ok=True)
             os.replace(self.staged_report_dir, self.report_dir)
             self._report_published = True
+            self._write_manifest("publishing")
 
             if self.staged_snapshot_path is not None:
                 self.snapshot_path.parent.mkdir(parents=True, exist_ok=True)
                 os.replace(self.staged_snapshot_path, self.snapshot_path)
                 self._snapshot_published = True
+                self._write_manifest("publishing")
 
             if self.site_index.exists():
                 os.replace(self.site_index, self.backup_site_index)
                 self._site_index_backed_up = True
+                self._write_manifest("publishing")
             self.site_index.parent.mkdir(parents=True, exist_ok=True)
             os.replace(self.staged_site_index, self.site_index)
             self._site_index_published = True
+            self._write_manifest("publishing")
 
             if self.staged_styles_path is not None:
                 if self.styles_path.exists():
                     os.replace(self.styles_path, self.backup_styles)
                     self._styles_backed_up = True
+                    self._write_manifest("publishing")
                 self.styles_path.parent.mkdir(parents=True, exist_ok=True)
                 os.replace(self.staged_styles_path, self.styles_path)
                 self._styles_published = True
+                self._write_manifest("publishing")
         except BaseException:
             self.rollback()
             raise
@@ -528,17 +1004,41 @@ class _PublicationTransaction:
         """Mark publication ready while retaining backups for cache commit."""
 
     def complete(self) -> None:
-        """Discard rollback backups after every transactional step succeeds."""
+        """Verify publication and remove backups while retaining recovery copies."""
 
+        published_targets = {
+            "report": self.report_dir,
+            "snapshot": self.snapshot_path,
+            "site-index": self.site_index,
+            "styles": self.styles_path,
+        }
+        for name, target in published_targets.items():
+            if not _artifact_matches(target, self._published_artifacts[name]):
+                raise OSError(f"Published artifact verification failed: {target}")
         self._prepare_recovery_copy()
+        self._write_manifest("verified")
         if self.backup_root.exists():
             shutil.rmtree(self.backup_root)
             if self.backup_root.exists():
                 raise OSError(
                     f"Could not remove publication backups: {self.backup_root}"
                 )
+
+    def commit(self) -> None:
+        """Commit publication cleanup after the deferred cache commit succeeds."""
+
+        if self._finished:
+            return
+        self._write_manifest("committing")
+        self._write_manifest("committed")
         self._finished = True
-        shutil.rmtree(self.recovery_root, ignore_errors=True)
+        if self.recovery_root.exists():
+            shutil.rmtree(self.recovery_root)
+            if self.recovery_root.exists():
+                raise OSError(
+                    "Could not remove publication recovery copies: "
+                    f"{self.recovery_root}"
+                )
 
     def rollback(self) -> None:
         if self._finished:
@@ -550,6 +1050,7 @@ class _PublicationTransaction:
             )
         self._rollback_attempted = True
         try:
+            self._write_manifest("rolling_back")
             restore_plan = (
                 (
                     "styles",
@@ -619,7 +1120,8 @@ class _PublicationTransaction:
                     raise OSError(
                         f"Publication target was not restored completely: {target}"
                     )
-            shutil.rmtree(self.backup_root)
+            if self.backup_root.exists():
+                shutil.rmtree(self.backup_root)
             if self.backup_root.exists():
                 raise OSError(f"Could not remove publication backups: {self.backup_root}")
             if self.recovery_root.exists():
@@ -629,6 +1131,7 @@ class _PublicationTransaction:
                         "Could not remove publication recovery copies: "
                         f"{self.recovery_root}"
                     )
+            self._write_manifest("rolled_back")
         except BaseException as error:
             if isinstance(error, PublicationRollbackError):
                 raise
@@ -637,6 +1140,26 @@ class _PublicationTransaction:
                 f"{self._recovery_error_path()}"
             ) from error
         self._finished = True
+
+    def _write_manifest(self, state: str) -> None:
+        manifest = {
+            "schema_version": 1,
+            "report_date": self.report_date.isoformat(),
+            "state": state,
+            "artifacts": self._artifact_specs,
+            "restore_candidates": self._restore_candidates,
+            "progress": {
+                "report_backed_up": self._report_backed_up,
+                "report_published": self._report_published,
+                "snapshot_published": self._snapshot_published,
+                "site_index_backed_up": self._site_index_backed_up,
+                "site_index_published": self._site_index_published,
+                "styles_backed_up": self._styles_backed_up,
+                "styles_published": self._styles_published,
+            },
+            "published": self._published_artifacts,
+        }
+        _write_publication_manifest(self.transaction_root, manifest)
 
     def _select_complete_source(
         self,
@@ -762,6 +1285,7 @@ class _PublicationTransaction:
             self.recovery_root / "manifest.json",
             json.dumps(manifest, ensure_ascii=False, sort_keys=True) + "\n",
         )
+        _fsync_directory(self.recovery_root)
 
 
 def _fetch_direct(
