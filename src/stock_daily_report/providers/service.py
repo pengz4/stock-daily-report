@@ -11,7 +11,12 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from stock_daily_report.models import DailyBar, MarketDataSettings
-from stock_daily_report.providers.base import MarketDataProvider, ProviderError
+from stock_daily_report.providers.base import (
+    MarketDataProvider,
+    ProviderAvailabilityError,
+    ProviderDataError,
+    ProviderError,
+)
 from stock_daily_report.quality.checks import (
     BarInput,
     DataQualityIssue,
@@ -38,13 +43,15 @@ _SENSITIVE_KEY_NAMES = frozenset(
 )
 
 
-class DataQualityError(ValueError):
+class DataQualityError(ProviderDataError):
     """Raised when a provider returned data that may not enter analysis."""
 
-    def __init__(self, quality: DataQualityResult) -> None:
+    def __init__(self, provider: str, quality: DataQualityResult) -> None:
         self.quality = quality
         super().__init__(
-            f"Data quality rejected {quality.code}: {', '.join(quality.issue_codes)}"
+            provider,
+            "data_quality_rejected",
+            f"Data quality rejected {quality.code}: {', '.join(quality.issue_codes)}",
         )
 
 
@@ -216,7 +223,7 @@ class MarketDataService:
     ) -> FetchedBars:
         """Return validated data from exactly the configured primary/fallback order."""
 
-        failures: list[ProviderError] = []
+        failures: list[ProviderAvailabilityError] = []
         for provider_name in self._selection:
             cached_response = self._cache.load(provider_name, code, start, end)
             from_cache = cached_response is not None
@@ -227,7 +234,7 @@ class MarketDataService:
                     response = self._providers[provider_name].get_daily_bars(
                         code, start=start, end=end
                     )
-                except ProviderError as error:
+                except ProviderAvailabilityError as error:
                     failures.append(error)
                     continue
 
@@ -236,12 +243,13 @@ class MarketDataService:
                 code, raw_bars, as_of=as_of, settings=self._quality_settings
             )
             if not quality.analysis_allowed:
-                raise DataQualityError(quality)
+                raise DataQualityError(provider_name, quality)
             try:
                 normalized_bars = tuple(_normalize_bar(item) for item in raw_bars)
             except (TypeError, ValidationError) as error:
                 raise DataQualityError(
-                    quality.with_issue("invalid_bar", f"Could not normalize bar: {error}")
+                    provider_name,
+                    quality.with_issue("invalid_bar", f"Could not normalize bar: {error}"),
                 ) from error
 
             if not from_cache:
@@ -262,6 +270,7 @@ def _require_sequence(
     if isinstance(response, Sequence) and not isinstance(response, (str, bytes, bytearray)):
         return response
     raise DataQualityError(
+        provider_name,
         DataQualityResult(
             code=code,
             as_of=as_of,

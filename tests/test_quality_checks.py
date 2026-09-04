@@ -115,10 +115,11 @@ def _service(primary, fallback, cache_directory, *, now=None):
 
 
 def test_service_falls_back_only_for_expected_provider_failure(tmp_path, bars):
-    from stock_daily_report.providers.base import ProviderError
+    from stock_daily_report.providers.base import ProviderAvailabilityError
 
     primary = RecordingProvider(
-        "primary", error=ProviderError("primary", "network_error", "unavailable")
+        "primary",
+        error=ProviderAvailabilityError("primary", "network_error", "unavailable"),
     )
     fallback = RecordingProvider("fallback", response=bars)
 
@@ -133,11 +134,12 @@ def test_service_falls_back_only_for_expected_provider_failure(tmp_path, bars):
 
 def test_service_uses_provider_order_and_thresholds_from_settings(tmp_path, bars):
     from stock_daily_report.models import MarketDataSettings
-    from stock_daily_report.providers.base import ProviderError
+    from stock_daily_report.providers.base import ProviderAvailabilityError
     from stock_daily_report.providers.service import MarketDataService
 
     primary = RecordingProvider(
-        "primary", error=ProviderError("primary", "network_error", "unavailable")
+        "primary",
+        error=ProviderAvailabilityError("primary", "network_error", "unavailable"),
     )
     fallback = RecordingProvider("fallback", response=bars)
     settings = MarketDataSettings(
@@ -192,6 +194,86 @@ def test_service_does_not_fallback_after_invalid_primary_data(tmp_path, bars):
     assert list(tmp_path.glob("*.json")) == []
 
 
+def test_service_does_not_fallback_after_akshare_missing_core_schema(tmp_path, bars):
+    from stock_daily_report.providers.akshare import AkShareMarketDataProvider
+    from stock_daily_report.providers.base import ProviderDataError
+
+    primary = AkShareMarketDataProvider(
+        fetcher=lambda **_: [{"日期": "2026-09-04", "开盘": 100.0}]
+    )
+    fallback = RecordingProvider("fallback", response=bars)
+
+    with pytest.raises(ProviderDataError) as error:
+        _service(primary, fallback, tmp_path).fetch(
+            "600519", as_of=date(2026, 9, 4)
+        )
+
+    assert error.value.provider == "akshare"
+    assert error.value.code == "provider_schema_invalid"
+    assert "Missing required source fields" in error.value.detail
+    assert (primary.name, fallback.calls) == ("akshare", 0)
+
+
+def test_service_qualities_invalid_akshare_records_without_fallback(tmp_path, bars):
+    from stock_daily_report.providers.akshare import AkShareMarketDataProvider
+    from stock_daily_report.providers.service import DataQualityError
+
+    primary = AkShareMarketDataProvider(
+        fetcher=lambda **_: [
+            {
+                "日期": "2026-09-04",
+                "开盘": 100.0,
+                "最高": 99.0,
+                "最低": -1.0,
+                "收盘": 101.0,
+                "成交量": 1_000.0,
+                "成交额": 101_000.0,
+                "换手率": 0.1,
+            },
+            {
+                "日期": "2026-09-04",
+                "开盘": 100.0,
+                "最高": 99.0,
+                "最低": 100.0,
+                "收盘": 101.0,
+                "成交量": 1_000.0,
+                "成交额": 101_000.0,
+                "换手率": 0.1,
+            },
+        ]
+    )
+    fallback = RecordingProvider("fallback", response=bars)
+
+    with pytest.raises(DataQualityError) as error:
+        _service(primary, fallback, tmp_path).fetch(
+            "600519", as_of=date(2026, 9, 4)
+        )
+
+    assert error.value.provider == "akshare"
+    assert set(error.value.quality.issue_codes) >= {
+        "negative_ohlc",
+        "high_lt_low",
+        "close_outside_low_high",
+    }
+    assert fallback.calls == 0
+
+
+def test_service_falls_back_after_akshare_network_availability_error(tmp_path, bars):
+    from stock_daily_report.providers.akshare import AkShareMarketDataProvider
+
+    primary = AkShareMarketDataProvider(
+        fetcher=lambda **_: (_ for _ in ()).throw(OSError("offline"))
+    )
+    fallback = RecordingProvider("fallback", response=bars)
+
+    fetched = _service(primary, fallback, tmp_path).fetch(
+        "600519", as_of=date(2026, 9, 4)
+    )
+
+    assert fetched.provider_name == "fallback"
+    assert (primary.name, fallback.calls) == ("akshare", 1)
+
+
 def test_service_does_not_fallback_for_unexpected_primary_error(tmp_path, bars):
     primary = RecordingProvider("primary", error=RuntimeError("programming error"))
     fallback = RecordingProvider("fallback", response=bars)
@@ -205,14 +287,18 @@ def test_service_does_not_fallback_for_unexpected_primary_error(tmp_path, bars):
 
 
 def test_service_reports_each_expected_provider_failure(tmp_path):
-    from stock_daily_report.providers.base import ProviderError
+    from stock_daily_report.providers.base import ProviderAvailabilityError
     from stock_daily_report.providers.service import AllProvidersFailedError
 
     primary = RecordingProvider(
-        "primary", error=ProviderError("primary", "network_error", "timeout")
+        "primary",
+        error=ProviderAvailabilityError("primary", "network_error", "timeout"),
     )
     fallback = RecordingProvider(
-        "fallback", error=ProviderError("fallback", "bad_response", "empty body")
+        "fallback",
+        error=ProviderAvailabilityError(
+            "fallback", "upstream_service_error", "maintenance"
+        ),
     )
 
     with pytest.raises(AllProvidersFailedError) as error:
@@ -222,10 +308,10 @@ def test_service_reports_each_expected_provider_failure(tmp_path):
 
     assert [(failure.provider, failure.code) for failure in error.value.failures] == [
         ("primary", "network_error"),
-        ("fallback", "bad_response"),
+        ("fallback", "upstream_service_error"),
     ]
     assert "primary[network_error]" in str(error.value)
-    assert "fallback[bad_response]" in str(error.value)
+    assert "fallback[upstream_service_error]" in str(error.value)
 
 
 def test_raw_cache_redacts_recursive_credentials_and_enforces_expiry(tmp_path):
@@ -288,7 +374,7 @@ def test_service_reuses_valid_cached_response_until_it_expires(tmp_path, bars):
     assert primary.calls == 2
 
 
-def test_akshare_adapter_normalizes_complete_source_records_without_network():
+def test_akshare_adapter_maps_complete_source_records_without_network():
     from stock_daily_report.providers.akshare import AkShareMarketDataProvider
 
     provider = AkShareMarketDataProvider(
@@ -309,26 +395,36 @@ def test_akshare_adapter_normalizes_complete_source_records_without_network():
 
     normalized = provider.get_daily_bars("600519", start=date(2026, 9, 1))
 
-    assert normalized[0].model_dump(
-        include={"trade_date", "close", "provider_name", "adjustment_mode"}
-    ) == {
-        "trade_date": date(2026, 9, 4),
+    assert normalized[0] == {
+        "trade_date": "2026-09-04",
         "close": 101.0,
         "provider_name": "akshare",
         "adjustment_mode": "qfq",
+        "open": 100.0,
+        "high": 103.0,
+        "low": 99.0,
+        "volume": 1_000.0,
+        "amount": 101_000.0,
+        "turnover_rate": 0.1,
+        "source_timestamp": datetime(2026, 9, 4, 16, tzinfo=UTC),
     }
 
 
-def test_akshare_adapter_reports_malformed_and_network_responses_without_network():
+def test_akshare_adapter_distinguishes_invalid_data_from_availability_errors():
     from stock_daily_report.providers.akshare import AkShareMarketDataProvider
-    from stock_daily_report.providers.base import ProviderError
+    from stock_daily_report.providers.base import (
+        ProviderAvailabilityError,
+        ProviderDataError,
+    )
 
     malformed = AkShareMarketDataProvider(fetcher=lambda **_: [{"日期": "2026-09-04"}])
     unavailable = AkShareMarketDataProvider(
         fetcher=lambda **_: (_ for _ in ()).throw(OSError("offline"))
     )
 
-    with pytest.raises(ProviderError, match=r"akshare\[malformed_response\]"):
+    with pytest.raises(
+        ProviderDataError, match=r"akshare\[provider_schema_invalid\]"
+    ):
         malformed.get_daily_bars("600519")
-    with pytest.raises(ProviderError, match=r"akshare\[network_error\]"):
+    with pytest.raises(ProviderAvailabilityError, match=r"akshare\[network_error\]"):
         unavailable.get_daily_bars("600519")

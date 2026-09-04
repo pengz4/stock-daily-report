@@ -1,5 +1,6 @@
 """Provider contracts for normalized market data."""
 
+from collections.abc import Mapping
 from datetime import date
 from typing import Protocol, runtime_checkable
 
@@ -7,7 +8,7 @@ from stock_daily_report.models import DailyBar
 
 
 class ProviderError(RuntimeError):
-    """An expected, provider-scoped failure that may permit fallback."""
+    """A provider-scoped failure with stable provider and code context."""
 
     def __init__(self, provider: str, code: str, detail: str) -> None:
         self.provider = provider
@@ -16,9 +17,17 @@ class ProviderError(RuntimeError):
         super().__init__(f"{provider}[{code}]: {detail}")
 
 
+class ProviderAvailabilityError(ProviderError):
+    """An availability, transport, or upstream-service failure eligible for fallback."""
+
+
+class ProviderDataError(ProviderError):
+    """A provider schema or data failure that must not use fallback."""
+
+
 @runtime_checkable
 class MarketDataProvider(Protocol):
-    """A source of already-normalized daily bars for one security."""
+    """A source of canonical daily-bar records for one security."""
 
     name: str
 
@@ -28,8 +37,14 @@ class MarketDataProvider(Protocol):
         *,
         start: date | None = None,
         end: date | None = None,
-    ) -> list[DailyBar]:
-        """Return chronological normalized bars for ``code``."""
+    ) -> list[DailyBar | Mapping[str, object]]:
+        """Return chronological canonical records for ``code``."""
 
 
-__all__ = ["DailyBar", "MarketDataProvider", "ProviderError"]
+__all__ = [
+    "DailyBar",
+    "MarketDataProvider",
+    "ProviderAvailabilityError",
+    "ProviderDataError",
+    "ProviderError",
+]

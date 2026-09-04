@@ -4,10 +4,12 @@ from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, date, datetime
 from typing import Any
 
-from pydantic import ValidationError
-
 from stock_daily_report.models import DailyBar
-from stock_daily_report.providers.base import ProviderError
+from stock_daily_report.providers.base import (
+    ProviderAvailabilityError,
+    ProviderDataError,
+    ProviderError,
+)
 
 _SOURCE_FIELDS = {
     "日期": "trade_date",
@@ -43,8 +45,8 @@ class AkShareMarketDataProvider:
         *,
         start: date | None = None,
         end: date | None = None,
-    ) -> list[DailyBar]:
-        """Fetch and normalize AkShare's daily A-share field names."""
+    ) -> list[DailyBar | Mapping[str, object]]:
+        """Fetch and map AkShare's daily A-share field names to canonical names."""
 
         try:
             response = self._resolve_fetcher()(
@@ -56,16 +58,20 @@ class AkShareMarketDataProvider:
             )
         except ProviderError:
             raise
-        except Exception as error:
-            raise ProviderError("akshare", "network_error", str(error)) from error
+        except OSError as error:
+            raise ProviderAvailabilityError(
+                "akshare", "network_error", str(error)
+            ) from error
 
         try:
             records = _records_from_response(response)
-            return [self._normalize_record(record) for record in records]
+            return [self._map_record(record) for record in records]
         except ProviderError:
             raise
-        except (TypeError, ValueError, ValidationError) as error:
-            raise ProviderError("akshare", "malformed_response", str(error)) from error
+        except (TypeError, ValueError) as error:
+            raise ProviderDataError(
+                "akshare", "provider_schema_invalid", str(error)
+            ) from error
 
     def _resolve_fetcher(self) -> Callable[..., object]:
         if self._fetcher is not None:
@@ -73,19 +79,19 @@ class AkShareMarketDataProvider:
         try:
             import akshare  # type: ignore[import-not-found]
         except ImportError as error:
-            raise ProviderError(
+            raise ProviderAvailabilityError(
                 "akshare",
                 "dependency_unavailable",
                 "Install stock-daily-report[akshare] to enable this provider",
             ) from error
         return akshare.stock_zh_a_hist
 
-    def _normalize_record(self, record: Mapping[str, object]) -> DailyBar:
+    def _map_record(self, record: Mapping[str, object]) -> Mapping[str, object]:
         missing = sorted(set(_SOURCE_FIELDS).difference(record))
         if missing:
-            raise ProviderError(
+            raise ProviderDataError(
                 "akshare",
-                "malformed_response",
+                "provider_schema_invalid",
                 f"Missing required source fields: {', '.join(missing)}",
             )
         normalized: dict[str, Any] = {
@@ -96,7 +102,7 @@ class AkShareMarketDataProvider:
             provider_name=self.name,
             source_timestamp=self._now().astimezone(UTC),
         )
-        return DailyBar.model_validate(normalized)
+        return normalized
 
 
 def _records_from_response(response: object) -> Sequence[Mapping[str, object]]:
