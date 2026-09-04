@@ -27,6 +27,16 @@ _REQUIRED_DECISION_METRICS = (
     "drawdown60",
     "volume_ratio20",
 )
+_PRICE_METRICS = (
+    "close",
+    "ma5",
+    "ma10",
+    "ma20",
+    "ma60",
+    "ma120",
+    "recent_high20",
+    "recent_low20",
+)
 
 
 @dataclass(frozen=True)
@@ -80,8 +90,18 @@ def evaluate_risk_rules(
         add_evidence("insufficient_history")
         insufficient_data = True
 
-    close = _finite(metrics.close)
-    ma20 = _finite(metrics.ma20)
+    invalid_price_metrics = tuple(
+        name
+        for name in _PRICE_METRICS
+        if _is_invalid_price(getattr(metrics, name))
+    )
+    if invalid_price_metrics:
+        add_risk("invalid_data_quality")
+        add_evidence("invalid_price_metric")
+        hard_data_failure = True
+
+    close = _positive_finite(metrics.close)
+    ma20 = _positive_finite(metrics.ma20)
     if close is None or ma20 is None:
         add_risk("insufficient_metric_data")
         add_evidence("close_or_ma20_unavailable")
@@ -167,6 +187,16 @@ def _finite(value: float | None) -> float | None:
     if value is None or not math.isfinite(value):
         return None
     return value
+
+
+def _positive_finite(value: float | None) -> float | None:
+    if value is None or not math.isfinite(value) or value <= 0:
+        return None
+    return value
+
+
+def _is_invalid_price(value: float | None) -> bool:
+    return value is not None and _positive_finite(value) is None
 
 
 __all__ = [

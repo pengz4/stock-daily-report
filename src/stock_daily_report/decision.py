@@ -120,7 +120,7 @@ def _label(
         return "风险升高"
     if insufficient_data or "incomplete_structure" in risk_codes:
         return "等待确认"
-    if trend is not None:
+    if trend is not None and trend.label != "风险升高":
         return trend.label
     return _derived_label(metrics, structure)
 

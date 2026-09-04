@@ -1,11 +1,11 @@
-from datetime import date
+from datetime import UTC, date, datetime, timedelta
 
 import pytest
 from pydantic import ValidationError
 
 from stock_daily_report.chan.common import SimplifiedChanResult, StructureState
 from stock_daily_report.indicators.technical import TechnicalMetrics
-from stock_daily_report.models import RiskRulesSettings, Settings
+from stock_daily_report.models import DailyBar, RiskRulesSettings, Settings
 from stock_daily_report.quality.checks import DataQualityIssue, DataQualityResult
 
 
@@ -44,6 +44,27 @@ def metrics(**overrides: float | None) -> TechnicalMetrics:
     }
     values.update(overrides)
     return TechnicalMetrics(**values)
+
+
+def make_bars(closes: list[float]) -> list[DailyBar]:
+    start = date(2026, 1, 1)
+    return [
+        DailyBar(
+            trade_date=start + timedelta(days=index),
+            open=close,
+            high=close + 1.0,
+            low=close - 1.0,
+            close=close,
+            volume=100.0,
+            amount=close * 100.0,
+            turnover_rate=0.1,
+            adjustment_mode="qfq",
+            provider_name="test",
+            source_timestamp=datetime(2026, 1, 1, tzinfo=UTC)
+            + timedelta(days=index),
+        )
+        for index, close in enumerate(closes)
+    ]
 
 
 def structure(*, status: str = "confirmed", label: str = "confirmed_upward"):
@@ -247,6 +268,69 @@ def test_custom_thresholds_change_behavior_and_configuration_hash():
         structure=structure(),
         quality=valid_quality(),
     ).config_hash
+
+
+def test_custom_thresholds_override_supplied_classifier_risk_label():
+    from stock_daily_report.decision import decide
+    from stock_daily_report.indicators.technical import calculate_technical_metrics
+    from stock_daily_report.indicators.trend import classify_trend
+
+    closes = [100.0, 130.0, 95.0] + [float(value) for value in range(96, 154)]
+    bars = make_bars(closes)
+    trend = classify_trend(bars)
+    assert trend.label == "风险升高"
+
+    settings = Settings(
+        rule_version={"name": "simplified", "version": "v1"},
+        notifications={"enabled_channels": []},
+        risk_rules=RiskRulesSettings(
+            rule_version="risk-test-v1",
+            high_realized_volatility20=0.80,
+            overextension_ma20_distance=0.30,
+            large_drawdown60=-0.40,
+            adverse_volume_ratio20=0.20,
+            minimum_history_bars=60,
+        ),
+    )
+
+    decision = decide(
+        metrics=calculate_technical_metrics(bars),
+        structure=structure(),
+        quality=valid_quality(),
+        trend=trend,
+        settings=settings,
+    )
+
+    assert decision.label == "偏强"
+    assert decision.risk_codes == ()
+    assert "drawdown60_exceeds_risk_threshold" in decision.evidence
+
+
+@pytest.mark.parametrize(
+    ("metric", "value"),
+    [
+        ("close", 0.0),
+        ("ma20", 0.0),
+        ("ma60", -1.0),
+        ("recent_high20", 0.0),
+        ("recent_low20", -1.0),
+        ("close", float("nan")),
+        ("ma20", float("inf")),
+    ],
+)
+def test_invalid_price_metrics_return_data_quality_risk_instead_of_raising(
+    metric, value
+):
+    from stock_daily_report.decision import decide
+
+    decision = decide(
+        metrics=metrics(**{metric: value}),
+        structure=structure(),
+        quality=valid_quality(),
+    )
+
+    assert decision.label == "风险升高"
+    assert "invalid_data_quality" in decision.risk_codes
 
 
 def test_supplied_settings_without_risk_rules_are_rejected():
