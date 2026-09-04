@@ -1,0 +1,5 @@
+rule_version:
+  name: simplified
+  version: v1
+notifications:
+  enabled_channels: []

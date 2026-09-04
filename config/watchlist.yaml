@@ -1,0 +1,7 @@
+stocks:
+  - code: "600519"
+    name: 贵州茅台
+    group: consumer
+    tags:
+      - baijiu
+    news_enabled: true
