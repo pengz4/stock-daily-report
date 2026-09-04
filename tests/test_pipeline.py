@@ -627,6 +627,54 @@ def test_finalize_failure_does_not_commit_new_cache_entries(
     assert not list((tmp_path / "cache").glob("*.json"))
 
 
+def test_backup_cleanup_failure_restores_old_publication(
+    tmp_path, fixture_settings, monkeypatch
+):
+    watchlist = Watchlist(stocks=[{"code": "600519", "name": "one"}])
+    report_date = date(2026, 9, 4)
+    run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        report_date=report_date,
+        now=lambda: datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
+    )
+    report_paths = [
+        tmp_path / "reports/2026-09-04/report.json",
+        tmp_path / "reports/2026-09-04/report.md",
+        tmp_path / "reports/2026-09-04/index.html",
+        tmp_path / "site/index.html",
+    ]
+    before = {path: path.read_bytes() for path in report_paths}
+    original_rmtree = pipeline_module.shutil.rmtree
+    cleanup_attempted = False
+
+    def partially_remove_backups(path, *args, **kwargs):
+        nonlocal cleanup_attempted
+        path = Path(path)
+        if path.name == "backups" and not cleanup_attempted:
+            cleanup_attempted = True
+            original_rmtree(path / "report")
+            raise OSError("injected partial backup cleanup failure")
+        return original_rmtree(path, *args, **kwargs)
+
+    monkeypatch.setattr(pipeline_module.shutil, "rmtree", partially_remove_backups)
+
+    with pytest.raises(OSError, match="injected partial backup cleanup failure"):
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=watchlist,
+            provider=RecordingProvider({"600519": make_bars("600519")}),
+            report_date=report_date,
+            now=lambda: datetime(2026, 9, 4, 10, 30, tzinfo=UTC),
+        )
+
+    assert cleanup_attempted
+    assert {path: path.read_bytes() for path in report_paths} == before
+
+
 def test_cache_commit_failure_restores_preimage_and_publication(
     tmp_path, fixture_settings, monkeypatch
 ):
@@ -840,6 +888,126 @@ def test_cli_handles_configuration_failure_without_traceback(
     captured = capsys.readouterr()
     assert result == 1
     assert expected_message in captured.err
+    assert "Traceback" not in captured.err
+
+
+def test_cli_handles_unsupported_provider_without_traceback(
+    tmp_path, capsys
+):
+    settings_path = tmp_path / "settings.yaml"
+    settings_path.write_text(
+        """rule_version:
+  name: simplified
+  version: v1
+notifications:
+  enabled_channels: []
+market_data:
+  primary_provider: unsupported
+  fallback_provider: fixture
+risk_rules:
+  rule_version: risk-v1
+  high_realized_volatility20: 0.45
+  overextension_ma20_distance: 0.20
+  large_drawdown60: -0.20
+  adverse_volume_ratio20: 0.50
+  minimum_history_bars: 1
+""",
+        encoding="utf-8",
+    )
+    watchlist_path = tmp_path / "watchlist.yaml"
+    watchlist_path.write_text(
+        "stocks:\n  - code: '600519'\n    name: one\n", encoding="utf-8"
+    )
+
+    result = cli_module.main(
+        [
+            "daily",
+            "--date",
+            "2026-09-04",
+            "--settings",
+            str(settings_path),
+            "--watchlist",
+            str(watchlist_path),
+            "--output-root",
+            str(tmp_path / "published"),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert result == 1
+    assert "Configured provider is unavailable: unsupported" in captured.err
+    assert "Traceback" not in captured.err
+
+
+def test_cli_handles_missing_risk_rules_without_traceback(
+    tmp_path, capsys
+):
+    fixture_directory = tmp_path / "fixtures"
+    fixture_directory.mkdir()
+    fixture_file = fixture_directory / "600519.csv"
+    fixture_file.write_text(
+        "trade_date,open,high,low,close,volume,amount,turnover_rate,"
+        "adjustment_mode,provider_name,source_timestamp\n"
+        + "".join(
+            ",".join(
+                [
+                    bar.trade_date.isoformat(),
+                    str(bar.open),
+                    str(bar.high),
+                    str(bar.low),
+                    str(bar.close),
+                    str(bar.volume),
+                    str(bar.amount),
+                    str(bar.turnover_rate),
+                    bar.adjustment_mode,
+                    bar.provider_name,
+                    bar.source_timestamp.isoformat(),
+                ]
+            )
+            + "\n"
+            for bar in make_bars("600519")
+        ),
+        encoding="utf-8",
+    )
+    settings_path = tmp_path / "settings.yaml"
+    settings_path.write_text(
+        """rule_version:
+  name: simplified
+  version: v1
+notifications:
+  enabled_channels: []
+market_data:
+  primary_provider: fixture
+  fallback_provider: akshare
+  minimum_history_bars: 60
+  max_completed_trading_day_lag: 1
+""",
+        encoding="utf-8",
+    )
+    watchlist_path = tmp_path / "watchlist.yaml"
+    watchlist_path.write_text(
+        "stocks:\n  - code: '600519'\n    name: one\n", encoding="utf-8"
+    )
+
+    result = cli_module.main(
+        [
+            "daily",
+            "--date",
+            "2026-09-04",
+            "--settings",
+            str(settings_path),
+            "--watchlist",
+            str(watchlist_path),
+            "--fixture-directory",
+            str(fixture_directory),
+            "--output-root",
+            str(tmp_path / "published"),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert result == 1
+    assert "risk_rules configuration is required for decisions" in captured.err
     assert "Traceback" not in captured.err
 
 

@@ -388,6 +388,61 @@ def test_service_reuses_valid_cached_response_until_it_expires(tmp_path, bars):
     assert primary.calls == 2
 
 
+def test_cache_restore_failure_is_atomic_and_retains_recovery_state(
+    tmp_path, bars, monkeypatch
+):
+    import stock_daily_report.providers.service as service_module
+    from stock_daily_report.providers.service import CacheRollbackError
+
+    primary = RecordingProvider("primary", response=bars)
+    fallback = RecordingProvider("fallback", response=bars)
+    service = _service(primary, fallback, tmp_path)
+    service.fetch("600519", end=date(2026, 9, 4), as_of=date(2026, 9, 4))
+    existing_path = service._cache._path_for(
+        "primary", "600519", None, date(2026, 9, 4)
+    )
+    existing_bytes = existing_path.read_bytes()
+    changed_bars = [
+        bar.model_copy(update={"close": bar.close + 1.0}) for bar in bars
+    ]
+    primary.response = changed_bars
+    monkeypatch.setattr(service._cache, "load", lambda *_args, **_kwargs: None)
+    service.fetch(
+        "600519", end=date(2026, 9, 4), as_of=date(2026, 9, 4), defer_cache=True
+    )
+    service.fetch(
+        "000001", end=date(2026, 9, 4), as_of=date(2026, 9, 4), defer_cache=True
+    )
+    new_path = service._cache._path_for(
+        "primary", "000001", None, date(2026, 9, 4)
+    )
+    original_replace = service_module.os.replace
+    existing_replacements = 0
+
+    def fail_cache_restore(source, destination):
+        nonlocal existing_replacements
+        destination = Path(destination)
+        if destination == existing_path:
+            existing_replacements += 1
+            if existing_replacements >= 2:
+                raise OSError("injected cache restore failure")
+        if destination == new_path:
+            raise OSError("injected cache commit failure")
+        return original_replace(source, destination)
+
+    monkeypatch.setattr(service_module.os, "replace", fail_cache_restore)
+
+    with pytest.raises(CacheRollbackError, match="recovery"):
+        service.commit_staged_cache_writes()
+
+    recovery_directories = list(tmp_path.glob(".cache-recovery-*"))
+    assert len(recovery_directories) == 1
+    recovery_directory = recovery_directories[0]
+    assert (recovery_directory / "manifest.json").exists()
+    assert (recovery_directory / existing_path.name).read_bytes() == existing_bytes
+    assert existing_path.read_bytes() != b""
+
+
 def test_akshare_adapter_maps_complete_source_records_without_network():
     from stock_daily_report.providers.akshare import AkShareMarketDataProvider
 

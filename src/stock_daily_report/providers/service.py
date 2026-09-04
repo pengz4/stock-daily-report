@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import tempfile
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import contextmanager
@@ -14,6 +15,7 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
+from stock_daily_report.config import ConfigurationError
 from stock_daily_report.models import DailyBar, MarketDataSettings
 from stock_daily_report.providers.base import (
     MarketDataProvider,
@@ -66,6 +68,18 @@ class AllProvidersFailedError(ProviderError):
         self.failures = tuple(failures)
         detail = "; ".join(str(failure) for failure in self.failures)
         super().__init__("selection", "all_providers_failed", detail)
+
+
+class CacheRollbackError(RuntimeError):
+    """Raised when a cache commit cannot restore its preimages."""
+
+    def __init__(self, recovery_path: Path | None, detail: str) -> None:
+        self.recovery_path = recovery_path
+        retained_at = str(recovery_path) if recovery_path is not None else "unavailable"
+        super().__init__(
+            "Cache rollback failed; recovery artifacts retained at "
+            f"{retained_at}: {detail}"
+        )
 
 
 @dataclass(frozen=True)
@@ -197,6 +211,36 @@ class RawResponseCache:
             if temporary_path is not None:
                 temporary_path.unlink(missing_ok=True)
 
+    def _write_bytes_atomic(self, path: Path, content: bytes) -> None:
+        """Write bytes with an atomic replacement and content verification."""
+
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary_path: Path | None = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="wb",
+                dir=path.parent,
+                delete=False,
+                prefix=f".{path.name}.",
+                suffix=".restore.tmp",
+            ) as temporary:
+                temporary_path = Path(temporary.name)
+                temporary.write(content)
+                temporary.flush()
+                os.fsync(temporary.fileno())
+            os.replace(temporary_path, path)
+            restored = path.read_bytes()
+            if restored != content:
+                raise OSError(f"Cache restoration verification failed: {path}")
+        finally:
+            if temporary_path is not None:
+                temporary_path.unlink(missing_ok=True)
+
+    def _restore_bytes_atomic(self, path: Path, content: bytes) -> None:
+        """Restore bytes with an atomic replacement and content verification."""
+
+        self._write_bytes_atomic(path, content)
+
     def _path_for(
         self, provider: str, code: str, start: date | None, end: date | None
     ) -> Path:
@@ -235,11 +279,13 @@ class MarketDataService:
         now: Callable[[], datetime] | None = None,
     ) -> None:
         if primary_provider == fallback_provider:
-            raise ValueError("primary and fallback providers must differ")
+            raise ConfigurationError("primary and fallback providers must differ")
         self._providers = dict(providers)
         for provider_name in (primary_provider, fallback_provider):
             if provider_name not in self._providers:
-                raise ValueError(f"Configured provider is unavailable: {provider_name}")
+                raise ConfigurationError(
+                    f"Configured provider is unavailable: {provider_name}"
+                )
         self._selection = (primary_provider, fallback_provider)
         self._quality_settings = quality_settings or DataQualitySettings()
         self._cache = RawResponseCache(
@@ -249,6 +295,7 @@ class MarketDataService:
             now=now,
         )
         self._staged_cache_writes: list[tuple[str, str, date | None, date | None, object]] = []
+        self._cache_recovery_path: Path | None = None
 
     @classmethod
     def from_settings(
@@ -358,12 +405,14 @@ class MarketDataService:
                     self._cache._store_unlocked(
                         provider_name, code, start, end, document
                     )
-            except BaseException:
-                for path, previous in reversed(backups):
-                    if previous is None:
-                        path.unlink(missing_ok=True)
-                    else:
-                        path.write_bytes(previous)
+            except BaseException as commit_error:
+                try:
+                    self._restore_cache_preimages(backups)
+                except BaseException as restore_error:
+                    raise CacheRollbackError(
+                        self._cache_recovery_path,
+                        f"{commit_error}; {restore_error}",
+                    ) from restore_error
                 raise
         self._staged_cache_writes = []
 
@@ -371,6 +420,64 @@ class MarketDataService:
         """Drop deferred responses when a batch cannot be completed."""
 
         self._staged_cache_writes.clear()
+
+    def _restore_cache_preimages(
+        self, backups: Sequence[tuple[Path, bytes | None]]
+    ) -> None:
+        self._cache_recovery_path = self._create_cache_recovery(backups)
+        for path, previous in reversed(backups):
+            if previous is None:
+                path.unlink(missing_ok=True)
+                if path.exists():
+                    raise OSError(f"Cache entry remains after removal: {path}")
+            else:
+                self._cache._restore_bytes_atomic(path, previous)
+        shutil.rmtree(self._cache_recovery_path)
+        if self._cache_recovery_path.exists():
+            raise OSError(
+                f"Could not remove cache recovery artifacts: "
+                f"{self._cache_recovery_path}"
+            )
+
+    def _create_cache_recovery(
+        self, backups: Sequence[tuple[Path, bytes | None]]
+    ) -> Path:
+        recovery_path = Path(
+            tempfile.mkdtemp(prefix=".cache-recovery-", dir=self._cache._directory)
+        )
+        self._cache_recovery_path = recovery_path
+        manifest_path = recovery_path / "manifest.json"
+        manifest = {
+            "schema_version": 1,
+            "state": "copying",
+            "entries": [
+                {
+                    "path": path.name,
+                    "present": previous is not None,
+                    "sha256": (
+                        hashlib.sha256(previous).hexdigest()
+                        if previous is not None
+                        else None
+                    ),
+                }
+                for path, previous in backups
+            ],
+        }
+        self._cache._write_bytes_atomic(
+            manifest_path,
+            json.dumps(manifest, sort_keys=True).encode("utf-8"),
+        )
+        for path, previous in backups:
+            if previous is not None:
+                self._cache._write_bytes_atomic(
+                    recovery_path / path.name, previous
+                )
+        manifest["state"] = "ready"
+        self._cache._write_bytes_atomic(
+            manifest_path,
+            json.dumps(manifest, sort_keys=True).encode("utf-8"),
+        )
+        return recovery_path
 
 
 def _require_sequence(

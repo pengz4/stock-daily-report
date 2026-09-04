@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from stock_daily_report.chan.common import SimplifiedChanResult
-from stock_daily_report.config import load_settings
+from stock_daily_report.config import ConfigurationError, load_settings
 from stock_daily_report.indicators.technical import TechnicalMetrics
 from stock_daily_report.models import RiskRulesSettings, Settings
 from stock_daily_report.quality.checks import DataQualityResult
@@ -163,7 +163,7 @@ def resolve_risk_rules(settings: Settings | None = None) -> RiskRulesSettings:
     if settings is None:
         settings = load_settings(_default_settings_path())
     if settings.risk_rules is None:
-        raise ValueError("risk_rules configuration is required for decisions")
+        raise ConfigurationError("risk_rules configuration is required for decisions")
     return settings.risk_rules
 
 

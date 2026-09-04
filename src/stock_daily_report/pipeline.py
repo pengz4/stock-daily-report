@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import tempfile
@@ -205,7 +206,8 @@ def _cleanup_transaction_root(transaction_root: Path, report_date: date) -> None
     """Remove staging only when no unverified publication backup remains."""
 
     backup_root = transaction_root / "backups"
-    if backup_root.exists():
+    recovery_root = transaction_root / "recovery"
+    if backup_root.exists() or recovery_root.exists():
         return
     shutil.rmtree(transaction_root, ignore_errors=True)
 
@@ -413,10 +415,15 @@ class _PublicationTransaction:
         self._site_index_was_present = self.site_index.exists()
         self._styles_was_present = self.styles_path.exists()
         self.backup_root = staged_report_dir.parents[1] / "backups"
+        self.recovery_root = staged_report_dir.parents[1] / "recovery"
         self.backup_report_dir = self.backup_root / "report"
         self.backup_snapshot_path = self.backup_root / "snapshot.json"
         self.backup_site_index = self.backup_root / "site-index.html"
         self.backup_styles = self.backup_root / "styles.css"
+        self.recovery_report_dir = self.recovery_root / "report"
+        self.recovery_snapshot_path = self.recovery_root / "snapshot.json"
+        self.recovery_site_index = self.recovery_root / "site-index.html"
+        self.recovery_styles = self.recovery_root / "styles.css"
         self._report_backed_up = False
         self._report_published = False
         self._snapshot_published = False
@@ -466,6 +473,7 @@ class _PublicationTransaction:
     def complete(self) -> None:
         """Discard rollback backups after every transactional step succeeds."""
 
+        self._prepare_recovery_copy()
         if self.backup_root.exists():
             shutil.rmtree(self.backup_root)
             if self.backup_root.exists():
@@ -473,6 +481,7 @@ class _PublicationTransaction:
                     f"Could not remove publication backups: {self.backup_root}"
                 )
         self._finished = True
+        shutil.rmtree(self.recovery_root, ignore_errors=True)
 
     def rollback(self) -> None:
         if self._finished:
@@ -487,31 +496,39 @@ class _PublicationTransaction:
             self._restore_path(
                 target=self.styles_path,
                 backup=self.backup_styles,
+                recovery=self.recovery_styles,
                 staged=self.staged_styles_path,
                 was_present=self._styles_was_present,
                 published=self._styles_published,
+                backed_up=self._styles_backed_up,
             )
             self._restore_path(
                 target=self.site_index,
                 backup=self.backup_site_index,
+                recovery=self.recovery_site_index,
                 staged=self.staged_site_index,
                 was_present=self._site_index_was_present,
                 published=self._site_index_published,
+                backed_up=self._site_index_backed_up,
             )
             if self.staged_snapshot_path is not None:
                 self._restore_path(
                     target=self.snapshot_path,
                     backup=self.backup_snapshot_path,
+                    recovery=self.recovery_snapshot_path,
                     staged=self.staged_snapshot_path,
                     was_present=self._snapshot_was_present,
                     published=self._snapshot_published,
+                    backed_up=False,
                 )
             self._restore_path(
                 target=self.report_dir,
                 backup=self.backup_report_dir,
+                recovery=self.recovery_report_dir,
                 staged=self.staged_report_dir,
                 was_present=self._report_was_present,
                 published=self._report_published,
+                backed_up=self._report_backed_up,
             )
             self._verify_restored(
                 target=self.styles_path,
@@ -537,6 +554,13 @@ class _PublicationTransaction:
             shutil.rmtree(self.backup_root)
             if self.backup_root.exists():
                 raise OSError(f"Could not remove publication backups: {self.backup_root}")
+            if self.recovery_root.exists():
+                shutil.rmtree(self.recovery_root)
+                if self.recovery_root.exists():
+                    raise OSError(
+                        "Could not remove publication recovery copies: "
+                        f"{self.recovery_root}"
+                    )
         except BaseException as error:
             if isinstance(error, PublicationRollbackError):
                 raise
@@ -551,20 +575,25 @@ class _PublicationTransaction:
         *,
         target: Path,
         backup: Path,
+        recovery: Path,
         staged: Path | None,
         was_present: bool,
         published: bool,
+        backed_up: bool,
     ) -> None:
-        if backup.exists():
+        restore_source = backup if backup.exists() else recovery if recovery.exists() else None
+        if restore_source is not None:
             target.parent.mkdir(parents=True, exist_ok=True)
             if target.is_dir():
                 shutil.rmtree(target)
             else:
                 target.unlink(missing_ok=True)
-            os.replace(backup, target)
+            os.replace(restore_source, target)
+            return
+        if was_present and not backed_up and not published and target.exists():
             return
         if was_present:
-            return
+            raise OSError(f"Missing publication recovery artifact: {backup}")
         if published or (staged is not None and not staged.exists()):
             if target.is_dir():
                 shutil.rmtree(target)
@@ -580,6 +609,42 @@ class _PublicationTransaction:
             raise OSError(f"Publication target was not restored: {target}")
         if not was_present and target.exists():
             raise OSError(f"New publication target remains: {target}")
+
+    def _prepare_recovery_copy(self) -> None:
+        entries = (
+            (self.backup_report_dir, self.recovery_report_dir, "report"),
+            (self.backup_snapshot_path, self.recovery_snapshot_path, "snapshot"),
+            (self.backup_site_index, self.recovery_site_index, "site-index"),
+            (self.backup_styles, self.recovery_styles, "styles"),
+        )
+        expected = [
+            (source, destination, name)
+            for source, destination, name in entries
+            if source.exists()
+        ]
+        if not expected:
+            return
+        self.recovery_root.mkdir(parents=True, exist_ok=True)
+        manifest = {
+            "schema_version": 1,
+            "state": "copying",
+            "entries": [name for _, _, name in expected],
+        }
+        _atomic_write(
+            self.recovery_root / "manifest.json",
+            json.dumps(manifest, ensure_ascii=False, sort_keys=True) + "\n",
+        )
+        for source, destination, _ in expected:
+            if source.is_dir():
+                shutil.copytree(source, destination)
+            else:
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
+        manifest["state"] = "ready"
+        _atomic_write(
+            self.recovery_root / "manifest.json",
+            json.dumps(manifest, ensure_ascii=False, sort_keys=True) + "\n",
+        )
 
 
 def _fetch_direct(
