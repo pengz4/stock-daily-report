@@ -1089,6 +1089,107 @@ def test_snapshots_root_is_fsynced_after_snapshot_publish_before_cache_commit(
     assert events.index("snapshot-rename") < events.index("cache-commit")
 
 
+def test_publication_transaction_parent_is_fsynced_before_commit(
+    tmp_path, fixture_settings, monkeypatch
+):
+    events: list[tuple[str, Path | None]] = []
+    original_fsync_directory = pipeline_module._fsync_directory
+    original_commit = pipeline_module._PublicationTransaction.commit
+
+    def record_fsync(directory):
+        path = Path(directory)
+        if path == tmp_path:
+            events.append(("output-root-fsync", path))
+        elif path.parent == tmp_path and path.name.startswith(".publication-"):
+            events.append(("transaction-fsync", path))
+        return original_fsync_directory(directory)
+
+    def record_commit(transaction):
+        assert any(
+            event == "output-root-fsync" for event, _ in events
+        ), "output root was not fsynced before commit"
+        assert any(
+            event == "transaction-fsync" for event, _ in events
+        ), "transaction directory was not fsynced before commit"
+        events.append(("commit", transaction.transaction_root))
+        return original_commit(transaction)
+
+    monkeypatch.setattr(pipeline_module, "_fsync_directory", record_fsync)
+    monkeypatch.setattr(
+        pipeline_module._PublicationTransaction, "commit", record_commit
+    )
+
+    run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        report_date=date(2026, 9, 4),
+    )
+
+    assert any(event == "commit" for event, _ in events)
+
+
+def test_publication_transaction_parent_fsync_failure_retains_journal(
+    tmp_path, fixture_settings, monkeypatch
+):
+    original_fsync_directory = pipeline_module._fsync_directory
+
+    def fail_manifest_parent_fsync(directory):
+        path = Path(directory)
+        if path == tmp_path and any(
+            (candidate / "manifest.json").exists()
+            for candidate in tmp_path.glob(".publication-*")
+        ):
+            raise OSError("injected transaction parent fsync failure")
+        return original_fsync_directory(directory)
+
+    monkeypatch.setattr(
+        pipeline_module, "_fsync_directory", fail_manifest_parent_fsync
+    )
+
+    with pytest.raises(OSError, match="transaction parent fsync"):
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+            provider=RecordingProvider({"600519": make_bars("600519")}),
+            report_date=date(2026, 9, 4),
+        )
+
+    transaction_paths = list(tmp_path.glob(".publication-*"))
+    assert len(transaction_paths) == 1
+    assert (transaction_paths[0] / "manifest.json").exists()
+
+
+def test_publication_transaction_creation_fsync_failure_retains_evidence(
+    tmp_path, fixture_settings, monkeypatch
+):
+    original_fsync_directory = pipeline_module._fsync_directory
+
+    def fail_transaction_directory_fsync(directory):
+        path = Path(directory)
+        if path.parent == tmp_path and path.name.startswith(".publication-"):
+            raise OSError("injected transaction directory fsync failure")
+        return original_fsync_directory(directory)
+
+    monkeypatch.setattr(
+        pipeline_module, "_fsync_directory", fail_transaction_directory_fsync
+    )
+
+    with pytest.raises(OSError, match="transaction directory fsync"):
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+            provider=RecordingProvider({"600519": make_bars("600519")}),
+            report_date=date(2026, 9, 4),
+        )
+
+    transaction_paths = list(tmp_path.glob(".publication-*"))
+    assert len(transaction_paths) == 1
+
+
 def test_concurrent_different_dates_preserve_all_site_index_entries(
     tmp_path, fixture_settings, monkeypatch
 ):
@@ -1155,6 +1256,68 @@ def test_concurrent_different_dates_preserve_all_site_index_entries(
     site_index = (tmp_path / "site/index.html").read_text(encoding="utf-8")
     assert "../reports/2026-09-04/index.html" in site_index
     assert "../reports/2026-09-05/index.html" in site_index
+
+
+def test_opportunistic_recovery_waits_for_each_transaction_date_lock(
+    tmp_path, monkeypatch
+):
+    transaction_root = tmp_path / ".publication-date-lock-orphan"
+    staged_report = transaction_root / "reports/2026-09-04"
+    staged_report.mkdir(parents=True)
+    transaction = pipeline_module._PublicationTransaction(
+        root=tmp_path,
+        report_date=date(2026, 9, 4),
+        staged_report_dir=staged_report,
+        staged_snapshot_path=None,
+        staged_site_index=transaction_root / "site/index.html",
+        staged_styles_path=None,
+    )
+    assert transaction.transaction_root == transaction_root
+
+    marker = tmp_path / "date-lock-held"
+    holder = subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            f"""
+import fcntl
+import time
+from pathlib import Path
+
+lock_path = Path({str(tmp_path / "snapshots/2026-09-04/.input.lock")!r})
+lock_path.parent.mkdir(parents=True, exist_ok=True)
+with lock_path.open("a", encoding="utf-8") as lock_file:
+    fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+    Path({str(marker)!r}).write_text("held", encoding="utf-8")
+    time.sleep(5)
+""",
+        ],
+        cwd=Path(__file__).parents[1],
+        env={**os.environ, "PYTHONPATH": str(Path(__file__).parents[1] / "src")},
+    )
+    try:
+        for _ in range(100):
+            if marker.exists():
+                break
+            time.sleep(0.05)
+        assert marker.exists()
+        recovered = []
+        monkeypatch.setattr(
+            pipeline_module,
+            "_recover_pending_publications",
+            lambda *_args, **_kwargs: recovered.append(True),
+        )
+
+        pipeline_module._recover_pending_publications_if_idle(
+            tmp_path,
+            date(2026, 9, 5),
+        )
+
+        assert recovered == []
+        assert transaction_root.exists()
+    finally:
+        holder.terminate()
+        holder.wait(timeout=5)
 
 
 def test_later_date_recovers_older_orphan_before_touching_shared_site(

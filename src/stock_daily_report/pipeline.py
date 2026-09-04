@@ -263,24 +263,36 @@ def run_daily_report(
             markdown_path = report_dir / "report.md"
             html_path = report_dir / "index.html"
             transaction_root = Path(tempfile.mkdtemp(prefix=".publication-", dir=root))
+            transaction_initialized = False
             try:
-                return _publish_report_transaction(
-                    root=root,
-                    transaction_root=transaction_root,
-                    report_date=active_report_date,
-                    generated_at=generated_at,
-                    settings=active_settings,
-                    watchlist=active_watchlist,
-                    fetched=fetched,
-                    bars_by_code=bars_by_code,
-                    service=active_service,
-                    json_path=json_path,
-                    markdown_path=markdown_path,
-                    html_path=html_path,
-                )
+                _fsync_directory(transaction_root)
+                _fsync_directory(root)
+                transaction_initialized = True
+                try:
+                    return _publish_report_transaction(
+                        root=root,
+                        transaction_root=transaction_root,
+                        report_date=active_report_date,
+                        generated_at=generated_at,
+                        settings=active_settings,
+                        watchlist=active_watchlist,
+                        fetched=fetched,
+                        bars_by_code=bars_by_code,
+                        service=active_service,
+                        json_path=json_path,
+                        markdown_path=markdown_path,
+                        html_path=html_path,
+                    )
+                finally:
+                    _cleanup_transaction_root(transaction_root, active_report_date)
+                    transaction_root = None
             finally:
-                _cleanup_transaction_root(transaction_root, active_report_date)
-                transaction_root = None
+                if not transaction_initialized:
+                    try:
+                        _fsync_directory(root)
+                    except OSError:
+                        pass
+                    transaction_root = None
 
         if active_service is not None:
             with _publication_lock(root, active_report_date, cache=cache_lock):
@@ -408,7 +420,47 @@ def _recover_pending_publications_if_idle(
     )
     if not transaction_paths and not pending_cache:
         return
-    with _try_publication_recovery_lock(root, cache=cache_lock) as acquired:
+    transaction_dates: set[date] = set()
+    for transaction_path in transaction_paths:
+        if not transaction_path.exists():
+            continue
+        if transaction_path.is_symlink() or not transaction_path.is_dir():
+            raise PublicationRollbackError(
+                "Invalid orphan publication transaction retained at "
+                f"{transaction_path}"
+            )
+        if not (transaction_path / "manifest.json").exists() and not (
+            transaction_path / "cleanup.json"
+        ).exists():
+            if not _date_lock_available(root, report_date):
+                return
+            raise PublicationRollbackError(
+                "Could not derive orphan publication report date; "
+                f"recovery artifacts retained at {transaction_path}"
+            )
+        try:
+            manifest = _read_publication_manifest(transaction_path)
+            report_date_value = manifest["report_date"]
+        except PublicationRollbackError as manifest_error:
+            cleanup = _read_cleanup_journal(transaction_path)
+            if cleanup is None:
+                raise PublicationRollbackError(
+                    "Could not derive orphan publication report date; "
+                    f"recovery artifacts retained at {transaction_path}"
+                ) from manifest_error
+            report_date_value = cleanup.get("report_date")
+        try:
+            transaction_dates.add(date.fromisoformat(report_date_value))
+        except (TypeError, ValueError) as error:
+            raise PublicationRollbackError(
+                "Invalid orphan publication report date retained at "
+                f"{transaction_path}"
+            ) from error
+    if pending_cache:
+        transaction_dates.add(report_date)
+    with _try_publication_recovery_lock(
+        root, report_dates=transaction_dates, cache=cache_lock
+    ) as acquired:
         if acquired:
             if service is not None:
                 service.recover_pending_cache_manifests(publication_root=root)
@@ -422,6 +474,24 @@ def _recover_pending_publications_if_idle(
                 "Could not acquire recovery lock before fetching; "
                 "pending cache recovery is a precondition",
             )
+
+
+def _date_lock_available(root: Path, report_date: date) -> bool:
+    snapshot_directory = root / "snapshots" / report_date.isoformat()
+    snapshot_directory.mkdir(parents=True, exist_ok=True)
+    _fsync_directory(snapshot_directory.parent)
+    lock_path = snapshot_directory / ".input.lock"
+    with lock_path.open("a", encoding="utf-8") as lock_file:
+        try:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return False
+        finally:
+            try:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+            except OSError:
+                pass
+    return True
 
 
 @contextmanager
@@ -600,6 +670,7 @@ def _write_cleanup_journal(
         json.dumps(journal, ensure_ascii=False, sort_keys=True) + "\n",
     )
     _fsync_directory(transaction_root)
+    _fsync_directory(transaction_root.parent)
 
 
 def _publication_targets(root: Path, report_date: date) -> dict[str, Path]:
@@ -987,20 +1058,43 @@ def _write_publication_manifest(
         json.dumps(manifest, ensure_ascii=False, sort_keys=True) + "\n",
     )
     _fsync_directory(transaction_root)
+    _fsync_directory(transaction_root.parent)
 
 
 @contextmanager
 def _try_publication_recovery_lock(
-    root: Path, *, cache: RawResponseCache | None = None
+    root: Path,
+    *,
+    report_dates: Sequence[date] = (),
+    cache: RawResponseCache | None = None,
 ):
     root = Path(root).expanduser().resolve()
-    site_directory = root / "site"
-    site_directory.mkdir(parents=True, exist_ok=True)
-    site_lock = site_directory.joinpath(".publication.lock").open(
-        "a", encoding="utf-8"
-    )
+    date_locks = []
+    date_acquired = []
+    site_lock = None
     site_acquired = False
     try:
+        for report_date in sorted(set(report_dates)):
+            snapshot_directory = root / "snapshots" / report_date.isoformat()
+            snapshot_directory.mkdir(parents=True, exist_ok=True)
+            _fsync_directory(snapshot_directory.parent)
+            date_lock = (snapshot_directory / ".input.lock").open(
+                "a", encoding="utf-8"
+            )
+            date_locks.append(date_lock)
+            try:
+                fcntl.flock(
+                    date_lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB
+                )
+                date_acquired.append(date_lock)
+            except BlockingIOError:
+                yield False
+                return
+        site_directory = root / "site"
+        site_directory.mkdir(parents=True, exist_ok=True)
+        site_lock = site_directory.joinpath(".publication.lock").open(
+            "a", encoding="utf-8"
+        )
         try:
             fcntl.flock(site_lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
             site_acquired = True
@@ -1018,7 +1112,12 @@ def _try_publication_recovery_lock(
     finally:
         if site_acquired:
             fcntl.flock(site_lock.fileno(), fcntl.LOCK_UN)
-        site_lock.close()
+        if site_lock is not None:
+            site_lock.close()
+        for date_lock in reversed(date_acquired):
+            fcntl.flock(date_lock.fileno(), fcntl.LOCK_UN)
+        for date_lock in reversed(date_locks):
+            date_lock.close()
 
 
 @contextmanager
@@ -1723,6 +1822,8 @@ class _PublicationTransaction:
             self.recovery_root / "manifest.json",
             json.dumps(manifest, ensure_ascii=False, sort_keys=True) + "\n",
         )
+        _fsync_directory(self.transaction_root)
+        _fsync_directory(self.transaction_root.parent)
         for source, destination, name in to_copy:
             if not source.exists():
                 raise OSError(f"Missing publication backup for {name}: {source}")
@@ -1743,6 +1844,8 @@ class _PublicationTransaction:
             json.dumps(manifest, ensure_ascii=False, sort_keys=True) + "\n",
         )
         _fsync_tree(self.recovery_root)
+        _fsync_directory(self.transaction_root)
+        _fsync_directory(self.transaction_root.parent)
 
 
 def _fetch_direct(

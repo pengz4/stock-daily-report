@@ -367,6 +367,11 @@ class RawResponseCache:
             or not isinstance(manifest["entries"], list)
         ):
             raise OSError(f"Invalid cache recovery manifest: {manifest_path}")
+        manifest, legacy_owner_error = self._migrate_legacy_owner(
+            recovery_path, manifest, publication_root=publication_root
+        )
+        if legacy_owner_error is not None:
+            raise CacheRollbackError(recovery_path, legacy_owner_error)
         owner_mismatch = self._publication_owner_mismatch(
             manifest, publication_root=publication_root
         )
@@ -416,6 +421,7 @@ class RawResponseCache:
             digest = raw_entry["sha256"]
             status = raw_entry.get("status", "pending")
             preimage_ready = raw_entry.get("preimage_ready", True)
+            preimage_temp = raw_entry.get("preimage_temp")
             if (
                 not isinstance(name, str)
                 or not name
@@ -426,14 +432,87 @@ class RawResponseCache:
                 or Path(name).is_absolute()
                 or not isinstance(present, bool)
                 or not isinstance(preimage_ready, bool)
+                or (
+                    preimage_temp is not None
+                    and (
+                        not isinstance(preimage_temp, str)
+                        or not preimage_temp
+                        or Path(preimage_temp).name != preimage_temp
+                        or preimage_temp in {".", "..", "manifest.json"}
+                        or preimage_temp == name
+                        or preimage_temp in entry_names
+                        or Path(preimage_temp).is_absolute()
+                    )
+                )
                 or status not in {"pending", "committed", "restored"}
             ):
                 raise OSError(f"Invalid cache recovery path: {name!r}")
             entry_names.add(name)
+            if preimage_ready and preimage_temp is not None:
+                raise OSError(f"Invalid completed cache recovery entry: {name}")
             if not preimage_ready:
-                if present or size is not None or digest is not None:
-                    raise OSError(f"Invalid incomplete cache recovery entry: {name}")
-                source = None
+                if present:
+                    if (
+                        not isinstance(size, int)
+                        or isinstance(size, bool)
+                        or size < 0
+                        or size > _MAX_RECOVERY_ENTRY_BYTES
+                        or not isinstance(digest, str)
+                        or len(digest) != 64
+                        or any(
+                            character not in "0123456789abcdef"
+                            for character in digest
+                        )
+                    ):
+                        raise OSError(f"Invalid cache recovery metadata: {name}")
+                    recovery_names.add(name)
+                    if preimage_temp is not None:
+                        recovery_names.add(preimage_temp)
+                    total_bytes += size
+                    if total_bytes > _MAX_RECOVERY_TOTAL_BYTES:
+                        raise OSError(
+                            "Cache recovery preimages exceed the total size limit"
+                        )
+                    source = recovery_path / name
+                    temporary_source = (
+                        recovery_path / preimage_temp
+                        if preimage_temp is not None
+                        else None
+                    )
+                    source_valid = self._verify_file(source, size, digest)
+                    temporary_valid = (
+                        temporary_source is not None
+                        and self._verify_file(temporary_source, size, digest)
+                    )
+                    if source_valid and (
+                        temporary_source is None or not temporary_source.exists()
+                    ):
+                        raw_entry["preimage_ready"] = True
+                        raw_entry.pop("preimage_temp", None)
+                        if preimage_temp is not None:
+                            recovery_names.discard(preimage_temp)
+                        self._persist_recovery_manifest(recovery_path, manifest)
+                        preimage_ready = True
+                        preimage_temp = None
+                    elif (
+                        temporary_valid
+                        and temporary_source is not None
+                        and not source.exists()
+                    ):
+                        os.replace(temporary_source, source)
+                        _fsync_directory(recovery_path)
+                        raw_entry["preimage_ready"] = True
+                        raw_entry.pop("preimage_temp", None)
+                        recovery_names.discard(preimage_temp)
+                        self._persist_recovery_manifest(recovery_path, manifest)
+                        preimage_ready = True
+                        preimage_temp = None
+                    else:
+                        source = None
+                else:
+                    if size is not None or digest is not None or preimage_temp is not None:
+                        raise OSError(f"Invalid incomplete cache recovery entry: {name}")
+                    source = None
             elif present:
                 if (
                     not isinstance(size, int)
@@ -478,13 +557,24 @@ class RawResponseCache:
 
         actual_names = {path.name for path in recovery_path.iterdir()}
         if actual_names != recovery_names:
+            if state in {"copying", "preparing", "prepared"}:
+                manifest["state"] = "incomplete"
+                self._persist_recovery_manifest(recovery_path, manifest)
             raise OSError(
                 f"Unexpected files in cache recovery directory: {recovery_path}"
             )
 
         incomplete_entries = [name for *_, name, ready in entries if not ready]
         if incomplete_entries:
-            if state in {"copying", "preparing"}:
+            has_durable_preimage_evidence = any(
+                entry.get("path") in incomplete_entries
+                and (
+                    entry.get("present") is True
+                    or entry.get("preimage_temp") is not None
+                )
+                for entry in manifest["entries"]
+            )
+            if state in {"copying", "preparing"} and not has_durable_preimage_evidence:
                 shutil.rmtree(recovery_path)
                 _fsync_directory(self._directory)
                 return
@@ -594,6 +684,53 @@ class RawResponseCache:
         except (OSError, RuntimeError, ValueError):
             return "Cache recovery has an invalid publication root owner"
         return None
+
+    def _migrate_legacy_owner(
+        self,
+        recovery_path: Path,
+        manifest: dict[str, object],
+        *,
+        publication_root: Path | None,
+    ) -> tuple[dict[str, object], str | None]:
+        persisted_root_value = manifest.get("publication_root")
+        owner_token = manifest.get("publication_owner_token")
+        if persisted_root_value is not None or owner_token is not None:
+            return manifest, None
+        expected_root = (
+            Path(publication_root).expanduser().resolve()
+            if publication_root is not None
+            else self._directory
+        )
+        publication_manifest_value = manifest.get("publication_manifest")
+        if publication_manifest_value is not None:
+            if not isinstance(publication_manifest_value, str):
+                return manifest, "Cache recovery has an invalid publication root owner"
+            publication_manifest = Path(publication_manifest_value)
+            try:
+                if (
+                    not publication_manifest.is_absolute()
+                    or publication_manifest.is_symlink()
+                    or publication_manifest.parent.is_symlink()
+                    or publication_manifest.parent.parent.is_symlink()
+                    or publication_manifest.name != "manifest.json"
+                    or not publication_manifest.parent.name.startswith(".publication-")
+                    or publication_manifest.parent.parent.resolve(strict=False)
+                    != expected_root
+                ):
+                    return (
+                        manifest,
+                        (
+                            "Cache recovery belongs to another publication root; "
+                            "recovery artifacts retained"
+                        ),
+                    )
+            except (OSError, RuntimeError, ValueError):
+                return manifest, "Cache recovery has an invalid publication root owner"
+        migrated = dict(manifest)
+        migrated["publication_root"] = str(expected_root)
+        migrated["publication_owner_token"] = _publication_owner_token(expected_root)
+        self._persist_recovery_manifest(recovery_path, migrated)
+        return migrated, None
 
     def _publication_commit_is_durable(
         self, manifest: Mapping[str, object], *, publication_root: Path | None = None
@@ -1071,13 +1208,48 @@ class MarketDataService:
                     total_bytes += size
                     if total_bytes > _MAX_RECOVERY_TOTAL_BYTES:
                         raise OSError("Cache recovery preimages exceed the total size limit")
+
+                    def journal_preimage_before_replace(
+                        copied: int,
+                        digest: str,
+                        temporary: Path,
+                        *,
+                        entry: dict[str, object] = entry,
+                    ) -> None:
+                        entry.update(
+                            {
+                                "present": True,
+                                "size": copied,
+                                "sha256": digest,
+                                "preimage_temp": temporary.name,
+                            }
+                        )
+                        self._cache._persist_recovery_manifest(
+                            recovery_path, manifest
+                        )
+
+                    def journal_preimage_after_replace(
+                        *, entry: dict[str, object] = entry
+                    ) -> None:
+                        entry["preimage_ready"] = True
+                        entry.pop("preimage_temp", None)
+                        self._cache._persist_recovery_manifest(
+                            recovery_path, manifest
+                        )
+
                     size, digest = self._copy_cache_preimage(
-                        path, recovery_path / path.name
+                        path,
+                        recovery_path / path.name,
+                        before_replace=journal_preimage_before_replace,
+                        after_replace=journal_preimage_after_replace,
                     )
                     entry["present"] = True
                     entry["size"] = size
                     entry["sha256"] = digest
-                entry["preimage_ready"] = True
+                    entry["preimage_ready"] = True
+                    entry.pop("preimage_temp", None)
+                else:
+                    entry["preimage_ready"] = True
                 self._cache._persist_recovery_manifest(recovery_path, manifest)
         except BaseException:
             manifest["state"] = "incomplete"
@@ -1087,7 +1259,14 @@ class MarketDataService:
         self._cache._persist_recovery_manifest(recovery_path, manifest)
         return recovery_path
 
-    def _copy_cache_preimage(self, source: Path, destination: Path) -> tuple[int, str]:
+    def _copy_cache_preimage(
+        self,
+        source: Path,
+        destination: Path,
+        *,
+        before_replace: Callable[[int, str, Path], None] | None = None,
+        after_replace: Callable[[], None] | None = None,
+    ) -> tuple[int, str]:
         destination.parent.mkdir(parents=True, exist_ok=True)
         declared_size = source.stat().st_size
         if declared_size > _MAX_RECOVERY_ENTRY_BYTES:
@@ -1115,8 +1294,12 @@ class MarketDataService:
                     raise OSError(f"Cache preimage changed during copy: {source}")
                 temporary.flush()
                 os.fsync(temporary.fileno())
+            if before_replace is not None:
+                before_replace(copied, digest.hexdigest(), temporary_path)
             os.replace(temporary_path, destination)
             _fsync_directory(destination.parent)
+            if after_replace is not None:
+                after_replace()
         finally:
             if temporary_path is not None and temporary_path.exists():
                 temporary_path.unlink()

@@ -613,6 +613,114 @@ service.commit_staged_cache_writes()
     assert not recovery_directories[0].exists()
 
 
+def test_cache_recovery_reconciles_preimage_rename_before_manifest_ack(
+    tmp_path,
+):
+    from stock_daily_report.providers.service import RawResponseCache
+
+    cache = RawResponseCache(tmp_path, ttl_seconds=30)
+    existing_path = cache._path_for("primary", "600519", None, date(2026, 9, 4))
+    original_bytes = b"cache bytes before the interrupted rename"
+    existing_path.write_bytes(original_bytes)
+    repo_root = Path(__file__).parents[1]
+    child = f"""
+import os
+from datetime import date
+from pathlib import Path
+
+import stock_daily_report.providers.service as service_module
+from stock_daily_report.providers.service import MarketDataService
+
+class Provider:
+    def get_daily_bars(self, code, *, start=None, end=None):
+        return []
+
+root = Path({str(tmp_path)!r})
+service = MarketDataService(
+    {{"primary": Provider(), "fallback": Provider()}},
+    primary_provider="primary",
+    fallback_provider="fallback",
+    cache_directory=root,
+    cache_ttl_seconds=30,
+)
+service._staged_cache_writes = [
+    ("primary", "600519", None, date(2026, 9, 4), [{{"close": 2}}]),
+]
+original_fsync = service_module._fsync_directory
+interrupted = False
+
+def hard_exit_after_preimage_fsync(directory):
+    global interrupted
+    original_fsync(directory)
+    recovery_paths = list(root.glob(".cache-recovery-*"))
+    if (
+        not interrupted
+        and recovery_paths
+        and Path(directory) == recovery_paths[0]
+        and (recovery_paths[0] / {existing_path.name!r}).exists()
+    ):
+        interrupted = True
+        os._exit(77)
+
+service_module._fsync_directory = hard_exit_after_preimage_fsync
+service.commit_staged_cache_writes()
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", child],
+        cwd=repo_root,
+        env={**os.environ, "PYTHONPATH": str(repo_root / "src")},
+        check=False,
+    )
+
+    assert result.returncode == 77
+    recovery_directories = list(tmp_path.glob(".cache-recovery-*"))
+    assert len(recovery_directories) == 1
+    recovery_directory = recovery_directories[0]
+    assert (recovery_directory / existing_path.name).read_bytes() == original_bytes
+
+    RawResponseCache(tmp_path, ttl_seconds=30).recover_pending_manifests()
+
+    assert existing_path.read_bytes() == original_bytes
+    assert not recovery_directory.exists()
+
+
+def test_legacy_ownerless_v2_cache_journal_is_migrated_safely(tmp_path):
+    from stock_daily_report.providers.service import RawResponseCache
+
+    cache = RawResponseCache(tmp_path, ttl_seconds=30)
+    target = cache._path_for("primary", "600519", None, date(2026, 9, 4))
+    previous = b"legacy preimage"
+    target.write_bytes(b"new cache bytes")
+    recovery_directory = tmp_path / ".cache-recovery-legacy"
+    recovery_directory.mkdir()
+    preimage = recovery_directory / target.name
+    preimage.write_bytes(previous)
+    (recovery_directory / "manifest.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "state": "ready",
+                "publication_manifest": None,
+                "publication_root": None,
+                "entries": [
+                    {
+                        "path": target.name,
+                        "present": True,
+                        "size": len(previous),
+                        "sha256": hashlib.sha256(previous).hexdigest(),
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    cache.recover_pending_manifests()
+
+    assert target.read_bytes() == previous
+    assert not recovery_directory.exists()
+
+
 def test_same_service_finalization_is_idempotent_after_recovery_cleanup(
     tmp_path, bars
 ):
