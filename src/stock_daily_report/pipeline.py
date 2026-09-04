@@ -34,6 +34,7 @@ from stock_daily_report.providers.service import (
     CacheRollbackError,
     FetchedBars,
     MarketDataService,
+    RawResponseCache,
 )
 from stock_daily_report.quality.checks import (
     DataQualityResult,
@@ -145,11 +146,11 @@ def run_daily_report(
         raise TypeError("report_date must be a date, not a datetime")
     root = Path(output_root)
     root.mkdir(parents=True, exist_ok=True)
-    _recover_pending_publications_if_idle(root, active_report_date)
     failures: list[PipelineFailure] = []
     fetched: dict[str, FetchedBars] = {}
 
     active_service = service
+    recovery_cache: RawResponseCache | None = None
     if active_service is None and provider is None:
         active_service = _build_default_service(
             active_settings,
@@ -158,6 +159,14 @@ def run_daily_report(
             now=lambda: generated_at,
             output_root=root,
         )
+    elif active_service is None:
+        recovery_cache = _build_recovery_cache(active_settings, root)
+    _recover_pending_publications_if_idle(
+        root,
+        active_report_date,
+        service=active_service,
+        cache=recovery_cache,
+    )
 
     transaction_root: Path | None = None
     try:
@@ -199,6 +208,10 @@ def run_daily_report(
         markdown_path = report_dir / "report.md"
         html_path = report_dir / "index.html"
         with _publication_lock(root, active_report_date):
+            if active_service is not None:
+                active_service.recover_pending_cache_manifests()
+            elif recovery_cache is not None:
+                recovery_cache.recover_pending_manifests()
             _recover_pending_publications(root, active_report_date)
             transaction_root = Path(tempfile.mkdtemp(prefix=".publication-", dir=root))
             try:
@@ -283,8 +296,15 @@ def _recover_pending_publications(
         _recover_publication_transaction(transaction_path)
 
 
-def _recover_pending_publications_if_idle(root: Path, report_date: date) -> None:
+def _recover_pending_publications_if_idle(
+    root: Path,
+    report_date: date,
+    *,
+    service: MarketDataService | None = None,
+    cache: RawResponseCache | None = None,
+) -> None:
     transaction_paths = sorted(root.glob(".publication-*"))
+    recovery_dates: set[date] = set()
     for transaction_path in transaction_paths:
         transaction_dates: set[date] = set()
         try:
@@ -301,10 +321,19 @@ def _recover_pending_publications_if_idle(root: Path, report_date: date) -> None
                     continue
             if not transaction_dates:
                 transaction_dates.add(report_date)
-        for transaction_date in sorted(transaction_dates):
-            with _try_publication_lock(root, transaction_date) as acquired:
-                if acquired:
-                    _recover_pending_publications(root, transaction_date)
+        recovery_dates.update(transaction_dates)
+    if (
+        service is not None and service.has_pending_cache_manifests()
+    ) or (cache is not None and cache.has_pending_manifests()):
+        recovery_dates.add(report_date)
+    for transaction_date in sorted(recovery_dates):
+        with _try_publication_lock(root, transaction_date) as acquired:
+            if acquired:
+                if service is not None:
+                    service.recover_pending_cache_manifests()
+                elif cache is not None:
+                    cache.recover_pending_manifests()
+                _recover_pending_publications(root, transaction_date)
 
 
 @contextmanager
@@ -376,13 +405,22 @@ def _read_publication_manifest(transaction_root: Path) -> dict[str, object]:
     for field in (
         "report_backed_up",
         "report_published",
+        "report_backup_intent",
+        "report_publish_intent",
         "snapshot_published",
+        "snapshot_publish_intent",
         "site_index_backed_up",
         "site_index_published",
+        "site_index_backup_intent",
+        "site_index_publish_intent",
         "styles_backed_up",
         "styles_published",
+        "styles_backup_intent",
+        "styles_publish_intent",
     ):
-        if not isinstance(manifest["progress"].get(field), bool):
+        if field in manifest["progress"] and not isinstance(
+            manifest["progress"][field], bool
+        ):
             raise PublicationRollbackError(
                 "Invalid orphan publication progress metadata; recovery "
                 f"artifacts retained at {transaction_root}"
@@ -492,16 +530,20 @@ def _recover_publication_transaction(transaction_root: Path) -> None:
             transaction_root.parents[0] / "site" / "styles.css",
             transaction_root / "backups" / "styles.css",
             transaction_root / "recovery" / "styles.css",
-            bool(progress.get("styles_published")),
-            bool(progress.get("styles_backed_up")),
+            bool(progress.get("styles_published"))
+            or bool(progress.get("styles_publish_intent")),
+            bool(progress.get("styles_backed_up"))
+            or bool(progress.get("styles_backup_intent")),
         ),
         (
             "site-index",
             transaction_root.parents[0] / "site" / "index.html",
             transaction_root / "backups" / "site-index.html",
             transaction_root / "recovery" / "site-index.html",
-            bool(progress.get("site_index_published")),
-            bool(progress.get("site_index_backed_up")),
+            bool(progress.get("site_index_published"))
+            or bool(progress.get("site_index_publish_intent")),
+            bool(progress.get("site_index_backed_up"))
+            or bool(progress.get("site_index_backup_intent")),
         ),
         (
             "snapshot",
@@ -511,7 +553,8 @@ def _recover_publication_transaction(transaction_root: Path) -> None:
             / "input.json",
             transaction_root / "backups" / "snapshot.json",
             transaction_root / "recovery" / "snapshot.json",
-            bool(progress.get("snapshot_published")),
+            bool(progress.get("snapshot_published"))
+            or bool(progress.get("snapshot_publish_intent")),
             False,
         ),
         (
@@ -521,8 +564,10 @@ def _recover_publication_transaction(transaction_root: Path) -> None:
             / report_date.isoformat(),
             transaction_root / "backups" / "report",
             transaction_root / "recovery" / "report",
-            bool(progress.get("report_published")),
-            bool(progress.get("report_backed_up")),
+            bool(progress.get("report_published"))
+            or bool(progress.get("report_publish_intent")),
+            bool(progress.get("report_backed_up"))
+            or bool(progress.get("report_backup_intent")),
         ),
     )
     manifest["state"] = "rolling_back"
@@ -739,6 +784,7 @@ def _publish_report_transaction(
             )
             if finalize_cache is not None:
                 finalize_cache()
+        publication.cleanup()
     except BaseException as error:
         if service is not None:
             service.discard_staged_cache_writes()
@@ -924,11 +970,18 @@ class _PublicationTransaction:
         self.recovery_styles = self.recovery_root / "styles.css"
         self._report_backed_up = False
         self._report_published = False
+        self._report_backup_intent = False
+        self._report_publish_intent = False
         self._snapshot_published = False
+        self._snapshot_publish_intent = False
         self._site_index_backed_up = False
         self._site_index_published = False
+        self._site_index_backup_intent = False
+        self._site_index_publish_intent = False
         self._styles_backed_up = False
         self._styles_published = False
+        self._styles_backup_intent = False
+        self._styles_publish_intent = False
         self._finished = False
         self._rollback_attempted = False
         self._artifact_specs = {
@@ -964,35 +1017,49 @@ class _PublicationTransaction:
         try:
             self.backup_root.mkdir(parents=True, exist_ok=True)
             if self.report_dir.exists():
+                self._report_backup_intent = True
+                self._write_manifest("publishing")
                 os.replace(self.report_dir, self.backup_report_dir)
                 self._report_backed_up = True
                 self._write_manifest("publishing")
             self.report_dir.parent.mkdir(parents=True, exist_ok=True)
+            self._report_publish_intent = True
+            self._write_manifest("publishing")
             os.replace(self.staged_report_dir, self.report_dir)
             self._report_published = True
             self._write_manifest("publishing")
 
             if self.staged_snapshot_path is not None:
                 self.snapshot_path.parent.mkdir(parents=True, exist_ok=True)
+                self._snapshot_publish_intent = True
+                self._write_manifest("publishing")
                 os.replace(self.staged_snapshot_path, self.snapshot_path)
                 self._snapshot_published = True
                 self._write_manifest("publishing")
 
             if self.site_index.exists():
+                self._site_index_backup_intent = True
+                self._write_manifest("publishing")
                 os.replace(self.site_index, self.backup_site_index)
                 self._site_index_backed_up = True
                 self._write_manifest("publishing")
             self.site_index.parent.mkdir(parents=True, exist_ok=True)
+            self._site_index_publish_intent = True
+            self._write_manifest("publishing")
             os.replace(self.staged_site_index, self.site_index)
             self._site_index_published = True
             self._write_manifest("publishing")
 
             if self.staged_styles_path is not None:
                 if self.styles_path.exists():
+                    self._styles_backup_intent = True
+                    self._write_manifest("publishing")
                     os.replace(self.styles_path, self.backup_styles)
                     self._styles_backed_up = True
                     self._write_manifest("publishing")
                 self.styles_path.parent.mkdir(parents=True, exist_ok=True)
+                self._styles_publish_intent = True
+                self._write_manifest("publishing")
                 os.replace(self.staged_styles_path, self.styles_path)
                 self._styles_published = True
                 self._write_manifest("publishing")
@@ -1025,13 +1092,19 @@ class _PublicationTransaction:
                 )
 
     def commit(self) -> None:
-        """Commit publication cleanup after the deferred cache commit succeeds."""
+        """Record the commit while retaining the journal for cache cleanup."""
 
         if self._finished:
             return
         self._write_manifest("committing")
         self._write_manifest("committed")
         self._finished = True
+
+    def cleanup(self) -> None:
+        """Release the durable publication journal after cache acknowledgement."""
+
+        if not self._finished:
+            raise OSError("Cannot clean up an uncommitted publication")
         if self.recovery_root.exists():
             shutil.rmtree(self.recovery_root)
             if self.recovery_root.exists():
@@ -1039,6 +1112,13 @@ class _PublicationTransaction:
                     "Could not remove publication recovery copies: "
                     f"{self.recovery_root}"
                 )
+            _fsync_directory(self.transaction_root)
+        shutil.rmtree(self.transaction_root)
+        _fsync_directory(self.transaction_root.parent)
+        if self.transaction_root.exists():
+            raise OSError(
+                f"Could not remove publication transaction: {self.transaction_root}"
+            )
 
     def rollback(self) -> None:
         if self._finished:
@@ -1151,11 +1231,18 @@ class _PublicationTransaction:
             "progress": {
                 "report_backed_up": self._report_backed_up,
                 "report_published": self._report_published,
+                "report_backup_intent": self._report_backup_intent,
+                "report_publish_intent": self._report_publish_intent,
                 "snapshot_published": self._snapshot_published,
+                "snapshot_publish_intent": self._snapshot_publish_intent,
                 "site_index_backed_up": self._site_index_backed_up,
                 "site_index_published": self._site_index_published,
+                "site_index_backup_intent": self._site_index_backup_intent,
+                "site_index_publish_intent": self._site_index_publish_intent,
                 "styles_backed_up": self._styles_backed_up,
                 "styles_published": self._styles_published,
+                "styles_backup_intent": self._styles_backup_intent,
+                "styles_publish_intent": self._styles_publish_intent,
             },
             "published": self._published_artifacts,
         }
@@ -1256,8 +1343,6 @@ class _PublicationTransaction:
             for source, destination, name in sources
             if self._restore_candidates[name]
         ]
-        if not to_copy:
-            return
         self.recovery_root.mkdir(parents=True, exist_ok=True)
         manifest = {
             "schema_version": 2,
@@ -1486,7 +1571,19 @@ def _build_default_service(
     return MarketDataService.from_settings(
         active_providers,
         active_settings,
+        recover_pending=False,
         now=now,
+    )
+
+
+def _build_recovery_cache(settings: Settings, output_root: Path) -> RawResponseCache:
+    cache_directory = Path(settings.market_data.cache_directory)
+    if not cache_directory.is_absolute():
+        cache_directory = output_root / cache_directory
+    return RawResponseCache(
+        cache_directory,
+        ttl_seconds=settings.market_data.cache_ttl_seconds,
+        recover_pending=False,
     )
 
 

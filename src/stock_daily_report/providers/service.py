@@ -122,6 +122,7 @@ class RawResponseCache:
         ttl_seconds: int,
         secrets: Sequence[str] = (),
         now: Callable[[], datetime] | None = None,
+        recover_pending: bool = True,
     ) -> None:
         if ttl_seconds < 0:
             raise ValueError("cache TTL must not be negative")
@@ -129,7 +130,8 @@ class RawResponseCache:
         self._ttl_seconds = ttl_seconds
         self._secrets = tuple(secret for secret in secrets if secret)
         self._now = now or (lambda: datetime.now(UTC))
-        self._recover_pending_manifests()
+        if recover_pending:
+            self._recover_pending_manifests()
 
     def load(
         self, provider: str, code: str, start: date | None, end: date | None
@@ -286,6 +288,16 @@ class RawResponseCache:
                 except Exception as error:
                     raise CacheRollbackError(recovery_path, str(error)) from error
 
+    def recover_pending_manifests(self) -> None:
+        """Recover cache journals while the caller holds its publication lock."""
+
+        self._recover_pending_manifests()
+
+    def has_pending_manifests(self) -> bool:
+        return self._directory.exists() and any(
+            self._directory.glob(".cache-recovery-*")
+        )
+
     def _replay_recovery_manifest(self, recovery_path: Path) -> None:
         manifest_path = recovery_path / "manifest.json"
         try:
@@ -315,6 +327,7 @@ class RawResponseCache:
             "restoring",
             "committed",
             "rolled_back",
+            "incomplete",
         }:
             raise OSError(f"Invalid cache recovery state: {state!r}")
         if len(manifest["entries"]) > _MAX_RECOVERY_ENTRIES:
@@ -322,7 +335,17 @@ class RawResponseCache:
                 f"Too many cache recovery entries (limit {_MAX_RECOVERY_ENTRIES})"
             )
 
-        entries: list[tuple[Path, bool, Path | None, int | None, str | None, str]] = []
+        entries: list[
+            tuple[
+                Path,
+                bool,
+                Path | None,
+                int | None,
+                str | None,
+                str,
+                bool,
+            ]
+        ] = []
         recovery_names = {"manifest.json"}
         entry_names: set[str] = set()
         total_bytes = 0
@@ -337,6 +360,7 @@ class RawResponseCache:
             size = raw_entry["size"]
             digest = raw_entry["sha256"]
             status = raw_entry.get("status", "pending")
+            preimage_ready = raw_entry.get("preimage_ready", True)
             if (
                 not isinstance(name, str)
                 or not name
@@ -346,11 +370,16 @@ class RawResponseCache:
                 or name == ".cache.lock"
                 or Path(name).is_absolute()
                 or not isinstance(present, bool)
+                or not isinstance(preimage_ready, bool)
                 or status not in {"pending", "committed", "restored"}
             ):
                 raise OSError(f"Invalid cache recovery path: {name!r}")
             entry_names.add(name)
-            if present:
+            if not preimage_ready:
+                if present or size is not None or digest is not None:
+                    raise OSError(f"Invalid incomplete cache recovery entry: {name}")
+                source = None
+            elif present:
                 if (
                     not isinstance(size, int)
                     or isinstance(size, bool)
@@ -380,7 +409,17 @@ class RawResponseCache:
                 if size is not None or digest is not None:
                     raise OSError(f"Invalid absent cache recovery entry: {name}")
                 source = None
-            entries.append((self._directory / name, present, source, size, digest, name))
+            entries.append(
+                (
+                    self._directory / name,
+                    present,
+                    source,
+                    size,
+                    digest,
+                    name,
+                    preimage_ready,
+                )
+            )
 
         actual_names = {path.name for path in recovery_path.iterdir()}
         if actual_names != recovery_names:
@@ -388,7 +427,22 @@ class RawResponseCache:
                 f"Unexpected files in cache recovery directory: {recovery_path}"
             )
 
-        if state in {"copying", "preparing"}:
+        incomplete_entries = [name for *_, name, ready in entries if not ready]
+        if incomplete_entries:
+            if state != "incomplete":
+                manifest["state"] = "incomplete"
+                self._persist_recovery_manifest(recovery_path, manifest)
+            raise OSError(
+                "Cache recovery preimage preparation incomplete for: "
+                + ", ".join(incomplete_entries)
+            )
+        if state == "incomplete":
+            raise OSError(
+                "Cache recovery is incomplete; recovery artifacts retained at "
+                f"{recovery_path}"
+            )
+
+        if state in {"copying", "preparing", "prepared"}:
             shutil.rmtree(recovery_path)
             _fsync_directory(self._directory)
             return
@@ -403,7 +457,7 @@ class RawResponseCache:
 
         manifest["state"] = "restoring"
         self._persist_recovery_manifest(recovery_path, manifest)
-        for target, present, source, size, digest, name in entries:
+        for target, present, source, size, digest, name, _preimage_ready in entries:
             if present:
                 assert source is not None and size is not None and digest is not None
                 self._restore_file_from_source(
@@ -552,6 +606,7 @@ class MarketDataService:
         quality_settings: DataQualitySettings | None = None,
         secrets: Sequence[str] = (),
         now: Callable[[], datetime] | None = None,
+        recover_pending: bool = True,
     ) -> None:
         if primary_provider == fallback_provider:
             raise ConfigurationError("primary and fallback providers must differ")
@@ -568,10 +623,19 @@ class MarketDataService:
             ttl_seconds=cache_ttl_seconds,
             secrets=secrets,
             now=now,
+            recover_pending=recover_pending,
         )
         self._staged_cache_writes: list[tuple[str, str, date | None, date | None, object]] = []
         self._cache_recovery_path: Path | None = None
         self._publication_manifest_path: Path | None = None
+
+    def recover_pending_cache_manifests(self) -> None:
+        """Recover cache journals while publication locks are held."""
+
+        self._cache.recover_pending_manifests()
+
+    def has_pending_cache_manifests(self) -> bool:
+        return self._cache.has_pending_manifests()
 
     @classmethod
     def from_settings(
@@ -581,6 +645,7 @@ class MarketDataService:
         *,
         secrets: Sequence[str] = (),
         now: Callable[[], datetime] | None = None,
+        recover_pending: bool = True,
     ) -> "MarketDataService":
         """Build the fixed provider selection directly from loaded settings."""
 
@@ -596,6 +661,7 @@ class MarketDataService:
             ),
             secrets=secrets,
             now=now,
+            recover_pending=recover_pending,
         )
 
     def fetch(
@@ -783,6 +849,7 @@ class MarketDataService:
             "entries": [
                 {
                     "path": path.name,
+                    "preimage_ready": False,
                     "present": False,
                     "size": None,
                     "sha256": None,
@@ -792,30 +859,36 @@ class MarketDataService:
             ],
         }
         self._cache._persist_recovery_manifest(recovery_path, manifest)
-        seen_names: set[str] = set()
-        total_bytes = 0
-        for entry, path in zip(manifest["entries"], paths, strict=True):
-            if path.name in seen_names:
-                raise OSError(f"Duplicate cache preimage path: {path}")
-            seen_names.add(path.name)
-            if path.is_symlink():
-                raise OSError(f"Invalid cache preimage path: {path}")
-            if path.exists():
-                if path.is_symlink() or not path.is_file():
+        try:
+            seen_names: set[str] = set()
+            total_bytes = 0
+            for entry, path in zip(manifest["entries"], paths, strict=True):
+                if path.name in seen_names:
+                    raise OSError(f"Duplicate cache preimage path: {path}")
+                seen_names.add(path.name)
+                if path.is_symlink():
                     raise OSError(f"Invalid cache preimage path: {path}")
-                size = path.stat().st_size
-                if size > _MAX_RECOVERY_ENTRY_BYTES:
-                    raise OSError(f"Cache preimage exceeds the size limit: {path}")
-                total_bytes += size
-                if total_bytes > _MAX_RECOVERY_TOTAL_BYTES:
-                    raise OSError("Cache recovery preimages exceed the total size limit")
-                size, digest = self._copy_cache_preimage(
-                    path, recovery_path / path.name
-                )
-                entry["present"] = True
-                entry["size"] = size
-                entry["sha256"] = digest
+                if path.exists():
+                    if path.is_symlink() or not path.is_file():
+                        raise OSError(f"Invalid cache preimage path: {path}")
+                    size = path.stat().st_size
+                    if size > _MAX_RECOVERY_ENTRY_BYTES:
+                        raise OSError(f"Cache preimage exceeds the size limit: {path}")
+                    total_bytes += size
+                    if total_bytes > _MAX_RECOVERY_TOTAL_BYTES:
+                        raise OSError("Cache recovery preimages exceed the total size limit")
+                    size, digest = self._copy_cache_preimage(
+                        path, recovery_path / path.name
+                    )
+                    entry["present"] = True
+                    entry["size"] = size
+                    entry["sha256"] = digest
+                entry["preimage_ready"] = True
+                self._cache._persist_recovery_manifest(recovery_path, manifest)
+        except BaseException:
+            manifest["state"] = "incomplete"
             self._cache._persist_recovery_manifest(recovery_path, manifest)
+            raise
         manifest["state"] = "ready"
         self._cache._persist_recovery_manifest(recovery_path, manifest)
         return recovery_path

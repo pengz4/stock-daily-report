@@ -19,7 +19,7 @@ from stock_daily_report.pipeline import (
     PublicationRollbackError,
     run_daily_report,
 )
-from stock_daily_report.providers.service import MarketDataService
+from stock_daily_report.providers.service import CacheRollbackError, MarketDataService
 from stock_daily_report.quality.checks import DataQualitySettings
 from stock_daily_report.snapshots import SnapshotError, load_snapshot
 
@@ -1574,6 +1574,242 @@ transaction.publish()
 
     assert {path.name: path.read_bytes() for path in report_dir.iterdir()} == before
     assert not list(tmp_path.glob(".publication-*"))
+
+
+def test_restart_recovers_publication_and_cache_as_one_commit(
+    tmp_path, fixture_settings
+):
+    child = f"""
+import os
+from datetime import date
+from pathlib import Path
+
+from datetime import UTC, date, datetime, timedelta
+
+from stock_daily_report.models import DailyBar, Settings, Watchlist
+from stock_daily_report.pipeline import run_daily_report
+from stock_daily_report.providers.service import MarketDataService
+from stock_daily_report.quality.checks import DataQualitySettings
+
+
+class FixtureProvider:
+    name = "fixture"
+
+    def get_daily_bars(self, code, *, start=None, end=None):
+        first_day = date(2026, 6, 17)
+        return [
+            DailyBar(
+                trade_date=first_day + timedelta(days=index),
+                open=100.0 + index,
+                high=102.0 + index,
+                low=99.0 + index,
+                close=101.0 + index,
+                volume=1000.0 + index,
+                amount=(101.0 + index) * 1000.0,
+                turnover_rate=0.1,
+                adjustment_mode="qfq",
+                provider_name="fixture",
+                source_timestamp=datetime(2026, 9, 4, 8, tzinfo=UTC),
+            )
+            for index in range(80)
+        ]
+
+
+class UnusedProvider:
+    name = "unused"
+
+
+root = Path({str(tmp_path)!r})
+settings = Settings(
+    rule_version={{"name": "simplified", "version": "v1"}},
+    notifications={{"enabled_channels": []}},
+    market_data={{
+        "primary_provider": "fixture",
+        "fallback_provider": "unused",
+        "cache_directory": str(root / "cache"),
+        "cache_ttl_seconds": 3600,
+        "minimum_history_bars": 60,
+        "max_completed_trading_day_lag": 1,
+    }},
+    risk_rules={{
+        "rule_version": "risk-v1",
+        "high_realized_volatility20": 0.45,
+        "overextension_ma20_distance": 0.20,
+        "large_drawdown60": -0.20,
+        "adverse_volume_ratio20": 0.50,
+        "minimum_history_bars": 61,
+    }},
+)
+service = MarketDataService(
+    {{
+        "fixture": FixtureProvider(),
+        "unused": UnusedProvider(),
+    }},
+    primary_provider="fixture",
+    fallback_provider="unused",
+    cache_directory=root / "cache",
+    cache_ttl_seconds=3600,
+    quality_settings=DataQualitySettings(
+        minimum_history_bars=60,
+        max_completed_trading_day_lag=1,
+    ),
+)
+
+
+def fail_before_cache_recovery_ack():
+    raise OSError("simulated restart before cache recovery acknowledgement")
+
+
+service.finalize_staged_cache_commit = fail_before_cache_recovery_ack
+run_daily_report(
+    settings,
+    output_root=root,
+    watchlist=Watchlist(stocks=[{{"code": "600519", "name": "one"}}]),
+    service=service,
+    report_date=date(2026, 9, 4),
+)
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", child],
+        cwd=Path(__file__).parents[1],
+        env={**os.environ, "PYTHONPATH": str(Path(__file__).parents[1] / "src")},
+        check=False,
+    )
+    assert result.returncode != 0
+
+    restarted = MarketDataService(
+        {
+            "fixture": RecordingProvider({"600519": make_bars("600519")}),
+            "unused": RecordingProvider({"600519": make_bars("600519")}),
+        },
+        primary_provider="fixture",
+        fallback_provider="unused",
+        cache_directory=tmp_path / "cache",
+        cache_ttl_seconds=3600,
+        quality_settings=DataQualitySettings(
+            minimum_history_bars=fixture_settings.market_data.minimum_history_bars,
+            max_completed_trading_day_lag=fixture_settings.market_data.max_completed_trading_day_lag,
+        ),
+    )
+    cache_path = restarted._cache._path_for(
+        "fixture", "600519", None, date(2026, 9, 4)
+    )
+    pipeline_module._recover_pending_publications_if_idle(
+        tmp_path, date(2026, 9, 4), service=restarted
+    )
+
+    assert cache_path.exists()
+    assert not list(tmp_path.glob(".publication-*"))
+
+
+def test_startup_removes_newly_created_target_after_hard_exit_at_publish_rename(
+    tmp_path, fixture_settings
+):
+    orphan = tmp_path / ".publication-hard-exit-absent"
+    staged_report = orphan / "reports/2026-09-04"
+    staged_report.mkdir(parents=True)
+    for name in ("report.json", "report.md", "index.html"):
+        (staged_report / name).write_text("new", encoding="utf-8")
+    staged_site = orphan / "site"
+    staged_site.mkdir()
+    (staged_site / "index.html").write_text("new", encoding="utf-8")
+    repo_root = Path(__file__).parents[1]
+    child = f"""
+import os
+from datetime import date
+from pathlib import Path
+import stock_daily_report.pipeline as pipeline
+
+root = Path({str(tmp_path)!r})
+transaction_root = root / ".publication-hard-exit-absent"
+transaction = pipeline._PublicationTransaction(
+    root=root,
+    report_date=date(2026, 9, 4),
+    staged_report_dir=transaction_root / "reports/2026-09-04",
+    staged_snapshot_path=None,
+    staged_site_index=transaction_root / "site/index.html",
+    staged_styles_path=None,
+)
+original_replace = pipeline.os.replace
+
+
+def hard_exit_after_report_publish(source, destination):
+    original_replace(source, destination)
+    if Path(destination) == transaction.report_dir:
+        os._exit(74)
+
+
+pipeline.os.replace = hard_exit_after_report_publish
+transaction.publish()
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", child],
+        cwd=repo_root,
+        env={**os.environ, "PYTHONPATH": str(repo_root / "src")},
+        check=False,
+    )
+    assert result.returncode == 74
+    report_dir = tmp_path / "reports/2026-09-04"
+    assert report_dir.exists()
+
+    with pytest.raises(PipelineError):
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+            provider=RecordingProvider(
+                {"600519": make_bars("600519")}, fail_code="600519"
+            ),
+            report_date=date(2026, 9, 4),
+        )
+
+    assert not report_dir.exists()
+    assert not list(tmp_path.glob(".publication-*"))
+
+
+def test_cache_preparation_failure_preserves_original_target_and_recovery_manifest(
+    tmp_path, fixture_settings, monkeypatch
+):
+    service = MarketDataService(
+        {
+            "fixture": RecordingProvider({"600519": make_bars("600519")}),
+            "unused": RecordingProvider({"600519": make_bars("600519")}),
+        },
+        primary_provider="fixture",
+        fallback_provider="unused",
+        cache_directory=tmp_path / "cache",
+        cache_ttl_seconds=3600,
+        quality_settings=DataQualitySettings(
+            minimum_history_bars=fixture_settings.market_data.minimum_history_bars,
+            max_completed_trading_day_lag=fixture_settings.market_data.max_completed_trading_day_lag,
+        ),
+    )
+    cache_path = service._cache._path_for(
+        "fixture", "600519", None, date(2026, 9, 4)
+    )
+    original_cache_bytes = b"original cache preimage"
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    cache_path.write_bytes(original_cache_bytes)
+    monkeypatch.setattr(service._cache, "load", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        service,
+        "_copy_cache_preimage",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            OSError("injected preimage preparation failure")
+        ),
+    )
+
+    with pytest.raises(CacheRollbackError, match="preimage"):
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+            service=service,
+            report_date=date(2026, 9, 4),
+        )
+
+    assert cache_path.read_bytes() == original_cache_bytes
+    assert list((tmp_path / "cache").glob(".cache-recovery-*"))
 
 
 def test_failed_rollback_retains_recovery_artifacts(
