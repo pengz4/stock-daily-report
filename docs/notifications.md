@@ -24,5 +24,6 @@ export REPORT_BASE_URL='https://<owner>.github.io/<repository>'
 stock-daily-report daily --date 2026-09-04 --output-root .
 ```
 
-`--report-url` overrides `REPORT_BASE_URL` for a single run. Without either
-value, the notification contains a relative link to the dated report.
+`--report-url` is the final absolute report URL and overrides
+`REPORT_BASE_URL` for a single run. An absolute URL is required whenever
+notifications are enabled.

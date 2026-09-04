@@ -1948,6 +1948,49 @@ def test_cli_notifies_only_after_report_pipeline_returns(
     assert capsys.readouterr().out.endswith("\n")
 
 
+def test_cli_treats_explicit_report_url_as_final_url(
+    fixture_settings, monkeypatch
+):
+    settings_data = fixture_settings.model_dump()
+    settings_data["notifications"] = {"enabled_channels": ["wecom"]}
+    settings = Settings.model_validate(settings_data)
+    calls = []
+
+    class FakeNotificationService:
+        def __init__(self, _configured_settings):
+            pass
+
+        def send_report(self, _report, *, report_url):
+            calls.append(report_url)
+
+    monkeypatch.setattr(cli_module, "load_settings", lambda _path: settings)
+    monkeypatch.setattr(
+        cli_module,
+        "load_watchlist",
+        lambda _path: Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "run_daily_report",
+        lambda *args, **kwargs: SimpleNamespace(
+            report=object(), html_path="/tmp/reports/2026-09-04/index.html"
+        ),
+    )
+    monkeypatch.setattr(cli_module, "NotificationService", FakeNotificationService)
+
+    cli_module.main(
+        [
+            "daily",
+            "--date",
+            "2026-09-04",
+            "--report-url",
+            "https://reports.example/reports/2026-09-04/",
+        ]
+    )
+
+    assert calls == ["https://reports.example/reports/2026-09-04/"]
+
+
 def test_cli_reports_notification_failure_without_traceback(
     fixture_settings, monkeypatch, capsys
 ):

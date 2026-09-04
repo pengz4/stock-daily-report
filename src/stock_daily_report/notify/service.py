@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Mapping
+from urllib.parse import urlsplit
 
 from stock_daily_report.models import NotificationSettings
 from stock_daily_report.notify.base import (
@@ -57,10 +58,22 @@ class NotificationService:
     ) -> tuple[NotificationOutcome, ...]:
         """Build and deliver a summary only after report publication."""
 
+        parsed_url = urlsplit(report_url)
+        if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc:
+            outcomes = tuple(
+                NotificationOutcome(
+                    channel=channel,
+                    status="failed",
+                    error="REPORT_BASE_URL or --report-url must be an absolute URL",
+                )
+                for channel in sorted(self.settings.enabled_channels)
+            )
+            raise NotificationDeliveryError(outcomes)
         return self.send(
             NotificationSummary(
                 report_date=report.metadata.report_date.isoformat(),
                 generated_at=report.metadata.generated_at,
+                data_timestamp=report.metadata.latest_source_timestamp,
                 report_url=report_url,
                 stock_count=report.metadata.stock_count,
                 decision_counts=_decision_counts(report),

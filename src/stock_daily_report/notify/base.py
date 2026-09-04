@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import json
+import ssl
 import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime
+from http.client import HTTPException
 from typing import Literal
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -21,6 +23,7 @@ class NotificationSummary:
 
     report_date: str
     generated_at: datetime
+    data_timestamp: datetime
     report_url: str
     stock_count: int
     decision_counts: Mapping[str, int]
@@ -86,9 +89,19 @@ def post_json(
         except WebhookError as error:
             if not error.transient or attempt == max_attempts:
                 raise
-        except (TimeoutError, URLError) as error:
+        except (TimeoutError, HTTPException) as error:
             if attempt == max_attempts:
                 raise WebhookError("webhook network request failed", transient=True) from error
+        except URLError as error:
+            reason = error.reason
+            transient = isinstance(
+                reason, (TimeoutError, ConnectionError, OSError)
+            ) and not isinstance(reason, ssl.SSLError)
+            if not transient or attempt == max_attempts:
+                raise WebhookError(
+                    "webhook network request failed",
+                    transient=transient,
+                ) from error
         sleep(min(4.0, 0.5 * (2 ** (attempt - 1))))
 
 
@@ -115,7 +128,7 @@ def _validate_webhook_response(response_body: bytes) -> None:
         return
     if not isinstance(document, dict):
         return
-    for key in ("errcode", "code"):
+    for key in ("errcode", "code", "StatusCode"):
         value = document.get(key)
         if isinstance(value, int) and value != 0:
             raise WebhookError(f"webhook API returned {key}={value}", transient=False)
@@ -148,17 +161,23 @@ class WebhookNotifier:
         self.sleep = sleep
 
     def send(self, summary: NotificationSummary) -> None:
-        post_json(
-            self.webhook_url,
-            self.build_payload(summary),
-            timeout_seconds=self.timeout_seconds,
-            max_attempts=self.max_attempts,
-            transport=self.transport,
-            sleep=self.sleep,
-        )
+        for payload in self.build_payloads(summary):
+            post_json(
+                self.webhook_url,
+                payload,
+                timeout_seconds=self.timeout_seconds,
+                max_attempts=self.max_attempts,
+                transport=self.transport,
+                sleep=self.sleep,
+            )
 
     def build_payload(self, summary: NotificationSummary) -> dict[str, object]:
         raise NotImplementedError
+
+    def build_payloads(
+        self, summary: NotificationSummary
+    ) -> tuple[dict[str, object], ...]:
+        return (self.build_payload(summary),)
 
 
 def _shorten(value: str, limit: int = 240) -> str:

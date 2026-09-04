@@ -1,4 +1,7 @@
+import ssl
 from datetime import UTC, datetime
+from http.client import IncompleteRead
+from urllib.error import URLError
 
 import pytest
 
@@ -8,6 +11,7 @@ from stock_daily_report.notify.base import (
     NotificationSummary,
     WebhookError,
 )
+from stock_daily_report.notify.feishu import FeishuNotifier
 from stock_daily_report.notify.service import NotificationService
 from stock_daily_report.notify.wecom import WeComNotifier
 
@@ -16,6 +20,7 @@ def _summary() -> NotificationSummary:
     return NotificationSummary(
         report_date="2026-09-04",
         generated_at=datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
+        data_timestamp=datetime(2026, 9, 4, 8, tzinfo=UTC),
         report_url="https://reports.example/2026-09-04/",
         stock_count=1,
         decision_counts={"观察": 1},
@@ -112,6 +117,66 @@ def test_webhook_does_not_retry_non_transient_api_failure():
     assert len(attempts) == 1
 
 
+def test_webhook_does_not_retry_certificate_failure():
+    attempts = []
+
+    def transport(url, body, timeout):
+        attempts.append(1)
+        raise URLError(ssl.SSLError("certificate verify failed"))
+
+    with pytest.raises(WebhookError, match="network request failed"):
+        WeComNotifier(
+            "https://wecom.example/hook",
+            transport=transport,
+            sleep=lambda _: pytest.fail("certificate failure was retried"),
+        ).send(_summary())
+
+    assert attempts == [1]
+
+
+def test_feishu_status_code_failure_is_not_marked_delivered():
+    attempts = []
+
+    def transport(url, body, timeout):
+        attempts.append(1)
+        return 200, b'{"StatusCode":19024,"StatusMessage":"Key Words Not Found"}'
+
+    service = NotificationService(
+        NotificationSettings(enabled_channels={"feishu"}),
+        notifiers={
+            "feishu": FeishuNotifier(
+                "https://feishu.example/hook",
+                transport=transport,
+            )
+        },
+    )
+
+    with pytest.raises(NotificationDeliveryError) as raised:
+        service.send(_summary())
+
+    assert attempts == [1]
+    assert raised.value.outcomes[0].status == "failed"
+
+
+def test_truncated_response_is_recorded_and_does_not_block_other_channels():
+    feishu = FeishuNotifier(
+        "https://feishu.example/hook",
+        transport=lambda url, body, timeout: (_ for _ in ()).throw(
+            IncompleteRead(b"x", 10)
+        ),
+    )
+    wecom = RecordingNotifier()
+    service = NotificationService(
+        NotificationSettings(enabled_channels={"wecom", "feishu"}),
+        notifiers={"feishu": feishu, "wecom": wecom},
+    )
+
+    with pytest.raises(NotificationDeliveryError):
+        service.send(_summary())
+
+    assert len(wecom.calls) == 1
+
+
 def test_service_redacts_webhook_url_from_recorded_failure(monkeypatch):
     secret_url = "https://wecom.example/secret-token"
     monkeypatch.setenv("WECOM_WEBHOOK_URL", secret_url)
@@ -125,3 +190,10 @@ def test_service_redacts_webhook_url_from_recorded_failure(monkeypatch):
 
     assert secret_url not in str(raised.value)
     assert "<redacted>" in str(raised.value)
+
+
+def test_send_report_rejects_relative_report_url():
+    service = NotificationService(NotificationSettings(enabled_channels={"wecom"}))
+
+    with pytest.raises(NotificationDeliveryError, match="absolute URL"):
+        service.send_report(object(), report_url="reports/2026-09-04/index.html")
