@@ -7,6 +7,7 @@ import os
 import re
 import shutil
 import tempfile
+import threading
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -53,6 +54,11 @@ _MAX_RECOVERY_ENTRY_BYTES = 64 * 1024 * 1024
 _MAX_RECOVERY_TOTAL_BYTES = 256 * 1024 * 1024
 _MAX_RECOVERY_MANIFEST_BYTES = 1024 * 1024
 _RECOVERY_CHUNK_BYTES = 1024 * 1024
+
+
+def _publication_owner_token(root: Path) -> str:
+    canonical_root = Path(root).expanduser().resolve()
+    return hashlib.sha256(str(canonical_root).encode("utf-8")).hexdigest()
 
 
 def _fsync_directory(directory: Path) -> None:
@@ -131,6 +137,7 @@ class RawResponseCache:
         self._ttl_seconds = ttl_seconds
         self._secrets = tuple(secret for secret in secrets if secret)
         self._now = now or (lambda: datetime.now(UTC))
+        self._transaction_lock_state = threading.local()
         if recover_pending:
             self._recover_pending_manifests()
 
@@ -186,17 +193,51 @@ class RawResponseCache:
 
     @contextmanager
     def _write_lock(self):
+        with self.transaction_lock() as acquired:
+            if not acquired:
+                raise OSError("Could not acquire cache transaction lock")
+            yield
+
+    @contextmanager
+    def transaction_lock(self, *, nonblocking: bool = False):
+        """Hold the cache transaction lock, reusing it for nested operations."""
+
+        depth = getattr(self._transaction_lock_state, "depth", 0)
+        if depth:
+            self._transaction_lock_state.depth = depth + 1
+            try:
+                yield True
+            finally:
+                self._transaction_lock_state.depth = depth
+            return
+
         self._directory.mkdir(parents=True, exist_ok=True)
         lock_path = self._directory / ".cache.lock"
         lock_file = lock_path.open("a", encoding="utf-8")
         try:
-            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+            flags = fcntl.LOCK_EX
+            if nonblocking:
+                flags |= fcntl.LOCK_NB
             try:
-                yield
+                fcntl.flock(lock_file.fileno(), flags)
+            except BlockingIOError:
+                yield False
+                return
+            self._transaction_lock_state.depth = 1
+            try:
+                yield True
             finally:
+                self._transaction_lock_state.depth = 0
                 fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
         finally:
             lock_file.close()
+
+    @contextmanager
+    def _transaction_write_lock(self):
+        with self.transaction_lock() as acquired:
+            if not acquired:
+                raise OSError("Could not acquire cache transaction lock")
+            yield
 
     def _store_unlocked(
         self,
@@ -271,7 +312,7 @@ class RawResponseCache:
     ) -> None:
         if not self._directory.exists():
             return
-        with self._write_lock():
+        with self._transaction_write_lock():
             recovery_paths = sorted(self._directory.glob(".cache-recovery-*"))
             if len(recovery_paths) > _MAX_RECOVERY_MANIFESTS:
                 raise CacheRollbackError(
@@ -326,6 +367,11 @@ class RawResponseCache:
             or not isinstance(manifest["entries"], list)
         ):
             raise OSError(f"Invalid cache recovery manifest: {manifest_path}")
+        owner_mismatch = self._publication_owner_mismatch(
+            manifest, publication_root=publication_root
+        )
+        if owner_mismatch is not None:
+            raise CacheRollbackError(recovery_path, owner_mismatch)
         state = manifest["state"]
         if state not in {
             "copying",
@@ -493,11 +539,80 @@ class RawResponseCache:
         _fsync_directory(self._directory)
 
     @staticmethod
+    def _publication_owner_mismatch(
+        manifest: Mapping[str, object], *, publication_root: Path | None
+    ) -> str | None:
+        if publication_root is None:
+            return None
+        persisted_root_value = manifest.get("publication_root")
+        publication_manifest_value = manifest.get("publication_manifest")
+        if persisted_root_value is None and publication_manifest_value is None:
+            return None
+        try:
+            if persisted_root_value is None:
+                if not isinstance(publication_manifest_value, str):
+                    return "Cache recovery has an invalid publication root owner"
+                publication_manifest = Path(publication_manifest_value)
+                persisted_root = publication_manifest.parent.parent
+                persisted_root_value = str(persisted_root)
+            elif isinstance(persisted_root_value, str):
+                persisted_root = Path(persisted_root_value)
+            else:
+                return "Cache recovery has an invalid publication root owner"
+            expected_root = Path(publication_root).expanduser().resolve()
+            if (
+                not persisted_root.is_absolute()
+                or persisted_root.is_symlink()
+                or persisted_root.resolve(strict=False) != expected_root
+            ):
+                return (
+                    "Cache recovery belongs to another publication root; "
+                    f"recovery artifacts retained for {persisted_root_value}"
+                )
+            if publication_manifest_value is not None:
+                if not isinstance(publication_manifest_value, str):
+                    return "Cache recovery has an invalid publication root owner"
+                publication_manifest = Path(publication_manifest_value)
+                if (
+                    not publication_manifest.is_absolute()
+                    or publication_manifest.is_symlink()
+                    or publication_manifest.parent.is_symlink()
+                    or publication_manifest.parent.parent.is_symlink()
+                    or publication_manifest.name != "manifest.json"
+                    or not publication_manifest.parent.name.startswith(".publication-")
+                    or publication_manifest.parent.parent.resolve(strict=False)
+                    != persisted_root.resolve(strict=False)
+                ):
+                    return (
+                        "Cache recovery belongs to another publication root; "
+                        "recovery artifacts retained"
+                    )
+            owner_token = manifest.get("publication_owner_token")
+            if owner_token is not None and (
+                not isinstance(owner_token, str)
+                or owner_token != _publication_owner_token(persisted_root)
+            ):
+                return (
+                    "Cache recovery owner token mismatch; recovery artifacts "
+                    "retained"
+                )
+        except (OSError, RuntimeError, ValueError):
+            return "Cache recovery has an invalid publication root owner"
+        return None
+
+    @staticmethod
     def _publication_commit_is_durable(
         manifest: Mapping[str, object],
         *,
         publication_root: Path | None = None,
     ) -> bool:
+        if (
+            RawResponseCache._publication_owner_mismatch(
+                manifest, publication_root=publication_root
+            )
+            is not None
+        ):
+            return False
         publication_manifest = manifest.get("publication_manifest")
         if publication_manifest is None:
             return True
@@ -673,6 +788,7 @@ class MarketDataService:
         self._cache_recovery_path: Path | None = None
         self._publication_manifest_path: Path | None = None
         self._publication_root: Path | None = None
+        self._publication_owner_token: str | None = None
 
     def recover_pending_cache_manifests(
         self, *, publication_root: Path | None = None
@@ -783,7 +899,7 @@ class MarketDataService:
         staged_writes = tuple(self._staged_cache_writes)
         if not staged_writes:
             return
-        with self._cache._write_lock():
+        with self._cache._transaction_write_lock():
             paths = [
                 self._cache._path_for(provider_name, code, start, end)
                 for provider_name, code, start, end, _ in staged_writes
@@ -813,7 +929,9 @@ class MarketDataService:
                 self._cache._persist_recovery_manifest(recovery_path, manifest)
             except BaseException as commit_error:
                 try:
-                    self._cache._replay_recovery_manifest(recovery_path)
+                    self._cache._replay_recovery_manifest(
+                        recovery_path, publication_root=self._publication_root
+                    )
                     self._cache_recovery_path = None
                 except BaseException as restore_error:
                     raise CacheRollbackError(
@@ -832,6 +950,9 @@ class MarketDataService:
         if publication_root is None:
             publication_root = self._publication_manifest_path.parent.parent
         self._publication_root = Path(publication_root).expanduser().resolve()
+        self._publication_owner_token = _publication_owner_token(
+            self._publication_root
+        )
 
     def finalize_staged_cache_commit(self) -> None:
         """Discard a committed cache recovery manifest after publication cleanup."""
@@ -839,7 +960,7 @@ class MarketDataService:
         recovery_path = self._cache_recovery_path
         if recovery_path is None:
             return
-        with self._cache._write_lock():
+        with self._cache._transaction_write_lock():
             manifest = self._load_recovery_manifest_for_update(recovery_path)
             if manifest["state"] != "committed":
                 raise CacheRollbackError(
@@ -863,11 +984,13 @@ class MarketDataService:
         recovery_path = self._cache_recovery_path
         if recovery_path is None:
             return
-        with self._cache._write_lock():
+        with self._cache._transaction_write_lock():
             manifest = self._load_recovery_manifest_for_update(recovery_path)
             manifest["state"] = "restoring"
             self._cache._persist_recovery_manifest(recovery_path, manifest)
-            self._cache._replay_recovery_manifest(recovery_path)
+            self._cache._replay_recovery_manifest(
+                recovery_path, publication_root=self._publication_root
+            )
         self._cache_recovery_path = None
 
     def discard_staged_cache_writes(self) -> None:
@@ -903,6 +1026,7 @@ class MarketDataService:
                 if self._publication_root is not None
                 else None
             ),
+            "publication_owner_token": self._publication_owner_token,
             "entries": [
                 {
                     "path": path.name,

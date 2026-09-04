@@ -342,6 +342,188 @@ def test_cache_recovery_waits_for_publication_lock_before_replaying(
     assert not recovery.exists()
 
 
+def test_pending_cache_recovery_is_a_precondition_before_fetching(
+    tmp_path, fixture_settings
+):
+    cache_directory = tmp_path / "cache"
+    (cache_directory / ".cache-recovery-pending").mkdir(parents=True)
+    provider = RecordingProvider({"600519": make_bars("600519")})
+    service = MarketDataService(
+        {
+            "fixture": provider,
+            "unused": RecordingProvider({"600519": make_bars("600519")}),
+        },
+        primary_provider="fixture",
+        fallback_provider="unused",
+        cache_directory=cache_directory,
+        cache_ttl_seconds=3600,
+        quality_settings=DataQualitySettings(
+            minimum_history_bars=fixture_settings.market_data.minimum_history_bars,
+            max_completed_trading_day_lag=fixture_settings.market_data.max_completed_trading_day_lag,
+        ),
+    )
+    service._staged_cache_writes.append(
+        ("fixture", "staged", None, date(2026, 9, 4), [{"close": 1.0}])
+    )
+
+    lock_entered = threading.Event()
+    release_lock = threading.Event()
+
+    def hold_cache_lock():
+        with service._cache._write_lock():
+            lock_entered.set()
+            release_lock.wait(timeout=5)
+
+    lock_holder = threading.Thread(target=hold_cache_lock)
+    lock_holder.start()
+    assert lock_entered.wait(timeout=5)
+    try:
+        with pytest.raises(CacheRollbackError, match="recovery lock"):
+            run_daily_report(
+                fixture_settings,
+                output_root=tmp_path,
+                watchlist=Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+                service=service,
+                report_date=date(2026, 9, 4),
+            )
+    finally:
+        release_lock.set()
+        lock_holder.join(timeout=5)
+
+    assert provider.calls == []
+    assert service._staged_cache_writes == []
+    assert (cache_directory / ".cache-recovery-pending").exists()
+
+
+def test_cache_lock_is_held_through_publication_acknowledgement_and_cleanup(
+    tmp_path, fixture_settings, monkeypatch
+):
+    service = MarketDataService(
+        {
+            "fixture": RecordingProvider({"600519": make_bars("600519")}),
+            "unused": RecordingProvider({"600519": make_bars("600519")}),
+        },
+        primary_provider="fixture",
+        fallback_provider="unused",
+        cache_directory=tmp_path / "cache",
+        cache_ttl_seconds=3600,
+        quality_settings=DataQualitySettings(
+            minimum_history_bars=fixture_settings.market_data.minimum_history_bars,
+            max_completed_trading_day_lag=fixture_settings.market_data.max_completed_trading_day_lag,
+        ),
+    )
+    writer_finished = threading.Event()
+    writer_thread: threading.Thread | None = None
+    original_commit = service.commit_staged_cache_writes
+
+    def writer():
+        service._cache.store(
+            "fixture",
+            "concurrent",
+            None,
+            date(2026, 9, 4),
+            [{"close": 2.0}],
+        )
+        writer_finished.set()
+
+    def observe_commit():
+        nonlocal writer_thread
+        original_commit()
+        writer_thread = threading.Thread(target=writer)
+        writer_thread.start()
+        assert not writer_finished.wait(timeout=0.2)
+
+    monkeypatch.setattr(service, "commit_staged_cache_writes", observe_commit)
+    try:
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+            service=service,
+            report_date=date(2026, 9, 4),
+        )
+    finally:
+        if writer_thread is not None:
+            writer_thread.join(timeout=5)
+
+    assert writer_finished.is_set()
+    assert service._cache.load(
+        "fixture", "concurrent", None, date(2026, 9, 4)
+    ) == [{"close": 2.0}]
+
+
+def test_cache_recovery_rejects_cross_output_root_without_rollback(
+    tmp_path, fixture_settings
+):
+    shared_cache = tmp_path / "shared-cache"
+    root_a = tmp_path / "output-a"
+    root_b = tmp_path / "output-b"
+    root_a.mkdir()
+    root_b.mkdir()
+    publication_manifest = root_a / ".publication-owner" / "manifest.json"
+    publication_manifest.parent.mkdir()
+    publication_manifest.write_text(
+        json.dumps({"state": "committed"}), encoding="utf-8"
+    )
+    service_a = MarketDataService(
+        {
+            "fixture": RecordingProvider({"600519": make_bars("600519")}),
+            "unused": RecordingProvider({"600519": make_bars("600519")}),
+        },
+        primary_provider="fixture",
+        fallback_provider="unused",
+        cache_directory=shared_cache,
+        cache_ttl_seconds=3600,
+        quality_settings=DataQualitySettings(minimum_history_bars=60),
+    )
+    service_a.fetch(
+        "600519",
+        end=date(2026, 9, 4),
+        as_of=date(2026, 9, 4),
+        defer_cache=True,
+    )
+    service_a.set_publication_recovery_context(
+        publication_manifest, publication_root=root_a
+    )
+    service_a.commit_staged_cache_writes()
+    cache_path = service_a._cache._path_for(
+        "fixture", "600519", None, date(2026, 9, 4)
+    )
+    recovery_paths = list(shared_cache.glob(".cache-recovery-*"))
+    assert cache_path.exists()
+    assert len(recovery_paths) == 1
+    recovery_manifest = json.loads(
+        (recovery_paths[0] / "manifest.json").read_text(encoding="utf-8")
+    )
+    assert recovery_manifest["publication_owner_token"]
+
+    provider_b = RecordingProvider({"600519": make_bars("600519")})
+    service_b = MarketDataService(
+        {
+            "fixture": provider_b,
+            "unused": RecordingProvider({"600519": make_bars("600519")}),
+        },
+        primary_provider="fixture",
+        fallback_provider="unused",
+        cache_directory=shared_cache,
+        cache_ttl_seconds=3600,
+        quality_settings=DataQualitySettings(minimum_history_bars=60),
+    )
+
+    with pytest.raises(CacheRollbackError, match="another publication root"):
+        run_daily_report(
+            fixture_settings,
+            output_root=root_b,
+            watchlist=Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+            service=service_b,
+            report_date=date(2026, 9, 4),
+        )
+
+    assert provider_b.calls == []
+    assert cache_path.exists()
+    assert recovery_paths[0].exists()
+
+
 def test_restart_recovery_uses_absolute_publication_paths_from_another_cwd(
     tmp_path, fixture_settings
 ):

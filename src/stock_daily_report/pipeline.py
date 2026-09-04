@@ -161,15 +161,19 @@ def run_daily_report(
         )
     elif active_service is None:
         recovery_cache = _build_recovery_cache(active_settings, root)
-    _recover_pending_publications_if_idle(
-        root,
-        active_report_date,
-        service=active_service,
-        cache=recovery_cache,
-    )
 
     transaction_root: Path | None = None
     try:
+        cache_lock = _cache_lock_owner(
+            service=active_service, cache=recovery_cache
+        )
+        _recover_pending_publications_if_idle(
+            root,
+            active_report_date,
+            service=active_service,
+            cache=recovery_cache,
+            cache_lock=cache_lock,
+        )
         for stock in sorted(active_watchlist.stocks, key=lambda item: item.code):
             try:
                 result = (
@@ -207,7 +211,9 @@ def run_daily_report(
         json_path = report_dir / "report.json"
         markdown_path = report_dir / "report.md"
         html_path = report_dir / "index.html"
-        with _publication_lock(root, active_report_date):
+        with _publication_lock(
+            root, active_report_date, cache=cache_lock
+        ):
             if active_service is not None:
                 active_service.recover_pending_cache_manifests(
                     publication_root=root
@@ -340,6 +346,7 @@ def _recover_pending_publications_if_idle(
     *,
     service: MarketDataService | None = None,
     cache: RawResponseCache | None = None,
+    cache_lock: RawResponseCache | None = None,
 ) -> None:
     root = Path(root).expanduser().resolve()
     transaction_paths = sorted(root.glob(".publication-*"))
@@ -370,12 +377,16 @@ def _recover_pending_publications_if_idle(
             if not transaction_dates:
                 transaction_dates.add(report_date)
         recovery_dates.update(transaction_dates)
-    if (
-        service is not None and service.has_pending_cache_manifests()
-    ) or (cache is not None and cache.has_pending_manifests()):
+    pending_cache = (
+        (service is not None and service.has_pending_cache_manifests())
+        or (cache is not None and cache.has_pending_manifests())
+    )
+    if pending_cache:
         recovery_dates.add(report_date)
     for transaction_date in sorted(recovery_dates):
-        with _try_publication_lock(root, transaction_date) as acquired:
+        with _try_publication_lock(
+            root, transaction_date, cache=cache_lock
+        ) as acquired:
             if acquired:
                 if service is not None:
                     service.recover_pending_cache_manifests(
@@ -384,10 +395,19 @@ def _recover_pending_publications_if_idle(
                 elif cache is not None:
                     cache.recover_pending_manifests(publication_root=root)
                 _recover_pending_publications(root, transaction_date)
+            elif pending_cache and cache_lock is not None:
+                recovery_path = getattr(cache_lock, "_directory", None)
+                raise CacheRollbackError(
+                    recovery_path,
+                    "Could not acquire recovery lock before fetching; "
+                    "pending cache recovery is a precondition",
+                )
 
 
 @contextmanager
-def _try_publication_lock(root: Path, report_date: date):
+def _try_publication_lock(
+    root: Path, report_date: date, *, cache: RawResponseCache | None = None
+):
     root = Path(root).expanduser().resolve()
     snapshot_directory = root / "snapshots" / report_date.isoformat()
     snapshot_directory.mkdir(parents=True, exist_ok=True)
@@ -408,7 +428,14 @@ def _try_publication_lock(root: Path, report_date: date):
         except BlockingIOError:
             yield False
             return
-        yield True
+        if cache is None:
+            yield True
+            return
+        with cache.transaction_lock(nonblocking=True) as cache_acquired:
+            if not cache_acquired:
+                yield False
+                return
+            yield True
     finally:
         if site_acquired:
             fcntl.flock(site_lock.fileno(), fcntl.LOCK_UN)
@@ -939,7 +966,9 @@ def _write_publication_manifest(
 
 
 @contextmanager
-def _publication_lock(root: Path, report_date: date):
+def _publication_lock(
+    root: Path, report_date: date, *, cache: RawResponseCache | None = None
+):
     """Lock date, then shared site files; cache locks are acquired last.
 
     Every pipeline-owned cache recovery or staged cache commit runs inside this
@@ -954,7 +983,21 @@ def _publication_lock(root: Path, report_date: date):
     with _snapshot_write_lock(snapshot_directory), _snapshot_write_lock(
         site_directory, lock_name=".publication.lock"
     ):
-        yield
+        if cache is None:
+            yield
+            return
+        with cache.transaction_lock():
+            yield
+
+
+def _cache_lock_owner(
+    *,
+    service: MarketDataService | None,
+    cache: RawResponseCache | None,
+) -> RawResponseCache | None:
+    if service is not None:
+        return getattr(service, "_cache", None)
+    return cache
 
 
 def _publish_report_transaction(
