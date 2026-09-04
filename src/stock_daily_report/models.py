@@ -1,6 +1,8 @@
-"""Typed configuration models for the report pipeline."""
+"""Typed configuration and normalized market-data models for the pipeline."""
 
+import math
 import re
+from datetime import UTC, date, datetime
 from typing import Annotated, Literal
 
 from pydantic import (
@@ -141,3 +143,84 @@ class Settings(BaseModel):
 
     rule_version: RuleVersion
     notifications: NotificationSettings
+
+
+class DailyBar(BaseModel):
+    """One normalized daily OHLC bar from a named market-data provider.
+
+    Source timestamps must be timezone-aware. They are normalized to UTC so
+    serialized snapshots have one unambiguous representation regardless of
+    the provider's local exchange timezone.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    trade_date: date
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: float
+    amount: float
+    turnover_rate: float
+    adjustment_mode: NonEmptyString
+    provider_name: NonEmptyString
+    source_timestamp: datetime
+
+    @field_validator("trade_date", mode="before")
+    @classmethod
+    def reject_datetime_trade_dates(cls, value: object) -> object:
+        if isinstance(value, datetime):
+            raise ValueError("trade_date must be a date, not a datetime")  # noqa: TRY004
+        return value
+
+    @field_validator("open", "high", "low", "close", mode="before")
+    @classmethod
+    def require_numeric_prices(cls, value: object) -> object:
+        if isinstance(value, bool):
+            raise ValueError("OHLC values must be numeric")  # noqa: TRY004
+        return value
+
+    @field_validator("volume", "amount", "turnover_rate", mode="before")
+    @classmethod
+    def require_numeric_measures(cls, value: object) -> object:
+        if isinstance(value, bool):
+            raise ValueError(  # noqa: TRY004
+                "volume, amount, and turnover_rate must be numeric"
+            )
+        return value
+
+    @field_validator("open", "high", "low", "close")
+    @classmethod
+    def require_positive_finite_prices(cls, value: float) -> float:
+        if not math.isfinite(value) or value <= 0:
+            raise ValueError("OHLC values must be finite and strictly positive")
+        return value
+
+    @field_validator("volume", "amount", "turnover_rate")
+    @classmethod
+    def require_non_negative_finite_measures(cls, value: float) -> float:
+        if not math.isfinite(value) or value < 0:
+            raise ValueError(
+                "volume, amount, and turnover_rate must be finite and non-negative"
+            )
+        return value
+
+    @field_validator("source_timestamp")
+    @classmethod
+    def require_aware_source_timestamp(cls, value: datetime) -> datetime:
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("source_timestamp must be timezone-aware")
+        return value.astimezone(UTC)
+
+    @model_validator(mode="after")
+    def validate_ohlc_ordering(self) -> "DailyBar":
+        if not (
+            self.low <= min(self.open, self.close)
+            and max(self.open, self.close) <= self.high
+        ):
+            raise ValueError(
+                "OHLC values must satisfy "
+                "low <= min(open, close) <= max(open, close) <= high"
+            )
+        return self
