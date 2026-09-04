@@ -21,6 +21,10 @@ def _read_yaml_mapping(path: str | Path) -> dict[str, object]:
         document = yaml.safe_load(config_path.read_text(encoding="utf-8"))
     except FileNotFoundError as error:
         raise ConfigurationError(f"Configuration file not found: {config_path}") from error
+    except UnicodeDecodeError as error:
+        raise ConfigurationError(
+            f"Configuration file must be valid UTF-8: {config_path}"
+        ) from error
     except OSError as error:
         raise ConfigurationError(
             f"Could not read configuration file: {config_path}"

@@ -16,6 +16,54 @@ def test_load_watchlist_returns_valid_a_share_codes(tmp_path):
 
 
 @pytest.mark.parametrize(
+    ("code", "market"),
+    [
+        ("600519", "Shanghai main board"),
+        ("000001", "Shenzhen main board"),
+        ("300750", "ChiNext"),
+        ("688981", "STAR Market"),
+        ("430047", "Beijing Stock Exchange 430 prefix"),
+        ("831010", "Beijing Stock Exchange 83 prefix"),
+        ("920019", "Beijing Stock Exchange 92 prefix"),
+    ],
+)
+def test_load_watchlist_accepts_supported_mainland_a_share_codes(
+    tmp_path, code, market
+):
+    path = tmp_path / "watchlist.yaml"
+    path.write_text(
+        f"stocks:\n  - code: '{code}'\n    name: {market}\n",
+        encoding="utf-8",
+    )
+
+    watchlist = load_watchlist(path)
+
+    assert watchlist.stocks[0].code == code
+
+
+@pytest.mark.parametrize("code", ["200012", "900901", "100000", "500000", "700000"])
+def test_load_watchlist_rejects_non_a_share_code_prefixes(tmp_path, code):
+    path = tmp_path / "watchlist.yaml"
+    path.write_text(
+        f"stocks:\n  - code: '{code}'\n    name: 非 A 股\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ConfigurationError, match="supported mainland A-share code prefix"
+    ):
+        load_watchlist(path)
+
+
+def test_load_watchlist_rejects_empty_stock_list(tmp_path):
+    path = tmp_path / "watchlist.yaml"
+    path.write_text("stocks: []\n", encoding="utf-8")
+
+    with pytest.raises(ConfigurationError, match="at least one stock"):
+        load_watchlist(path)
+
+
+@pytest.mark.parametrize(
     "document",
     [
         "stocks:\n  - name: 贵州茅台\n",
@@ -146,6 +194,16 @@ def test_configuration_loaders_raise_clear_errors_for_invalid_documents(
         path.write_text(document, encoding="utf-8")
 
     with pytest.raises(ConfigurationError, match=expected_message):
+        load_watchlist(path)
+
+
+def test_load_watchlist_rejects_non_utf8_documents(tmp_path):
+    path = tmp_path / "watchlist.yaml"
+    path.write_bytes(b"stocks:\n  - code: '\xff'\n")
+
+    with pytest.raises(
+        ConfigurationError, match="must be valid UTF-8"
+    ):
         load_watchlist(path)
 
 

@@ -1,5 +1,6 @@
 """Typed configuration models for the report pipeline."""
 
+import re
 from typing import Annotated, Literal
 
 from pydantic import (
@@ -13,18 +14,38 @@ from pydantic import (
 )
 
 NonEmptyString = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+A_SHARE_CODE_PATTERN = re.compile(
+    r"^(?:00[0-3]\d{3}|30[01]\d{3}|60[0135]\d{3}|688\d{3}|430\d{3}"
+    r"|8[3-9]\d{4}|92\d{4})$"
+)
 
 
 class WatchlistStock(BaseModel):
-    """A tracked mainland A-share security."""
+    """A tracked mainland A-share security.
+
+    Supported code classes are Shenzhen main-board (000/001/002/003), ChiNext
+    (300/301), Shanghai main-board (600/601/603/605), STAR Market (688), and
+    Beijing Stock Exchange (430, 83--89, and 92) prefixes.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
-    code: str = Field(pattern=r"^\d{6}$")
+    code: str
     name: NonEmptyString
     group: str = "default"
     tags: list[str] = Field(default_factory=list)
     news_enabled: bool = True
+
+    @field_validator("code")
+    @classmethod
+    def require_supported_a_share_code(cls, value: str) -> str:
+        if not A_SHARE_CODE_PATTERN.fullmatch(value):
+            raise ValueError(
+                "stock code must use a supported mainland A-share code prefix "
+                "(SZ 000/001/002/003, ChiNext 300/301, SH 600/601/603/605, "
+                "STAR 688, BSE 430/83--89/92)"
+            )
+        return value
 
 
 class Watchlist(BaseModel):
@@ -33,6 +54,13 @@ class Watchlist(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     stocks: list[WatchlistStock]
+
+    @field_validator("stocks")
+    @classmethod
+    def require_stocks(cls, value: list[WatchlistStock]) -> list[WatchlistStock]:
+        if not value:
+            raise ValueError("watchlist must contain at least one stock")
+        return value
 
     @model_validator(mode="after")
     def ensure_unique_codes(self) -> "Watchlist":
