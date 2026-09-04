@@ -126,13 +126,16 @@ class _StrokeCandidate:
     event: StrictEvent
     start_index: int
     end_index: int
+    start_price: float
+    end_price: float
 
 
 class StrictChanAnalyzer:
     """Analyze a copied bar prefix using the strict-v1 profile."""
 
     def __init__(self, profile: StrictProfile | None = None) -> None:
-        self.profile = profile or load_strict_profile()
+        loaded = profile or load_strict_profile()
+        self.profile = StrictProfile.model_validate(loaded.model_dump())
 
     def analyze(self, bars: list[DailyBar]) -> StrictChanResult:
         copied = self._validate_and_copy(bars)
@@ -290,6 +293,25 @@ class StrictChanAnalyzer:
                         and candidate.event.price < active.event.price
                     )
                 ):
+                    if strokes:
+                        previous = strokes[-1]
+                        assert candidate.event.price is not None
+                        strokes[-1] = _StrokeCandidate(
+                            event=StrictEvent(
+                                kind="stroke",
+                                formed_at=previous.event.formed_at,
+                                confirmed_at=candidate.event.confirmed_at,
+                                tradable_at=candidate.event.tradable_at,
+                                status="confirmed",
+                                reason_code="strict_alternating_fractals",
+                                low=min(previous.start_price, candidate.event.price),
+                                high=max(previous.start_price, candidate.event.price),
+                            ),
+                            start_index=previous.start_index,
+                            end_index=candidate.processed_index,
+                            start_price=previous.start_price,
+                            end_price=candidate.event.price,
+                        )
                     active = candidate
                 continue
             if (
@@ -314,6 +336,8 @@ class StrictChanAnalyzer:
                     ),
                     start_index=active.processed_index,
                     end_index=candidate.processed_index,
+                    start_price=first_price,
+                    end_price=second_price,
                 )
             )
             active = candidate
@@ -331,22 +355,8 @@ class StrictChanAnalyzer:
     ) -> tuple[list[StrictEvent], list[StrictEvent]]:
         candidates: list[StrictEvent] = []
         areas: list[StrictEvent] = []
-        if len(strokes) >= 2:
-            overlap = self._overlap(strokes[-2:])
-            if overlap is not None:
-                candidates.append(
-                    StrictEvent(
-                        kind="central_area",
-                        formed_at=strokes[-1].event.formed_at,
-                        confirmed_at=None,
-                        tradable_at=None,
-                        status="candidate",
-                        reason_code="strict_two_stroke_overlap_candidate",
-                        low=overlap[0],
-                        high=overlap[1],
-                    )
-                )
         start = 0
+        consumed_until = 0
         while start + self.profile.minimum_central_strokes <= len(strokes):
             group = strokes[start : start + self.profile.minimum_central_strokes]
             overlap = self._overlap(group)
@@ -379,12 +389,29 @@ class StrictChanAnalyzer:
                 )
             )
             start = end
+            consumed_until = max(consumed_until, end)
+        trailing = strokes[consumed_until:]
+        if len(trailing) >= 2:
+            overlap = self._overlap(trailing[-2:])
+            if overlap is not None:
+                candidates.append(
+                    StrictEvent(
+                        kind="central_area",
+                        formed_at=trailing[-1].event.formed_at,
+                        confirmed_at=None,
+                        tradable_at=None,
+                        status="candidate",
+                        reason_code="strict_two_stroke_overlap_candidate",
+                        low=overlap[0],
+                        high=overlap[1],
+                    )
+                )
         return candidates, areas
 
     @staticmethod
     def _find_segments(strokes: list[_StrokeCandidate]) -> list[StrictEvent]:
         segments: list[StrictEvent] = []
-        for start in range(0, len(strokes) - 2, 2):
+        for start in range(0, len(strokes) - 2, 3):
             group = strokes[start : start + 3]
             if len(group) < 3:
                 break

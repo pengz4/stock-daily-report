@@ -57,6 +57,15 @@ def test_strict_profile_rejects_unversioned_rule_changes():
         )
 
 
+def test_strict_analyzer_revalidates_supplied_profile():
+    invalid = load_strict_profile().model_copy(
+        update={"minimum_stroke_separation": 99}
+    )
+
+    with pytest.raises(ValueError, match="strict-v1"):
+        StrictChanAnalyzer(invalid)
+
+
 def test_strict_analyzer_preserves_confirmation_before_tradeability():
     profile = load_strict_profile()
     result = StrictChanAnalyzer(profile).analyze(_bars())
@@ -202,8 +211,33 @@ def test_strict_builds_segments_and_preserves_initial_central_range():
 
     assert result.segments
     assert result.segments[0].reason_code == "strict_three_stroke_feature_sequence"
+    assert len(result.segments) == 1
     assert result.central_areas[0].low == 5
     assert result.central_areas[0].high == 15
+    assert result.central_candidates == ()
+
+
+def test_strict_replaces_emitted_stroke_endpoint_with_more_extreme_fractal():
+    result = StrictChanAnalyzer(load_strict_profile()).analyze(
+        _bars_from_ranges(
+            [
+                [8, 5],
+                [5, 4],
+                [10, 7],
+                [8, 5],
+                [17, 14],
+                [6, 5],
+                [20, 13],
+                [15, 12],
+                [12, 8],
+                [5, 3],
+                [15, 7],
+            ]
+        )
+    )
+
+    assert len(result.strokes) == 2
+    assert result.strokes[0].high == result.strokes[1].high == 20
 
 
 def test_strict_analyzer_rejects_unordered_input_without_mutating_it():
