@@ -22,9 +22,7 @@ def test_load_watchlist_returns_valid_a_share_codes(tmp_path):
         ("000001", "Shenzhen main board"),
         ("300750", "ChiNext"),
         ("688981", "STAR Market"),
-        ("430047", "Beijing Stock Exchange 430 prefix"),
-        ("831010", "Beijing Stock Exchange 83 prefix"),
-        ("920019", "Beijing Stock Exchange 92 prefix"),
+        ("920001", "Beijing Stock Exchange"),
     ],
 )
 def test_load_watchlist_accepts_supported_mainland_a_share_codes(
@@ -39,6 +37,20 @@ def test_load_watchlist_accepts_supported_mainland_a_share_codes(
     watchlist = load_watchlist(path)
 
     assert watchlist.stocks[0].code == code
+
+
+@pytest.mark.parametrize("code", ["430047", "831010", "840000"])
+def test_load_watchlist_rejects_legacy_bse_aliases(tmp_path, code):
+    path = tmp_path / "watchlist.yaml"
+    path.write_text(
+        f"stocks:\n  - code: '{code}'\n    name: 旧北交所代码\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ConfigurationError, match="legacy BSE aliases are not accepted"
+    ):
+        load_watchlist(path)
 
 
 @pytest.mark.parametrize("code", ["200012", "900901", "100000", "500000", "700000"])
