@@ -20,6 +20,13 @@ from stock_daily_report.risk.rules import (
 
 DecisionLabel = Literal["偏强", "观察", "偏弱", "风险升高", "等待确认"]
 
+_THRESHOLD_DEPENDENT_TREND_EVIDENCE = frozenset(
+    {
+        "realized_volatility20_exceeds_risk_threshold",
+        "drawdown60_exceeds_risk_threshold",
+    }
+)
+
 
 class KeyPriceLevel(BaseModel):
     """A finite price level copied from a typed technical or structure input."""
@@ -157,7 +164,11 @@ def _trend_evidence(
     trend: TrendClassification | None,
 ) -> tuple[str, ...]:
     if trend is not None:
-        return trend.evidence_codes
+        return tuple(
+            code
+            for code in trend.evidence_codes
+            if code not in _THRESHOLD_DEPENDENT_TREND_EVIDENCE
+        )
     if structure.state.status == "confirmed":
         return (f"structure_{structure.state.label}",)
     if _finite(metrics.close) is None or _finite(metrics.ma20) is None:

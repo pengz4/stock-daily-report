@@ -270,7 +270,7 @@ def test_custom_thresholds_change_behavior_and_configuration_hash():
     ).config_hash
 
 
-def test_custom_thresholds_override_supplied_classifier_risk_label():
+def test_custom_thresholds_filter_supplied_classifier_risk_evidence():
     from stock_daily_report.decision import decide
     from stock_daily_report.indicators.technical import calculate_technical_metrics
     from stock_daily_report.indicators.trend import classify_trend
@@ -303,7 +303,61 @@ def test_custom_thresholds_override_supplied_classifier_risk_label():
 
     assert decision.label == "偏强"
     assert decision.risk_codes == ()
-    assert "drawdown60_exceeds_risk_threshold" in decision.evidence
+    assert "drawdown60_exceeds_risk_threshold" not in decision.evidence
+    assert "price_above_rising_moving_averages" in decision.evidence
+
+
+def test_configured_threshold_risks_have_matching_decision_evidence():
+    from stock_daily_report.decision import decide
+    from stock_daily_report.indicators.trend import TrendClassification, TrendEvidence
+
+    settings = Settings(
+        rule_version={"name": "simplified", "version": "v1"},
+        notifications={"enabled_channels": []},
+        risk_rules=RiskRulesSettings(
+            rule_version="risk-test-v1",
+            high_realized_volatility20=0.40,
+            overextension_ma20_distance=0.30,
+            large_drawdown60=-0.10,
+            adverse_volume_ratio20=0.20,
+            minimum_history_bars=60,
+        ),
+    )
+    trend = TrendClassification(
+        label="偏强",
+        evidence=(
+            TrendEvidence(
+                "price_above_rising_moving_averages",
+                "neutral trend context",
+            ),
+            TrendEvidence(
+                "realized_volatility20_exceeds_risk_threshold",
+                "classifier threshold detail",
+            ),
+            TrendEvidence(
+                "drawdown60_exceeds_risk_threshold",
+                "classifier threshold detail",
+            ),
+        ),
+    )
+
+    decision = decide(
+        metrics=metrics(realized_volatility20=0.50, drawdown60=-0.15),
+        structure=structure(),
+        quality=valid_quality(),
+        trend=trend,
+        settings=settings,
+    )
+
+    assert decision.risk_codes == (
+        "high_realized_volatility20",
+        "large_drawdown60",
+    )
+    assert "high_realized_volatility20" in decision.evidence
+    assert "large_drawdown60" in decision.evidence
+    assert "realized_volatility20_exceeds_risk_threshold" not in decision.evidence
+    assert "drawdown60_exceeds_risk_threshold" not in decision.evidence
+    assert decision.evidence[0] == "price_above_rising_moving_averages"
 
 
 @pytest.mark.parametrize(
