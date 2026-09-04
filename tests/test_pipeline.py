@@ -987,6 +987,108 @@ def test_date_lock_file_remains_stable_after_failed_publication(
     assert lock_path.stat().st_ino == lock_inode
 
 
+def test_date_lock_file_remains_stable_after_prepublication_failure(
+    tmp_path, fixture_settings
+):
+    failing_provider = RecordingProvider(
+        {"600519": make_bars("600519")}, fail_code="600519"
+    )
+    service = MarketDataService(
+        {
+            "fixture": failing_provider,
+            "unused": RecordingProvider({"600519": make_bars("600519")}),
+        },
+        primary_provider="fixture",
+        fallback_provider="unused",
+        cache_directory=tmp_path / "cache",
+        cache_ttl_seconds=3600,
+        quality_settings=DataQualitySettings(
+            minimum_history_bars=fixture_settings.market_data.minimum_history_bars,
+            max_completed_trading_day_lag=fixture_settings.market_data.max_completed_trading_day_lag,
+        ),
+    )
+
+    with pytest.raises(PipelineError):
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+            service=service,
+            report_date=date(2026, 9, 4),
+        )
+
+    lock_path = tmp_path / "snapshots/2026-09-04/.input.lock"
+    assert lock_path.exists()
+    lock_inode = lock_path.stat().st_ino
+
+    failing_provider.fail_code = None
+    run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+        service=service,
+        report_date=date(2026, 9, 4),
+    )
+
+    assert lock_path.stat().st_ino == lock_inode
+
+
+def test_snapshots_root_is_fsynced_after_snapshot_publish_before_cache_commit(
+    tmp_path, fixture_settings, monkeypatch
+):
+    service = MarketDataService(
+        {
+            "fixture": RecordingProvider({"600519": make_bars("600519")}),
+            "unused": RecordingProvider({"600519": make_bars("600519")}),
+        },
+        primary_provider="fixture",
+        fallback_provider="unused",
+        cache_directory=tmp_path / "cache",
+        cache_ttl_seconds=3600,
+        quality_settings=DataQualitySettings(
+            minimum_history_bars=fixture_settings.market_data.minimum_history_bars,
+            max_completed_trading_day_lag=fixture_settings.market_data.max_completed_trading_day_lag,
+        ),
+    )
+    snapshots_root = tmp_path / "snapshots"
+    snapshot_target = snapshots_root / "2026-09-04" / "input.json"
+    events: list[str] = []
+    original_fsync_directory = pipeline_module._fsync_directory
+    original_replace = pipeline_module.os.replace
+    original_commit = service.commit_staged_cache_writes
+
+    def record_fsync(directory):
+        if Path(directory) == snapshots_root:
+            events.append("snapshots-fsync")
+        return original_fsync_directory(directory)
+
+    def record_replace(source, destination):
+        result = original_replace(source, destination)
+        if Path(destination) == snapshot_target:
+            events.append("snapshot-rename")
+        return result
+
+    def record_commit():
+        rename_index = events.index("snapshot-rename")
+        assert "snapshots-fsync" in events[rename_index + 1 :]
+        events.append("cache-commit")
+        original_commit()
+
+    monkeypatch.setattr(pipeline_module, "_fsync_directory", record_fsync)
+    monkeypatch.setattr(pipeline_module.os, "replace", record_replace)
+    monkeypatch.setattr(service, "commit_staged_cache_writes", record_commit)
+
+    run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+        service=service,
+        report_date=date(2026, 9, 4),
+    )
+
+    assert events.index("snapshot-rename") < events.index("cache-commit")
+
+
 def test_concurrent_different_dates_preserve_all_site_index_entries(
     tmp_path, fixture_settings, monkeypatch
 ):
@@ -1969,7 +2071,10 @@ def test_pipeline_does_not_commit_cache_entries_when_required_symbol_fails(
 
     assert not list((tmp_path / "cache").glob("*.json"))
     assert not list((tmp_path / "reports").glob("**/*"))
-    assert not list((tmp_path / "snapshots").glob("**/*"))
+    assert not list((tmp_path / "snapshots").glob("**/input.json"))
+    assert (
+        tmp_path / "snapshots/2026-09-04/.input.lock"
+    ).exists()
 
 
 @pytest.mark.parametrize("failure_kind", ["stale", "invalid"])

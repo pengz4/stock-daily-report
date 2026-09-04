@@ -558,6 +558,92 @@ def test_cache_startup_discards_pre_mutation_recovery_state(tmp_path):
     assert not recovery_directory.exists()
 
 
+def test_cache_recovery_aborts_interrupted_preparation_after_hard_exit(tmp_path):
+    from stock_daily_report.providers.service import RawResponseCache
+
+    cache = RawResponseCache(tmp_path, ttl_seconds=30)
+    existing_path = cache._path_for("primary", "600519", None, date(2026, 9, 4))
+    original_bytes = b"cache bytes before preparation"
+    existing_path.parent.mkdir(parents=True, exist_ok=True)
+    existing_path.write_bytes(original_bytes)
+    repo_root = Path(__file__).parents[1]
+    child = f"""
+import os
+from datetime import date
+from pathlib import Path
+from stock_daily_report.providers.service import MarketDataService
+
+class Provider:
+    def get_daily_bars(self, code, *, start=None, end=None):
+        return []
+
+root = Path({str(tmp_path)!r})
+service = MarketDataService(
+    {{"primary": Provider(), "fallback": Provider()}},
+    primary_provider="primary",
+    fallback_provider="fallback",
+    cache_directory=root,
+    cache_ttl_seconds=30,
+)
+service._staged_cache_writes = [
+    ("primary", "600519", None, date(2026, 9, 4), [{{"close": 2}}]),
+]
+service._copy_cache_preimage = lambda *_args, **_kwargs: os._exit(76)
+service.commit_staged_cache_writes()
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", child],
+        cwd=repo_root,
+        env={**os.environ, "PYTHONPATH": str(repo_root / "src")},
+        check=False,
+    )
+
+    assert result.returncode == 76
+    recovery_directories = list(tmp_path.glob(".cache-recovery-*"))
+    assert len(recovery_directories) == 1
+    manifest = json.loads(
+        (recovery_directories[0] / "manifest.json").read_text(encoding="utf-8")
+    )
+    assert manifest["state"] == "preparing"
+    assert manifest["entries"][0]["preimage_ready"] is False
+
+    RawResponseCache(tmp_path, ttl_seconds=30).recover_pending_manifests()
+
+    assert existing_path.read_bytes() == original_bytes
+    assert not recovery_directories[0].exists()
+
+
+def test_same_service_finalization_is_idempotent_after_recovery_cleanup(
+    tmp_path, bars
+):
+    service = _service(
+        RecordingProvider("primary", response=bars),
+        RecordingProvider("fallback", response=bars),
+        tmp_path,
+    )
+    service._staged_cache_writes = [
+        (
+            "primary",
+            "600519",
+            None,
+            date(2026, 9, 4),
+            [bar.model_dump() for bar in bars],
+        )
+    ]
+    service.commit_staged_cache_writes()
+    recovery_path = service._cache_recovery_path
+    assert recovery_path is not None
+    assert recovery_path.exists()
+
+    service.recover_pending_cache_manifests()
+
+    assert not recovery_path.exists()
+    service._staged_cache_writes = []
+    service.finalize_staged_cache_commit()
+
+    assert service._cache_recovery_path is None
+
+
 def test_cache_recovery_streams_preimage_without_reading_it_all(
     tmp_path, monkeypatch
 ):

@@ -484,6 +484,10 @@ class RawResponseCache:
 
         incomplete_entries = [name for *_, name, ready in entries if not ready]
         if incomplete_entries:
+            if state in {"copying", "preparing"}:
+                shutil.rmtree(recovery_path)
+                _fsync_directory(self._directory)
+                return
             if state != "incomplete":
                 manifest["state"] = "incomplete"
                 self._persist_recovery_manifest(recovery_path, manifest)
@@ -783,7 +787,11 @@ class MarketDataService:
     ) -> None:
         """Recover cache journals while publication locks are held."""
 
+        recovery_path = self._cache_recovery_path
         self._cache.recover_pending_manifests(publication_root=publication_root)
+        if recovery_path is not None and not recovery_path.exists():
+            _fsync_directory(self._cache._directory)
+            self._cache_recovery_path = None
 
     def has_pending_cache_manifests(self) -> bool:
         return self._cache.has_pending_manifests()
@@ -948,23 +956,37 @@ class MarketDataService:
         recovery_path = self._cache_recovery_path
         if recovery_path is None:
             return
+        cleanup_verified = False
         with self._cache._transaction_write_lock():
-            manifest = self._load_recovery_manifest_for_update(recovery_path)
-            if manifest["state"] != "committed":
-                raise CacheRollbackError(
-                    recovery_path,
-                    f"cannot finalize cache state {manifest['state']!r}",
-                )
-            manifest["publication_manifest"] = None
-            self._cache._persist_recovery_manifest(recovery_path, manifest)
-            shutil.rmtree(recovery_path)
-            _fsync_directory(self._cache._directory)
-            if recovery_path.exists():
-                raise CacheRollbackError(
-                    recovery_path,
-                    "cache recovery artifacts could not be removed",
-                )
-        self._cache_recovery_path = None
+            if not recovery_path.exists():
+                _fsync_directory(self._cache._directory)
+                cleanup_verified = True
+            else:
+                try:
+                    manifest = self._load_recovery_manifest_for_update(recovery_path)
+                except FileNotFoundError:
+                    if recovery_path.exists():
+                        raise
+                    _fsync_directory(self._cache._directory)
+                    cleanup_verified = True
+                else:
+                    if manifest["state"] != "committed":
+                        raise CacheRollbackError(
+                            recovery_path,
+                            f"cannot finalize cache state {manifest['state']!r}",
+                        )
+                    manifest["publication_manifest"] = None
+                    self._cache._persist_recovery_manifest(recovery_path, manifest)
+                    shutil.rmtree(recovery_path)
+                    _fsync_directory(self._cache._directory)
+                    if recovery_path.exists():
+                        raise CacheRollbackError(
+                            recovery_path,
+                            "cache recovery artifacts could not be removed",
+                        )
+                    cleanup_verified = True
+        if cleanup_verified:
+            self._cache_recovery_path = None
 
     def rollback_staged_cache_commit(self) -> None:
         """Restore cache preimages after a later publication cleanup failure."""

@@ -197,7 +197,6 @@ def run_daily_report(
         recovery_cache = _build_recovery_cache(active_settings, root)
 
     transaction_root: Path | None = None
-    publication_started = False
     try:
         cache_lock = _cache_lock_owner(
             service=active_service, cache=recovery_cache
@@ -257,13 +256,12 @@ def run_daily_report(
                 raise PipelineError(failures)
 
         def publish_locked() -> ReportOutputs:
-            nonlocal publication_started, transaction_root
+            nonlocal transaction_root
             bars_by_code = {code: result.bars for code, result in fetched.items()}
             report_dir = root / "reports" / active_report_date.isoformat()
             json_path = report_dir / "report.json"
             markdown_path = report_dir / "report.md"
             html_path = report_dir / "index.html"
-            publication_started = True
             transaction_root = Path(tempfile.mkdtemp(prefix=".publication-", dir=root))
             try:
                 return _publish_report_transaction(
@@ -297,8 +295,6 @@ def run_daily_report(
     finally:
         if active_service is not None:
             active_service.discard_staged_cache_writes()
-        if failures and not publication_started:
-            _cleanup_prepublication_lock_directory(root, active_report_date)
         if transaction_root is not None:
             _cleanup_transaction_root(transaction_root, active_report_date)
 
@@ -332,20 +328,6 @@ def _cleanup_transaction_root(transaction_root: Path, report_date: date) -> None
     except OSError:
         return
     _fsync_directory(transaction_root.parent)
-
-
-def _cleanup_prepublication_lock_directory(root: Path, report_date: date) -> None:
-    lock_directory = root / "snapshots" / report_date.isoformat()
-    lock_path = lock_directory / ".input.lock"
-    if not lock_directory.exists() or not lock_path.exists():
-        return
-    if any(path != lock_path for path in lock_directory.iterdir()):
-        return
-    lock_path.unlink()
-    lock_directory.rmdir()
-    snapshots_directory = lock_directory.parent
-    if snapshots_directory.exists() and not any(snapshots_directory.iterdir()):
-        snapshots_directory.rmdir()
 
 
 def _recover_pending_publications(
@@ -449,6 +431,7 @@ def _try_publication_lock(
     root = Path(root).expanduser().resolve()
     snapshot_directory = root / "snapshots" / report_date.isoformat()
     snapshot_directory.mkdir(parents=True, exist_ok=True)
+    _fsync_directory(snapshot_directory.parent)
     site_directory = root / "site"
     site_directory.mkdir(parents=True, exist_ok=True)
     date_lock = (snapshot_directory / ".input.lock").open("a", encoding="utf-8")
@@ -1051,6 +1034,7 @@ def _publication_lock(
     root = Path(root).expanduser().resolve()
     snapshot_directory = root / "snapshots" / report_date.isoformat()
     snapshot_directory.mkdir(parents=True, exist_ok=True)
+    _fsync_directory(snapshot_directory.parent)
     site_directory = root / "site"
     site_directory.mkdir(parents=True, exist_ok=True)
     with _snapshot_write_lock(snapshot_directory), _snapshot_write_lock(
@@ -1418,6 +1402,7 @@ class _PublicationTransaction:
                 self._snapshot_publish_intent = True
                 self._write_manifest("publishing")
                 _replace_and_fsync(self.staged_snapshot_path, self.snapshot_path)
+                _fsync_directory(self.snapshot_path.parent.parent)
                 self._snapshot_published = True
                 self._write_manifest("publishing")
 
