@@ -8,6 +8,7 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from stock_daily_report.models import DailyBar
+from stock_daily_report.providers.base import ProviderError
 
 _CODE_PATTERN = re.compile(r"^\d{6}$")
 _REQUIRED_COLUMNS = {
@@ -25,8 +26,11 @@ _REQUIRED_COLUMNS = {
 }
 
 
-class FixtureDataError(ValueError):
+class FixtureDataError(ProviderError):
     """Raised when committed fixture data is missing or invalid."""
+
+    def __init__(self, detail: str) -> None:
+        super().__init__("fixture", "fixture_data_error", detail)
 
 
 class FixtureMarketDataProvider:

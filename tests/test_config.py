@@ -223,6 +223,29 @@ def test_load_settings_allows_no_enabled_notification_channels(tmp_path):
     assert settings.notifications.enabled_channels == set()
 
 
+def test_load_settings_uses_configurable_market_data_defaults(tmp_path):
+    path = tmp_path / "settings.yaml"
+    path.write_text(
+        "rule_version:\n  name: simplified\n  version: v1\n"
+        "notifications:\n  enabled_channels: []\n"
+        "market_data:\n"
+        "  primary_provider: akshare\n"
+        "  fallback_provider: fixture\n"
+        "  cache_directory: .cache/stock-daily-report\n"
+        "  cache_ttl_seconds: 900\n"
+        "  minimum_history_bars: 120\n"
+        "  max_completed_trading_day_lag: 2\n",
+        encoding="utf-8",
+    )
+
+    settings = load_settings(path)
+
+    assert settings.market_data.primary_provider == "akshare"
+    assert settings.market_data.cache_ttl_seconds == 900
+    assert settings.market_data.minimum_history_bars == 120
+    assert settings.market_data.max_completed_trading_day_lag == 2
+
+
 def test_load_settings_rejects_duplicate_enabled_channels(tmp_path):
     path = tmp_path / "settings.yaml"
     path.write_text(

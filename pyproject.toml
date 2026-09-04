@@ -13,6 +13,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+akshare = [
+    "akshare>=1.13",
+]
 dev = [
     "pytest>=8",
     "ruff>=0.5",

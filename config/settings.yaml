@@ -3,3 +3,11 @@ rule_version:
   version: v1
 notifications:
   enabled_channels: []
+market_data:
+  primary_provider: akshare
+  fallback_provider: fixture
+  # Local ignored cache. TTL is in seconds; weekday staleness omits holidays.
+  cache_directory: .cache/stock-daily-report
+  cache_ttl_seconds: 3600
+  minimum_history_bars: 60
+  max_completed_trading_day_lag: 1

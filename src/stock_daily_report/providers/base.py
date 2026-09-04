@@ -6,6 +6,16 @@ from typing import Protocol, runtime_checkable
 from stock_daily_report.models import DailyBar
 
 
+class ProviderError(RuntimeError):
+    """An expected, provider-scoped failure that may permit fallback."""
+
+    def __init__(self, provider: str, code: str, detail: str) -> None:
+        self.provider = provider
+        self.code = code
+        self.detail = detail
+        super().__init__(f"{provider}[{code}]: {detail}")
+
+
 @runtime_checkable
 class MarketDataProvider(Protocol):
     """A source of already-normalized daily bars for one security."""
@@ -22,4 +32,4 @@ class MarketDataProvider(Protocol):
         """Return chronological normalized bars for ``code``."""
 
 
-__all__ = ["DailyBar", "MarketDataProvider"]
+__all__ = ["DailyBar", "MarketDataProvider", "ProviderError"]

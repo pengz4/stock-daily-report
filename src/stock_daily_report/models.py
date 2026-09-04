@@ -136,6 +136,29 @@ class NotificationSettings(BaseModel):
         return self
 
 
+class MarketDataSettings(BaseModel):
+    """Provider order, cache path, and weekday-only pre-analysis gate settings.
+
+    ``cache_directory`` is intentionally a local ignored directory. Weekday
+    staleness does not account for Chinese exchange holidays.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    primary_provider: NonEmptyString = "akshare"
+    fallback_provider: NonEmptyString = "fixture"
+    cache_directory: NonEmptyString = ".cache/stock-daily-report"
+    cache_ttl_seconds: int = Field(default=3600, ge=0)
+    minimum_history_bars: int = Field(default=60, ge=1)
+    max_completed_trading_day_lag: int = Field(default=1, ge=0)
+
+    @model_validator(mode="after")
+    def require_distinct_provider_order(self) -> "MarketDataSettings":
+        if self.primary_provider == self.fallback_provider:
+            raise ValueError("primary_provider and fallback_provider must differ")
+        return self
+
+
 class Settings(BaseModel):
     """Top-level deterministic report settings."""
 
@@ -143,6 +166,7 @@ class Settings(BaseModel):
 
     rule_version: RuleVersion
     notifications: NotificationSettings
+    market_data: MarketDataSettings = Field(default_factory=MarketDataSettings)
 
 
 class DailyBar(BaseModel):
