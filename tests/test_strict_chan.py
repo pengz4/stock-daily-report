@@ -161,6 +161,63 @@ def test_strict_breakout_signal_requires_two_chronological_bars():
     assert confirmed.tradable_at == date(2026, 1, 6)
 
 
+def test_strict_retains_signals_for_older_central_areas():
+    first_area = StrictEvent(
+        kind="central_area",
+        formed_at=date(2026, 1, 1),
+        confirmed_at=date(2026, 1, 1),
+        tradable_at=date(2026, 1, 2),
+        status="confirmed",
+        reason_code="strict_three_stroke_overlap",
+        low=5,
+        high=10,
+    )
+    later_area = StrictEvent(
+        kind="central_area",
+        formed_at=date(2026, 1, 4),
+        confirmed_at=date(2026, 1, 4),
+        tradable_at=date(2026, 1, 5),
+        status="confirmed",
+        reason_code="strict_three_stroke_overlap",
+        low=10,
+        high=30,
+    )
+
+    signals = StrictChanAnalyzer._find_signals(
+        _bars_from_ranges(
+            [[9, 7], [12, 11], [13, 11], [14, 12], [15, 13], [16, 14]]
+        ),
+        [first_area, later_area],
+    )
+
+    assert len(signals) == 1
+    assert signals[0].formed_at == date(2026, 1, 2)
+    assert signals[0].confirmed_at == date(2026, 1, 3)
+
+
+def test_strict_segment_requires_third_stroke_to_extend_sequence():
+    result = StrictChanAnalyzer(load_strict_profile()).analyze(
+        _bars_from_ranges(
+            [
+                [10, 8],
+                [15, 12],
+                [13, 10],
+                [11, 8],
+                [8, 5],
+                [10, 7],
+                [11, 9],
+                [13, 11],
+                [12, 10.5],
+                [11.5, 10.2],
+                [11, 10],
+                [12, 10.5],
+            ]
+        )
+    )
+
+    assert result.segments == ()
+
+
 def test_strict_central_candidate_does_not_crash_on_overlapping_strokes():
     result = StrictChanAnalyzer(load_strict_profile()).analyze(
         _bars_from_ranges(

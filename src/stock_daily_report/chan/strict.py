@@ -415,6 +415,16 @@ class StrictChanAnalyzer:
             group = strokes[start : start + 3]
             if len(group) < 3:
                 break
+            first, third = group[0], group[2]
+            first_is_up = first.end_price > first.start_price
+            third_is_up = third.end_price > third.start_price
+            if first_is_up != third_is_up:
+                continue
+            if (
+                (first_is_up and third.end_price <= first.end_price)
+                or (not first_is_up and third.end_price >= first.end_price)
+            ):
+                continue
             events = [stroke.event for stroke in group]
             segments.append(
                 StrictEvent(
@@ -436,11 +446,27 @@ class StrictChanAnalyzer:
     def _find_signals(
         bars: list[DailyBar], central_areas: list[StrictEvent]
     ) -> list[StrictEvent]:
-        if not bars or not central_areas:
-            return []
-        area = central_areas[-1]
+        confirmed: list[StrictEvent] = []
+        candidate: StrictEvent | None = None
+        for area in central_areas:
+            signal = StrictChanAnalyzer._find_signal_for_area(bars, area)
+            if signal is None:
+                continue
+            if signal.status == "confirmed":
+                if signal not in confirmed:
+                    confirmed.append(signal)
+            else:
+                candidate = signal
+        return [*confirmed, *([candidate] if candidate is not None else [])]
+
+    @staticmethod
+    def _find_signal_for_area(
+        bars: list[DailyBar], area: StrictEvent
+    ) -> StrictEvent | None:
+        if not bars:
+            return None
         if area.high is None or area.low is None:
-            return []
+            return None
         candidate: tuple[int, str] | None = None
         for index, bar in enumerate(bars):
             if area.confirmed_at is not None and bar.trade_date <= area.confirmed_at:
@@ -461,30 +487,26 @@ class StrictChanAnalyzer:
                 tradable_at = (
                     bars[index + 1].trade_date if index + 1 < len(bars) else None
                 )
-                return [
-                    StrictEvent(
-                        kind="signal",
-                        formed_at=bars[formed_index].trade_date,
-                        confirmed_at=confirmed_at,
-                        tradable_at=tradable_at,
-                        status="confirmed",
-                        reason_code=f"strict_breakout_{direction}_candidate",
-                    )
-                ]
+                return StrictEvent(
+                    kind="signal",
+                    formed_at=bars[formed_index].trade_date,
+                    confirmed_at=confirmed_at,
+                    tradable_at=tradable_at,
+                    status="confirmed",
+                    reason_code=f"strict_breakout_{direction}_candidate",
+                )
             candidate = (index, direction)
         if candidate is not None:
             index, direction = candidate
-            return [
-                StrictEvent(
-                    kind="signal",
-                    formed_at=bars[index].trade_date,
-                    confirmed_at=None,
-                    tradable_at=None,
-                    status="candidate",
-                    reason_code=f"strict_breakout_{direction}_candidate",
-                )
-            ]
-        return []
+            return StrictEvent(
+                kind="signal",
+                formed_at=bars[index].trade_date,
+                confirmed_at=None,
+                tradable_at=None,
+                status="candidate",
+                reason_code=f"strict_breakout_{direction}_candidate",
+            )
+        return None
 
 
 __all__ = [
