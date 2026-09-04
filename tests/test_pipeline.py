@@ -7,6 +7,8 @@ import pytest
 
 from stock_daily_report.models import DailyBar, Settings, Watchlist
 from stock_daily_report.pipeline import PipelineError, run_daily_report
+from stock_daily_report.providers.service import MarketDataService
+from stock_daily_report.quality.checks import DataQualitySettings
 
 
 class RecordingProvider:
@@ -90,6 +92,40 @@ def test_daily_pipeline_writes_json_markdown_and_html(tmp_path, fixture_settings
     assert outputs.snapshot_path == tmp_path / "snapshots/2026-09-04/input.json"
 
 
+def test_market_summary_is_derived_from_validated_watchlist_bars(
+    tmp_path, fixture_settings
+):
+    watchlist = Watchlist(
+        stocks=[
+            {"code": "600519", "name": "one"},
+            {"code": "000001", "name": "two"},
+        ]
+    )
+    bars_one = make_bars("600519")
+    bars_one[-1] = bars_one[-1].model_copy(update={"close": 180.79})
+    bars_two = make_bars("000001")
+    bars_two[-1] = bars_two[-1].model_copy(
+        update={"close": 177.21, "low": 177.0}
+    )
+    provider = RecordingProvider({"600519": bars_one, "000001": bars_two})
+
+    outputs = run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=provider,
+        report_date=date(2026, 9, 4),
+        now=lambda: datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
+    )
+
+    assert outputs.report.market_summary.status == "validated_watchlist"
+    assert outputs.report.market_summary.text == (
+        "Broad-market data unavailable; validated watchlist only: "
+        "count=2, average_latest_return=0.00%, up=1, down=1, unchanged=0, "
+        "latest_source=2026-09-04T08:00:00+00:00."
+    )
+
+
 def test_pipeline_fetches_and_validates_every_symbol_before_writing(tmp_path, fixture_settings):
     watchlist = Watchlist(
         stocks=[
@@ -121,6 +157,48 @@ def test_pipeline_fetches_and_validates_every_symbol_before_writing(tmp_path, fi
     assert not (report_dir / "report.json").exists()
     assert not (report_dir / "report.md").exists()
     assert not (report_dir / "index.html").exists()
+
+
+def test_pipeline_does_not_commit_cache_entries_when_required_symbol_fails(
+    tmp_path, fixture_settings
+):
+    watchlist = Watchlist(
+        stocks=[
+            {"code": "600519", "name": "one"},
+            {"code": "000001", "name": "two"},
+        ]
+    )
+    provider = RecordingProvider(
+        {"600519": make_bars("600519"), "000001": make_bars("000001")},
+        fail_code="000001",
+    )
+    fallback = RecordingProvider(
+        {"600519": make_bars("600519"), "000001": make_bars("000001")}
+    )
+    service = MarketDataService(
+        {"fixture": provider, "unused": fallback},
+        primary_provider="fixture",
+        fallback_provider="unused",
+        cache_directory=tmp_path / "cache",
+        cache_ttl_seconds=3600,
+        quality_settings=DataQualitySettings(
+            minimum_history_bars=fixture_settings.market_data.minimum_history_bars,
+            max_completed_trading_day_lag=fixture_settings.market_data.max_completed_trading_day_lag,
+        ),
+    )
+
+    with pytest.raises(PipelineError):
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=watchlist,
+            service=service,
+            report_date=date(2026, 9, 4),
+        )
+
+    assert not list((tmp_path / "cache").glob("*.json"))
+    assert not list((tmp_path / "reports").glob("**/*"))
+    assert not list((tmp_path / "snapshots").glob("**/*"))
 
 
 @pytest.mark.parametrize("failure_kind", ["stale", "invalid"])

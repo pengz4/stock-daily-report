@@ -187,6 +187,7 @@ class MarketDataService:
             secrets=secrets,
             now=now,
         )
+        self._staged_cache_writes: list[tuple[str, str, date | None, date | None, object]] = []
 
     @classmethod
     def from_settings(
@@ -220,8 +221,14 @@ class MarketDataService:
         start: date | None = None,
         end: date | None = None,
         as_of: date,
+        defer_cache: bool = False,
     ) -> FetchedBars:
-        """Return validated data from exactly the configured primary/fallback order."""
+        """Return validated data from exactly the configured primary/fallback order.
+
+        By default, successful uncached responses are persisted immediately for
+        standalone retrieval. Callers fetching a batch can defer those writes
+        and commit them only after every required request succeeds.
+        """
 
         failures: list[ProviderAvailabilityError] = []
         for provider_name in self._selection:
@@ -253,7 +260,12 @@ class MarketDataService:
                 ) from error
 
             if not from_cache:
-                self._cache.store(provider_name, code, start, end, response)
+                if defer_cache:
+                    self._staged_cache_writes.append(
+                        (provider_name, code, start, end, response)
+                    )
+                else:
+                    self._cache.store(provider_name, code, start, end, response)
             return FetchedBars(
                 code=code,
                 provider_name=provider_name,
@@ -262,6 +274,19 @@ class MarketDataService:
                 from_cache=from_cache,
             )
         raise AllProvidersFailedError(failures)
+
+    def commit_staged_cache_writes(self) -> None:
+        """Persist deferred responses after a complete batch validates."""
+
+        staged_writes = self._staged_cache_writes
+        self._staged_cache_writes = []
+        for provider_name, code, start, end, response in staged_writes:
+            self._cache.store(provider_name, code, start, end, response)
+
+    def discard_staged_cache_writes(self) -> None:
+        """Drop deferred responses when a batch cannot be completed."""
+
+        self._staged_cache_writes.clear()
 
 
 def _require_sequence(

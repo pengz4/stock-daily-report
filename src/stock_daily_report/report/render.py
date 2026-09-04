@@ -157,7 +157,7 @@ def _render_stock_html(stock: StockReport) -> str:
 
 
 def _md(value: object) -> str:
-    text = str(value)
+    text = str(value).replace("\r\n", " ").replace("\r", " ").replace("\n", " ")
     for character in r"\`*_{}[]()#+-.!|<>":
         text = text.replace(character, f"\\{character}")
     return text

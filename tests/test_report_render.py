@@ -71,6 +71,29 @@ def test_renderers_escape_untrusted_markdown_and_html_text():
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
 
 
+def test_markdown_normalizes_newlines_in_untrusted_watchlist_text():
+    document = _document().model_copy(
+        update={
+            "stocks": (
+                _document().stocks[0].model_copy(
+                    update={
+                        "name": "safe name\n# Injected heading\n- injected item",
+                        "provider_name": "provider\n## Injected provider",
+                    },
+                ),
+            )
+        }
+    )
+
+    markdown = render_markdown(document)
+
+    assert "\n# Injected heading\n" not in markdown
+    assert "\n- injected item\n" not in markdown
+    assert "\n## Injected provider\n" not in markdown
+    assert r"safe name \# Injected heading \- injected item" in markdown
+    assert r"provider \#\# Injected provider" in markdown
+
+
 def test_renderers_do_not_include_notification_secrets():
     document = _document(name="visible")
     markdown = render_markdown(document)

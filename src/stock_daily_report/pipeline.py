@@ -7,6 +7,7 @@ import tempfile
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
+from math import fsum
 from pathlib import Path
 
 from pydantic import ValidationError
@@ -129,6 +130,7 @@ def run_daily_report(
                     stock.code,
                     end=active_report_date,
                     as_of=active_report_date,
+                    defer_cache=True,
                 )
                 if active_service is not None
                 else _fetch_direct(
@@ -151,9 +153,13 @@ def run_daily_report(
     report_dir = root / "reports" / active_report_date.isoformat()
     _remove_report_artifacts(report_dir)
     if failures:
+        if active_service is not None:
+            active_service.discard_staged_cache_writes()
         raise PipelineError(failures)
 
     bars_by_code = {code: result.bars for code, result in fetched.items()}
+    if active_service is not None:
+        active_service.commit_staged_cache_writes()
     snapshot_path = write_snapshot(
         root,
         report_date=active_report_date,
@@ -320,14 +326,37 @@ def _build_report(
             quality_status="passed",
             stock_count=len(stocks),
         ),
-        market_summary=MarketSummary(
-            status="unavailable",
-            text=(
-                "Broad market data unavailable; summary is limited to validated "
-                "watchlist data and does not invent breadth or sector figures."
-            ),
-        ),
+        market_summary=_build_market_summary(fetched),
         stocks=tuple(stocks),
+    )
+
+
+def _build_market_summary(fetched: Mapping[str, FetchedBars]) -> MarketSummary:
+    """Summarize only the latest returns and source timestamps in validated data."""
+
+    latest_returns = [
+        bars[-1].close / bars[-2].close - 1.0
+        for result in fetched.values()
+        if (bars := result.bars) and len(bars) >= 2
+    ]
+    up_count = sum(value > 0.0 for value in latest_returns)
+    down_count = sum(value < 0.0 for value in latest_returns)
+    unchanged_count = sum(value == 0.0 for value in latest_returns)
+    average_return = fsum(latest_returns) / len(latest_returns) if latest_returns else None
+    latest_source = max(
+        bar.source_timestamp
+        for result in fetched.values()
+        for bar in result.bars
+    )
+    average_text = "n/a" if average_return is None else f"{average_return:.2%}"
+    return MarketSummary(
+        status="validated_watchlist",
+        text=(
+            "Broad-market data unavailable; validated watchlist only: "
+            f"count={len(fetched)}, average_latest_return={average_text}, "
+            f"up={up_count}, down={down_count}, unchanged={unchanged_count}, "
+            f"latest_source={latest_source.isoformat()}."
+        ),
     )
 
 
