@@ -297,6 +297,24 @@ def test_strict_keeps_tradeable_stroke_endpoint_immutable():
     assert result.strokes[0].high == result.strokes[1].high == 17
 
 
+def test_strict_advances_initial_active_extreme_before_first_stroke():
+    result = StrictChanAnalyzer(load_strict_profile()).analyze(
+        _bars_from_ranges(
+            [
+                [24, 23],
+                [20, 14],
+                [23, 20],
+                [26, 21],
+                [10, 5],
+                [21, 15],
+                [12, 10],
+            ]
+        )
+    )
+
+    assert result.strokes == ()
+
+
 def test_strict_analyzer_rejects_unordered_input_without_mutating_it():
     bars = _bars()
     original = list(bars)

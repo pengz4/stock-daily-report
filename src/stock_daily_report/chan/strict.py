@@ -292,26 +292,29 @@ class StrictChanAnalyzer:
                         current_kind == "bottom"
                         and candidate.event.price < active.event.price
                     )
-                ) and strokes and strokes[-1].event.tradable_at is None:
-                    previous = strokes[-1]
-                    assert candidate.event.price is not None
-                    strokes[-1] = _StrokeCandidate(
-                        event=StrictEvent(
-                            kind="stroke",
-                            formed_at=previous.event.formed_at,
-                            confirmed_at=candidate.event.confirmed_at,
-                            tradable_at=candidate.event.tradable_at,
-                            status="confirmed",
-                            reason_code="strict_alternating_fractals",
-                            low=min(previous.start_price, candidate.event.price),
-                            high=max(previous.start_price, candidate.event.price),
-                        ),
-                        start_index=previous.start_index,
-                        end_index=candidate.processed_index,
-                        start_price=previous.start_price,
-                        end_price=candidate.event.price,
-                    )
-                    active = candidate
+                ):
+                    if not strokes:
+                        active = candidate
+                    elif strokes[-1].event.tradable_at is None:
+                        previous = strokes[-1]
+                        assert candidate.event.price is not None
+                        strokes[-1] = _StrokeCandidate(
+                            event=StrictEvent(
+                                kind="stroke",
+                                formed_at=previous.event.formed_at,
+                                confirmed_at=candidate.event.confirmed_at,
+                                tradable_at=candidate.event.tradable_at,
+                                status="confirmed",
+                                reason_code="strict_alternating_fractals",
+                                low=min(previous.start_price, candidate.event.price),
+                                high=max(previous.start_price, candidate.event.price),
+                            ),
+                            start_index=previous.start_index,
+                            end_index=candidate.processed_index,
+                            start_price=previous.start_price,
+                            end_price=candidate.event.price,
+                        )
+                        active = candidate
                 continue
             if (
                 candidate.processed_index - active.processed_index
