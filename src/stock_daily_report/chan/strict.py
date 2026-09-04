@@ -79,6 +79,7 @@ class StrictEvent:
     price: float | None = None
     low: float | None = None
     high: float | None = None
+    direction: Literal["up", "down"] | None = None
 
 
 @dataclass(frozen=True)
@@ -308,6 +309,11 @@ class StrictChanAnalyzer:
                                 reason_code="strict_alternating_fractals",
                                 low=min(previous.start_price, candidate.event.price),
                                 high=max(previous.start_price, candidate.event.price),
+                                direction=(
+                                    "up"
+                                    if candidate.event.price > previous.start_price
+                                    else "down"
+                                ),
                             ),
                             start_index=previous.start_index,
                             end_index=candidate.processed_index,
@@ -345,6 +351,7 @@ class StrictChanAnalyzer:
                         reason_code="strict_alternating_fractals",
                         low=min(first_price, second_price),
                         high=max(first_price, second_price),
+                        direction="up" if second_price > first_price else "down",
                     ),
                     start_index=active.processed_index,
                     end_index=candidate.processed_index,
