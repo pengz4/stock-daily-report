@@ -228,6 +228,15 @@ def test_send_report_rejects_relative_report_url():
         service.send_report(object(), report_url="reports/2026-09-04/index.html")
 
 
+def test_send_report_is_noop_when_no_channels_are_enabled():
+    assert (
+        NotificationService(NotificationSettings()).send_report(
+            object(), report_url="not-a-url"
+        )
+        == ()
+    )
+
+
 def test_send_report_rejects_malformed_report_url_without_traceback():
     service = NotificationService(NotificationSettings(enabled_channels={"wecom"}))
 

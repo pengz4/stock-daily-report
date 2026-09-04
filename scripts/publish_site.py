@@ -33,7 +33,8 @@ def stage_pages(root: str | Path, output: str | Path) -> None:
     else:
         output_root.mkdir(parents=True)
 
-    _copy_public_tree(site_root, output_root)
+    _copy_public_tree(site_root, output_root / "site")
+    _write_root_entry(output_root / "index.html")
     _copy_public_tree(reports_root, output_root / "reports")
 
 
@@ -58,6 +59,22 @@ def _reject_symlinks(source: Path) -> None:
     for child in source.rglob("*"):
         if child.is_symlink():
             raise PublishSiteError(f"symlinked artifact source is not allowed: {child}")
+
+
+def _write_root_entry(path: Path) -> None:
+    path.write_text(
+        """<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="refresh" content="0; url=site/index.html">
+  <title>A-share daily reports</title>
+</head>
+<body><a href="site/index.html">Open daily reports</a></body>
+</html>
+""",
+        encoding="utf-8",
+    )
 
 
 def main(argv: list[str] | None = None) -> int:

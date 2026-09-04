@@ -1,6 +1,7 @@
 .worktrees/
 .cache/
 /public/
+/.report-history/
 /reports/
 /snapshots/
 site/.publication.lock

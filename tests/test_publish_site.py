@@ -33,7 +33,8 @@ def test_publish_site_stages_site_and_reports_without_private_inputs(tmp_path):
     )
 
     assert result.returncode == 0, result.stderr
-    assert (output / "index.html").read_text(encoding="utf-8") == "index"
+    assert (output / "site/index.html").read_text(encoding="utf-8") == "index"
+    assert "site/index.html" in (output / "index.html").read_text(encoding="utf-8")
     assert (
         output / "reports/2026-09-04/report.json"
     ).read_text(encoding="utf-8") == "{}"

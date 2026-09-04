@@ -58,6 +58,8 @@ class NotificationService:
     ) -> tuple[NotificationOutcome, ...]:
         """Build and deliver a summary only after report publication."""
 
+        if not self.settings.enabled_channels:
+            return ()
         try:
             parsed_url = urlsplit(report_url)
             hostname = parsed_url.hostname

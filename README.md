@@ -8,7 +8,8 @@ HTML artifacts. It does not place orders or provide investment advice.
 ## Local run
 
 ```bash
-python -m pip install -e ".[akshare]"
+python -m pip install -r requirements.lock
+python -m pip install --no-deps -e .
 stock-daily-report daily --date 2026-09-04 --output-root .
 ```
 
