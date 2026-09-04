@@ -8,8 +8,14 @@ from datetime import date
 from pathlib import Path
 
 from stock_daily_report.config import ConfigurationError, load_settings, load_watchlist
-from stock_daily_report.pipeline import PipelineError, run_daily_report
+from stock_daily_report.pipeline import (
+    PipelineError,
+    PublicationRollbackError,
+    run_daily_report,
+)
 from stock_daily_report.providers.fixture import FixtureMarketDataProvider
+from stock_daily_report.providers.service import CacheRollbackError
+from stock_daily_report.snapshots import SnapshotError
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -39,7 +45,13 @@ def main(argv: list[str] | None = None) -> int:
                 provider=provider,
                 report_date=args.date,
             )
-        except (ConfigurationError, PipelineError) as error:
+        except (
+            CacheRollbackError,
+            ConfigurationError,
+            PipelineError,
+            PublicationRollbackError,
+            SnapshotError,
+        ) as error:
             print(error, file=sys.stderr)
             return 1
         print(outputs.html_path)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
@@ -379,6 +380,50 @@ def _render_site_index_for_publication(root: Path, report_date: date) -> str:
     return render_site_index(sorted(report_dates))
 
 
+def _describe_artifact(path: Path) -> dict[str, object]:
+    if not path.exists():
+        return {"present": False, "kind": None, "files": []}
+    if path.is_dir():
+        files = []
+        for child in sorted(
+            (candidate for candidate in path.rglob("*") if candidate.is_file()),
+            key=lambda candidate: candidate.relative_to(path).as_posix(),
+        ):
+            relative_path = child.relative_to(path).as_posix()
+            content = child.read_bytes()
+            files.append(
+                {
+                    "path": relative_path,
+                    "size": len(content),
+                    "sha256": hashlib.sha256(content).hexdigest(),
+                }
+            )
+        return {"present": True, "kind": "directory", "files": files}
+    content = path.read_bytes()
+    return {
+        "present": True,
+        "kind": "file",
+        "files": [
+            {
+                "path": ".",
+                "size": len(content),
+                "sha256": hashlib.sha256(content).hexdigest(),
+            }
+        ],
+    }
+
+
+def _artifact_matches(path: Path, expected: Mapping[str, object]) -> bool:
+    if not expected["present"]:
+        return not path.exists() and not path.is_symlink()
+    actual = _describe_artifact(path)
+    return actual == {
+        "present": expected["present"],
+        "kind": expected["kind"],
+        "files": expected["files"],
+    }
+
+
 class _PublicationTransaction:
     """Publish staged outputs with reversible renames and rollback.
 
@@ -433,6 +478,18 @@ class _PublicationTransaction:
         self._styles_published = False
         self._finished = False
         self._rollback_attempted = False
+        self._artifact_specs = {
+            "report": _describe_artifact(self.report_dir),
+            "snapshot": _describe_artifact(self.snapshot_path),
+            "site-index": _describe_artifact(self.site_index),
+            "styles": _describe_artifact(self.styles_path),
+        }
+        self._restore_candidates = {
+            "report": self._report_was_present,
+            "snapshot": False,
+            "site-index": self._site_index_was_present,
+            "styles": self._styles_was_present,
+        }
 
     def publish(self) -> None:
         try:
@@ -489,68 +546,79 @@ class _PublicationTransaction:
         if self._rollback_attempted:
             raise PublicationRollbackError(
                 "Publication rollback previously failed; recovery artifacts "
-                f"retained at {self.backup_root}"
+                f"retained at {self._recovery_error_path()}"
             )
         self._rollback_attempted = True
         try:
-            self._restore_path(
-                target=self.styles_path,
-                backup=self.backup_styles,
-                recovery=self.recovery_styles,
-                staged=self.staged_styles_path,
-                was_present=self._styles_was_present,
-                published=self._styles_published,
-                backed_up=self._styles_backed_up,
+            restore_plan = (
+                (
+                    "styles",
+                    self.styles_path,
+                    self.backup_styles,
+                    self.recovery_styles,
+                    self._styles_published,
+                    self._styles_backed_up,
+                    self.staged_styles_path,
+                ),
+                (
+                    "site-index",
+                    self.site_index,
+                    self.backup_site_index,
+                    self.recovery_site_index,
+                    self._site_index_published,
+                    self._site_index_backed_up,
+                    self.staged_site_index,
+                ),
+                (
+                    "snapshot",
+                    self.snapshot_path,
+                    self.backup_snapshot_path,
+                    self.recovery_snapshot_path,
+                    self._snapshot_published,
+                    False,
+                    self.staged_snapshot_path,
+                ),
+                (
+                    "report",
+                    self.report_dir,
+                    self.backup_report_dir,
+                    self.recovery_report_dir,
+                    self._report_published,
+                    self._report_backed_up,
+                    self.staged_report_dir,
+                ),
             )
-            self._restore_path(
-                target=self.site_index,
-                backup=self.backup_site_index,
-                recovery=self.recovery_site_index,
-                staged=self.staged_site_index,
-                was_present=self._site_index_was_present,
-                published=self._site_index_published,
-                backed_up=self._site_index_backed_up,
-            )
-            if self.staged_snapshot_path is not None:
-                self._restore_path(
-                    target=self.snapshot_path,
-                    backup=self.backup_snapshot_path,
-                    recovery=self.recovery_snapshot_path,
-                    staged=self.staged_snapshot_path,
-                    was_present=self._snapshot_was_present,
-                    published=self._snapshot_published,
-                    backed_up=False,
+            selected_sources = {
+                name: self._select_complete_source(
+                    name=name,
+                    backup=backup,
+                    recovery=recovery,
+                    published=published,
+                    backed_up=backed_up,
                 )
-            self._restore_path(
-                target=self.report_dir,
-                backup=self.backup_report_dir,
-                recovery=self.recovery_report_dir,
-                staged=self.staged_report_dir,
-                was_present=self._report_was_present,
-                published=self._report_published,
-                backed_up=self._report_backed_up,
-            )
-            self._verify_restored(
-                target=self.styles_path,
-                backup=self.backup_styles,
-                was_present=self._styles_was_present,
-            )
-            self._verify_restored(
-                target=self.site_index,
-                backup=self.backup_site_index,
-                was_present=self._site_index_was_present,
-            )
-            if self.staged_snapshot_path is not None:
-                self._verify_restored(
-                    target=self.snapshot_path,
-                    backup=self.backup_snapshot_path,
-                    was_present=self._snapshot_was_present,
-                )
-            self._verify_restored(
-                target=self.report_dir,
-                backup=self.backup_report_dir,
-                was_present=self._report_was_present,
-            )
+                for name, _, backup, recovery, published, backed_up, _ in restore_plan
+            }
+            for (
+                name,
+                target,
+                _backup,
+                _recovery,
+                published,
+                _backed_up,
+                staged,
+            ) in restore_plan:
+                source = selected_sources[name]
+                if source is not None:
+                    self._replace_target(source, target)
+                elif not self._artifact_specs[name]["present"] and (
+                    published or (staged is not None and not staged.exists())
+                ):
+                    self._remove_target(target)
+            for name, target, *_ in restore_plan:
+                if not _artifact_matches(target, self._artifact_specs[name]):
+                    raise OSError(
+                        f"Publication target was not restored completely: {target}"
+                    )
             shutil.rmtree(self.backup_root)
             if self.backup_root.exists():
                 raise OSError(f"Could not remove publication backups: {self.backup_root}")
@@ -566,80 +634,129 @@ class _PublicationTransaction:
                 raise
             raise PublicationRollbackError(
                 "Publication rollback failed; recovery artifacts retained at "
-                f"{self.backup_root}"
+                f"{self._recovery_error_path()}"
             ) from error
         self._finished = True
 
-    def _restore_path(
+    def _select_complete_source(
         self,
         *,
-        target: Path,
+        name: str,
         backup: Path,
         recovery: Path,
-        staged: Path | None,
-        was_present: bool,
         published: bool,
         backed_up: bool,
-    ) -> None:
-        restore_source = backup if backup.exists() else recovery if recovery.exists() else None
-        if restore_source is not None:
-            target.parent.mkdir(parents=True, exist_ok=True)
-            if target.is_dir():
-                shutil.rmtree(target)
-            else:
-                target.unlink(missing_ok=True)
-            os.replace(restore_source, target)
-            return
-        if was_present and not backed_up and not published and target.exists():
-            return
-        if was_present:
-            raise OSError(f"Missing publication recovery artifact: {backup}")
-        if published or (staged is not None and not staged.exists()):
-            if target.is_dir():
-                shutil.rmtree(target)
-            else:
-                target.unlink(missing_ok=True)
+    ) -> Path | None:
+        expected = self._artifact_specs[name]
+        needs_restore = bool(expected["present"]) and (
+            backed_up or backup.exists() or published
+        )
+        if not needs_restore:
+            return None
+        recovery_manifest = self._load_recovery_manifest()
+        if recovery_manifest is not None:
+            entry = recovery_manifest.get(name)
+            if (
+                entry is not None
+                and entry["expected"] == expected
+                and _artifact_matches(recovery, expected)
+            ):
+                return recovery
+        if _artifact_matches(backup, expected):
+            return backup
+        raise OSError(
+            f"No complete publication recovery source for {name}; "
+            f"expected artifacts are retained at {self._recovery_error_path()}"
+        )
 
-    def _verify_restored(
-        self, *, target: Path, backup: Path, was_present: bool
-    ) -> None:
-        if backup.exists():
-            raise OSError(f"Publication backup remains: {backup}")
-        if was_present and not target.exists():
-            raise OSError(f"Publication target was not restored: {target}")
-        if not was_present and target.exists():
-            raise OSError(f"New publication target remains: {target}")
+    def _replace_target(self, source: Path, target: Path) -> None:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        self._remove_target(target)
+        os.replace(source, target)
+
+    @staticmethod
+    def _remove_target(target: Path) -> None:
+        if target.is_dir() and not target.is_symlink():
+            shutil.rmtree(target)
+        else:
+            target.unlink(missing_ok=True)
+
+    def _load_recovery_manifest(self) -> dict[str, dict[str, object]] | None:
+        manifest_path = self.recovery_root / "manifest.json"
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            if not isinstance(manifest, dict):
+                return None
+            if (
+                manifest.get("schema_version") != 2
+                or manifest.get("state") != "ready"
+                or not isinstance(manifest.get("entries"), list)
+            ):
+                return None
+            entries = {}
+            for entry in manifest["entries"]:
+                if not isinstance(entry, dict):
+                    return None
+                name = entry.get("name")
+                expected = entry.get("expected")
+                if (
+                    not isinstance(name, str)
+                    or name in entries
+                    or not isinstance(expected, dict)
+                ):
+                    return None
+                entries[name] = {"expected": expected}
+            return entries
+        except (OSError, ValueError, TypeError, KeyError):
+            return None
+
+    def _recovery_error_path(self) -> Path:
+        return self.recovery_root if self.recovery_root.exists() else self.backup_root
 
     def _prepare_recovery_copy(self) -> None:
-        entries = (
+        sources = (
             (self.backup_report_dir, self.recovery_report_dir, "report"),
             (self.backup_snapshot_path, self.recovery_snapshot_path, "snapshot"),
             (self.backup_site_index, self.recovery_site_index, "site-index"),
             (self.backup_styles, self.recovery_styles, "styles"),
         )
-        expected = [
-            (source, destination, name)
-            for source, destination, name in entries
-            if source.exists()
+        entries = [
+            {
+                "name": name,
+                "expected": self._artifact_specs[name],
+                "restore": self._restore_candidates[name],
+            }
+            for _, _, name in sources
         ]
-        if not expected:
+        to_copy = [
+            (source, destination, name)
+            for source, destination, name in sources
+            if self._restore_candidates[name]
+        ]
+        if not to_copy:
             return
         self.recovery_root.mkdir(parents=True, exist_ok=True)
         manifest = {
-            "schema_version": 1,
+            "schema_version": 2,
             "state": "copying",
-            "entries": [name for _, _, name in expected],
+            "entries": entries,
         }
         _atomic_write(
             self.recovery_root / "manifest.json",
             json.dumps(manifest, ensure_ascii=False, sort_keys=True) + "\n",
         )
-        for source, destination, _ in expected:
+        for source, destination, name in to_copy:
+            if not source.exists():
+                raise OSError(f"Missing publication backup for {name}: {source}")
             if source.is_dir():
                 shutil.copytree(source, destination)
             else:
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(source, destination)
+            if not _artifact_matches(destination, self._artifact_specs[name]):
+                raise OSError(
+                    f"Publication recovery copy verification failed: {destination}"
+                )
         manifest["state"] = "ready"
         _atomic_write(
             self.recovery_root / "manifest.json",

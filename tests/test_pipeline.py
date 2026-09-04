@@ -15,11 +15,12 @@ from stock_daily_report.models import DailyBar, Settings, Watchlist
 from stock_daily_report.pipeline import (
     PipelineError,
     PipelineFailure,
+    PublicationRollbackError,
     run_daily_report,
 )
 from stock_daily_report.providers.service import MarketDataService
 from stock_daily_report.quality.checks import DataQualitySettings
-from stock_daily_report.snapshots import load_snapshot
+from stock_daily_report.snapshots import SnapshotError, load_snapshot
 
 
 class RecordingProvider:
@@ -675,6 +676,53 @@ def test_backup_cleanup_failure_restores_old_publication(
     assert {path: path.read_bytes() for path in report_paths} == before
 
 
+def test_partial_backup_cleanup_restores_complete_report_from_recovery_copy(
+    tmp_path, fixture_settings, monkeypatch
+):
+    watchlist = Watchlist(stocks=[{"code": "600519", "name": "one"}])
+    report_date = date(2026, 9, 4)
+    run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        report_date=report_date,
+    )
+    report_paths = [
+        tmp_path / "reports/2026-09-04/report.json",
+        tmp_path / "reports/2026-09-04/report.md",
+        tmp_path / "reports/2026-09-04/index.html",
+        tmp_path / "site/index.html",
+    ]
+    before = {path: path.read_bytes() for path in report_paths}
+    original_rmtree = pipeline_module.shutil.rmtree
+    cleanup_attempted = False
+
+    def partially_remove_report(path, *args, **kwargs):
+        nonlocal cleanup_attempted
+        path = Path(path)
+        if path.name == "backups" and not cleanup_attempted:
+            cleanup_attempted = True
+            (path / "report" / "report.json").unlink()
+            raise OSError("injected partial backup cleanup failure")
+        return original_rmtree(path, *args, **kwargs)
+
+    monkeypatch.setattr(pipeline_module.shutil, "rmtree", partially_remove_report)
+
+    with pytest.raises(OSError, match="injected partial backup cleanup failure"):
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=watchlist,
+            provider=RecordingProvider({"600519": make_bars("600519")}),
+            report_date=report_date,
+            now=lambda: datetime(2026, 9, 4, 10, 30, tzinfo=UTC),
+        )
+
+    assert cleanup_attempted
+    assert {path: path.read_bytes() for path in report_paths} == before
+
+
 def test_cache_commit_failure_restores_preimage_and_publication(
     tmp_path, fixture_settings, monkeypatch
 ):
@@ -850,6 +898,56 @@ def test_cli_handles_pipeline_failure_without_traceback(
     captured = capsys.readouterr()
     assert result == 1
     assert "snapshot_conflict" in captured.err
+    assert "Traceback" not in captured.err
+
+
+def test_cli_handles_publication_rollback_failure_without_traceback(
+    fixture_settings, monkeypatch, capsys
+):
+    monkeypatch.setattr(cli_module, "load_settings", lambda _path: fixture_settings)
+    monkeypatch.setattr(
+        cli_module,
+        "load_watchlist",
+        lambda _path: Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "run_daily_report",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            PublicationRollbackError("recovery artifacts retained")
+        ),
+    )
+
+    result = cli_module.main(["daily", "--date", "2026-09-04"])
+
+    captured = capsys.readouterr()
+    assert result == 1
+    assert "recovery artifacts retained" in captured.err
+    assert "Traceback" not in captured.err
+
+
+def test_cli_handles_snapshot_lock_failure_without_traceback(
+    fixture_settings, monkeypatch, capsys
+):
+    monkeypatch.setattr(cli_module, "load_settings", lambda _path: fixture_settings)
+    monkeypatch.setattr(
+        cli_module,
+        "load_watchlist",
+        lambda _path: Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "run_daily_report",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            SnapshotError("Could not lock snapshot directory")
+        ),
+    )
+
+    result = cli_module.main(["daily", "--date", "2026-09-04"])
+
+    captured = capsys.readouterr()
+    assert result == 1
+    assert "Could not lock snapshot directory" in captured.err
     assert "Traceback" not in captured.err
 
 

@@ -1,3 +1,5 @@
+import hashlib
+import json
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
@@ -441,6 +443,82 @@ def test_cache_restore_failure_is_atomic_and_retains_recovery_state(
     assert (recovery_directory / "manifest.json").exists()
     assert (recovery_directory / existing_path.name).read_bytes() == existing_bytes
     assert existing_path.read_bytes() != b""
+
+
+def test_cache_replays_ready_recovery_manifest_on_startup(tmp_path):
+    from stock_daily_report.providers.service import RawResponseCache
+
+    cache = RawResponseCache(tmp_path, ttl_seconds=30)
+    existing_path = cache._path_for("primary", "600519", None, date(2026, 9, 4))
+    new_path = cache._path_for("primary", "000001", None, date(2026, 9, 4))
+    existing_path.write_bytes(b"post-commit bytes")
+    new_path.write_bytes(b"new entry")
+
+    recovery_directory = tmp_path / ".cache-recovery-manual"
+    recovery_directory.mkdir()
+    previous_bytes = b"exact preimage bytes"
+    (recovery_directory / existing_path.name).write_bytes(previous_bytes)
+    (recovery_directory / "manifest.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "state": "ready",
+                "entries": [
+                    {
+                        "path": existing_path.name,
+                        "present": True,
+                        "size": len(previous_bytes),
+                        "sha256": hashlib.sha256(previous_bytes).hexdigest(),
+                    },
+                    {
+                        "path": new_path.name,
+                        "present": False,
+                        "size": None,
+                        "sha256": None,
+                    },
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    RawResponseCache(tmp_path, ttl_seconds=30)
+
+    assert existing_path.read_bytes() == previous_bytes
+    assert not new_path.exists()
+    assert not recovery_directory.exists()
+
+
+def test_cache_recovery_manifest_failure_is_explicit_and_retained(tmp_path):
+    from stock_daily_report.providers.service import (
+        CacheRollbackError,
+        RawResponseCache,
+    )
+
+    recovery_directory = tmp_path / ".cache-recovery-manual"
+    recovery_directory.mkdir()
+    (recovery_directory / "manifest.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "state": "ready",
+                "entries": [
+                    {
+                        "path": "entry.json",
+                        "present": True,
+                        "size": 3,
+                        "sha256": "not-a-real-digest",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(CacheRollbackError, match="recovery"):
+        RawResponseCache(tmp_path, ttl_seconds=30)
+
+    assert recovery_directory.exists()
 
 
 def test_akshare_adapter_maps_complete_source_records_without_network():

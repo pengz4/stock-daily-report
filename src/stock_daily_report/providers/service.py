@@ -47,6 +47,20 @@ _SENSITIVE_KEY_NAMES = frozenset(
         "cookie",
     }
 )
+_MAX_RECOVERY_MANIFESTS = 32
+_MAX_RECOVERY_ENTRIES = 256
+_MAX_RECOVERY_ENTRY_BYTES = 64 * 1024 * 1024
+_MAX_RECOVERY_TOTAL_BYTES = 256 * 1024 * 1024
+_MAX_RECOVERY_MANIFEST_BYTES = 1024 * 1024
+
+
+def _fsync_directory(directory: Path) -> None:
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+    descriptor = os.open(directory, flags)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
 
 
 class DataQualityError(ProviderDataError):
@@ -114,6 +128,7 @@ class RawResponseCache:
         self._ttl_seconds = ttl_seconds
         self._secrets = tuple(secret for secret in secrets if secret)
         self._now = now or (lambda: datetime.now(UTC))
+        self._recover_pending_manifests()
 
     def load(
         self, provider: str, code: str, start: date | None, end: date | None
@@ -133,7 +148,7 @@ class RawResponseCache:
                     raise ValueError("invalid cache metadata")
                 age = (self._now() - cached_at).total_seconds()
                 if age < 0 or age > self._ttl_seconds:
-                    path.unlink(missing_ok=True)
+                    self._unlink_and_fsync(path)
                     return None
                 return document["response"]
             except (
@@ -144,7 +159,7 @@ class RawResponseCache:
                 TypeError,
                 json.JSONDecodeError,
             ):
-                path.unlink(missing_ok=True)
+                self._unlink_and_fsync(path)
                 return None
 
     def store(
@@ -207,9 +222,11 @@ class RawResponseCache:
                 temporary.flush()
                 os.fsync(temporary.fileno())
             os.replace(temporary_path, path)
+            _fsync_directory(self._directory)
         finally:
-            if temporary_path is not None:
-                temporary_path.unlink(missing_ok=True)
+            if temporary_path is not None and temporary_path.exists():
+                temporary_path.unlink()
+                _fsync_directory(self._directory)
 
     def _write_bytes_atomic(self, path: Path, content: bytes) -> None:
         """Write bytes with an atomic replacement and content verification."""
@@ -229,12 +246,150 @@ class RawResponseCache:
                 temporary.flush()
                 os.fsync(temporary.fileno())
             os.replace(temporary_path, path)
+            _fsync_directory(path.parent)
             restored = path.read_bytes()
             if restored != content:
                 raise OSError(f"Cache restoration verification failed: {path}")
         finally:
-            if temporary_path is not None:
-                temporary_path.unlink(missing_ok=True)
+            if temporary_path is not None and temporary_path.exists():
+                temporary_path.unlink()
+                _fsync_directory(path.parent)
+
+    def _unlink_and_fsync(self, path: Path) -> None:
+        try:
+            path.unlink()
+        except FileNotFoundError:
+            return
+        _fsync_directory(path.parent)
+
+    def _recover_pending_manifests(self) -> None:
+        if not self._directory.exists():
+            return
+        with self._write_lock():
+            recovery_paths = sorted(self._directory.glob(".cache-recovery-*"))
+            if len(recovery_paths) > _MAX_RECOVERY_MANIFESTS:
+                raise CacheRollbackError(
+                    recovery_paths[0],
+                    f"too many recovery manifests (limit {_MAX_RECOVERY_MANIFESTS})",
+                )
+            for recovery_path in recovery_paths:
+                if not recovery_path.is_dir() or recovery_path.is_symlink():
+                    raise CacheRollbackError(
+                        recovery_path,
+                        "recovery manifest path is not a directory",
+                    )
+                try:
+                    self._replay_recovery_manifest(recovery_path)
+                except CacheRollbackError:
+                    raise
+                except Exception as error:
+                    raise CacheRollbackError(recovery_path, str(error)) from error
+
+    def _replay_recovery_manifest(self, recovery_path: Path) -> None:
+        manifest_path = recovery_path / "manifest.json"
+        try:
+            if manifest_path.is_symlink() or (
+                manifest_path.stat().st_size > _MAX_RECOVERY_MANIFEST_BYTES
+            ):
+                raise OSError("cache recovery manifest exceeds the size limit")
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise OSError(
+                f"Could not read cache recovery manifest: {manifest_path}"
+            ) from error
+        if (
+            not isinstance(manifest, dict)
+            or set(manifest) != {"schema_version", "state", "entries"}
+            or manifest["schema_version"] != 2
+            or manifest["state"] != "ready"
+            or not isinstance(manifest["entries"], list)
+        ):
+            raise OSError(f"Invalid cache recovery manifest: {manifest_path}")
+        if len(manifest["entries"]) > _MAX_RECOVERY_ENTRIES:
+            raise OSError(
+                f"Too many cache recovery entries (limit {_MAX_RECOVERY_ENTRIES})"
+            )
+
+        entries: list[tuple[Path, bool, bytes | None, str]] = []
+        recovery_names = {"manifest.json"}
+        entry_names: set[str] = set()
+        total_bytes = 0
+        for raw_entry in manifest["entries"]:
+            if (
+                not isinstance(raw_entry, dict)
+                or set(raw_entry) != {"path", "present", "size", "sha256"}
+            ):
+                raise OSError(f"Invalid cache recovery entry: {manifest_path}")
+            name = raw_entry["path"]
+            present = raw_entry["present"]
+            size = raw_entry["size"]
+            digest = raw_entry["sha256"]
+            if (
+                not isinstance(name, str)
+                or not name
+                or Path(name).name != name
+                or name in {".", ".."}
+                or name in entry_names
+                or name == ".cache.lock"
+                or Path(name).is_absolute()
+                or not isinstance(present, bool)
+            ):
+                raise OSError(f"Invalid cache recovery path: {name!r}")
+            entry_names.add(name)
+            if present:
+                if (
+                    not isinstance(size, int)
+                    or isinstance(size, bool)
+                    or size < 0
+                    or size > _MAX_RECOVERY_ENTRY_BYTES
+                    or not isinstance(digest, str)
+                    or len(digest) != 64
+                    or any(character not in "0123456789abcdef" for character in digest)
+                ):
+                    raise OSError(f"Invalid cache recovery metadata: {name}")
+                source = recovery_path / name
+                if not source.is_file() or source.is_symlink():
+                    raise OSError(f"Missing cache recovery preimage: {source}")
+                content = source.read_bytes()
+                if (
+                    len(content) != size
+                    or hashlib.sha256(content).hexdigest() != digest
+                ):
+                    raise OSError(
+                        f"Cache recovery preimage verification failed: {source}"
+                    )
+                recovery_names.add(name)
+                total_bytes += size
+                if total_bytes > _MAX_RECOVERY_TOTAL_BYTES:
+                    raise OSError(
+                        "Cache recovery preimages exceed the total size limit"
+                    )
+            else:
+                if size is not None or digest is not None:
+                    raise OSError(f"Invalid absent cache recovery entry: {name}")
+                content = None
+            entries.append((self._directory / name, present, content, name))
+
+        actual_names = {path.name for path in recovery_path.iterdir()}
+        if actual_names != recovery_names:
+            raise OSError(
+                f"Unexpected files in cache recovery directory: {recovery_path}"
+            )
+
+        for target, present, content, name in entries:
+            if present:
+                assert content is not None
+                self._write_bytes_atomic(target, content)
+            else:
+                self._unlink_and_fsync(target)
+            if present:
+                if target.read_bytes() != content:
+                    raise OSError(f"Cache recovery verification failed: {target}")
+            elif target.exists():
+                raise OSError(f"Cache entry remains after recovery cleanup: {name}")
+
+        shutil.rmtree(recovery_path)
+        _fsync_directory(self._directory)
 
     def _restore_bytes_atomic(self, path: Path, content: bytes) -> None:
         """Restore bytes with an atomic replacement and content verification."""
@@ -427,17 +582,20 @@ class MarketDataService:
         self._cache_recovery_path = self._create_cache_recovery(backups)
         for path, previous in reversed(backups):
             if previous is None:
-                path.unlink(missing_ok=True)
+                self._cache._unlink_and_fsync(path)
                 if path.exists():
                     raise OSError(f"Cache entry remains after removal: {path}")
             else:
                 self._cache._restore_bytes_atomic(path, previous)
-        shutil.rmtree(self._cache_recovery_path)
-        if self._cache_recovery_path.exists():
+        recovery_path = self._cache_recovery_path
+        shutil.rmtree(recovery_path)
+        _fsync_directory(self._cache._directory)
+        if recovery_path.exists():
             raise OSError(
                 f"Could not remove cache recovery artifacts: "
-                f"{self._cache_recovery_path}"
+                f"{recovery_path}"
             )
+        self._cache_recovery_path = None
 
     def _create_cache_recovery(
         self, backups: Sequence[tuple[Path, bytes | None]]
@@ -445,15 +603,17 @@ class MarketDataService:
         recovery_path = Path(
             tempfile.mkdtemp(prefix=".cache-recovery-", dir=self._cache._directory)
         )
+        _fsync_directory(self._cache._directory)
         self._cache_recovery_path = recovery_path
         manifest_path = recovery_path / "manifest.json"
         manifest = {
-            "schema_version": 1,
+            "schema_version": 2,
             "state": "copying",
             "entries": [
                 {
                     "path": path.name,
                     "present": previous is not None,
+                    "size": len(previous) if previous is not None else None,
                     "sha256": (
                         hashlib.sha256(previous).hexdigest()
                         if previous is not None
