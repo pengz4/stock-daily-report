@@ -36,8 +36,10 @@ Webhook URLs are runtime secrets, not configuration values:
 | `REPORT_BASE_URL` | Actions variable | notifications are enabled |
 
 The scheduled workflow generates the report, deploys GitHub Pages, and sends
-the summary only after deployment succeeds. Run `stock-daily-report notify`
-locally to send an already published `report.json`.
+the summary only after deployment succeeds. Reports and input snapshots are
+also retained on the `reports-history` branch, while snapshots are excluded
+from the Pages artifact. Run `stock-daily-report notify` locally to send an
+already published `report.json`.
 
 ## GitHub Actions
 

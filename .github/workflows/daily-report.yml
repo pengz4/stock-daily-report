@@ -44,7 +44,10 @@ jobs:
           python-version: "3.11"
           cache: pip
       - name: Install project
-        run: python -m pip install --no-build-isolation -r requirements.lock && python -m pip install --no-build-isolation --no-deps .
+        run: |
+          python -m pip install setuptools==80.9.0 wheel==0.45.1
+          python -m pip install --no-build-isolation -r requirements.lock
+          python -m pip install --no-build-isolation --no-deps .
       - name: Select report date
         id: report-date
         env:
@@ -67,6 +70,9 @@ jobs:
           if [ -d .report-history/reports ]; then
             cp -a .report-history/reports ./reports
           fi
+          if [ -d .report-history/snapshots ]; then
+            cp -a .report-history/snapshots ./snapshots
+          fi
       - name: Generate report artifacts
         env:
           WECOM_WEBHOOK_URL: ${{ secrets.WECOM_WEBHOOK_URL }}
@@ -86,12 +92,13 @@ jobs:
             git -C .report-history remote add origin \
               "https://github.com/${GITHUB_REPOSITORY}.git"
           fi
-          rm -rf .report-history/reports .report-history/site
+          rm -rf .report-history/reports .report-history/site .report-history/snapshots
           cp -a reports .report-history/reports
           cp -a site .report-history/site
+          cp -a snapshots .report-history/snapshots
           git -C .report-history config user.name "github-actions[bot]"
           git -C .report-history config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git -C .report-history add reports site
+          git -C .report-history add reports site snapshots
           if ! git -C .report-history diff --cached --quiet; then
             git -C .report-history commit -m "chore: publish report history"
             git -C .report-history -c \
@@ -140,7 +147,10 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install project
-        run: python -m pip install --no-build-isolation -r requirements.lock && python -m pip install --no-build-isolation --no-deps .
+        run: |
+          python -m pip install setuptools==80.9.0 wheel==0.45.1
+          python -m pip install --no-build-isolation -r requirements.lock
+          python -m pip install --no-build-isolation --no-deps .
       - name: Download deployed report artifact
         uses: actions/download-artifact@v4
         with:
