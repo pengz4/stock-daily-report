@@ -79,6 +79,10 @@ class PipelineError(RuntimeError):
         super().__init__(f"Daily report pipeline failed: {detail}")
 
 
+class PublicationRollbackError(RuntimeError):
+    """Raised when publication recovery cannot be verified."""
+
+
 @dataclass(frozen=True)
 class ReportOutputs:
     """Paths and canonical model returned after a successful publication."""
@@ -134,46 +138,47 @@ def run_daily_report(
             output_root=root,
         )
 
-    for stock in sorted(active_watchlist.stocks, key=lambda item: item.code):
-        try:
-            result = (
-                active_service.fetch(
-                    stock.code,
-                    end=active_report_date,
-                    as_of=active_report_date,
-                    defer_cache=True,
-                )
-                if active_service is not None
-                else _fetch_direct(
-                    provider,
-                    stock.code,
-                    report_date=active_report_date,
-                    settings=active_settings,
-                )
-            )
-            fetched[stock.code] = result
-        except (ProviderError, ValidationError, TypeError, ValueError) as error:
-            quality = getattr(error, "quality", None)
-            issue_codes = (
-                quality.issue_codes if isinstance(quality, DataQualityResult) else ()
-            )
-            failures.append(
-                PipelineFailure(stock.code, str(error), tuple(issue_codes))
-            )
-
-    if failures:
-        if active_service is not None:
-            active_service.discard_staged_cache_writes()
-        raise PipelineError(failures)
-
-    bars_by_code = {code: result.bars for code, result in fetched.items()}
-    root.mkdir(parents=True, exist_ok=True)
-    report_dir = root / "reports" / active_report_date.isoformat()
-    json_path = report_dir / "report.json"
-    markdown_path = report_dir / "report.md"
-    html_path = report_dir / "index.html"
-    transaction_root = Path(tempfile.mkdtemp(prefix=".publication-", dir=root))
+    transaction_root: Path | None = None
     try:
+        for stock in sorted(active_watchlist.stocks, key=lambda item: item.code):
+            try:
+                result = (
+                    active_service.fetch(
+                        stock.code,
+                        end=active_report_date,
+                        as_of=active_report_date,
+                        defer_cache=True,
+                    )
+                    if active_service is not None
+                    else _fetch_direct(
+                        provider,
+                        stock.code,
+                        report_date=active_report_date,
+                        settings=active_settings,
+                    )
+                )
+                fetched[stock.code] = result
+            except (ProviderError, ValidationError, TypeError, ValueError) as error:
+                quality = getattr(error, "quality", None)
+                issue_codes = (
+                    quality.issue_codes
+                    if isinstance(quality, DataQualityResult)
+                    else ()
+                )
+                failures.append(
+                    PipelineFailure(stock.code, str(error), tuple(issue_codes))
+                )
+
+        if failures:
+            raise PipelineError(failures)
+
+        bars_by_code = {code: result.bars for code, result in fetched.items()}
+        root.mkdir(parents=True, exist_ok=True)
+        report_dir = root / "reports" / active_report_date.isoformat()
+        json_path = report_dir / "report.json"
+        markdown_path = report_dir / "report.md"
+        html_path = report_dir / "index.html"
+        transaction_root = Path(tempfile.mkdtemp(prefix=".publication-", dir=root))
         with _publication_lock(root, active_report_date):
             return _publish_report_transaction(
                 root=root,
@@ -190,7 +195,19 @@ def run_daily_report(
                 html_path=html_path,
             )
     finally:
-        shutil.rmtree(transaction_root, ignore_errors=True)
+        if active_service is not None:
+            active_service.discard_staged_cache_writes()
+        if transaction_root is not None:
+            _cleanup_transaction_root(transaction_root, active_report_date)
+
+
+def _cleanup_transaction_root(transaction_root: Path, report_date: date) -> None:
+    """Remove staging only when no unverified publication backup remains."""
+
+    backup_root = transaction_root / "backups"
+    if backup_root.exists():
+        return
+    shutil.rmtree(transaction_root, ignore_errors=True)
 
 
 @contextmanager
@@ -287,33 +304,27 @@ def _publish_report_transaction(
                 [PipelineFailure("cache_commit", str(error))]
             ) from error
         publication.complete()
-    except PipelineError:
+    except BaseException as error:
         if service is not None:
             service.discard_staged_cache_writes()
-        if publication is not None:
+        if (
+            publication is not None
+            and not publication._finished
+            and not publication._rollback_attempted
+        ):
             publication.rollback()
-        raise
-    except SnapshotConflictError as error:
-        if service is not None:
-            service.discard_staged_cache_writes()
-        if publication is not None:
-            publication.rollback()
-        raise PipelineError(
-            [PipelineFailure("snapshot_conflict", str(error))]
-        ) from error
-    except SnapshotError as error:
-        if service is not None:
-            service.discard_staged_cache_writes()
-        if publication is not None:
-            publication.rollback()
-        raise PipelineError(
-            [PipelineFailure("snapshot_error", f"Could not prepare snapshot: {error}")]
-        ) from error
-    except Exception:
-        if service is not None:
-            service.discard_staged_cache_writes()
-        if publication is not None:
-            publication.rollback()
+        if isinstance(error, SnapshotConflictError):
+            raise PipelineError(
+                [PipelineFailure("snapshot_conflict", str(error))]
+            ) from error
+        if isinstance(error, SnapshotError):
+            raise PipelineError(
+                [
+                    PipelineFailure(
+                        "snapshot_error", f"Could not prepare snapshot: {error}"
+                    )
+                ]
+            ) from error
         raise
 
     return ReportOutputs(
@@ -397,6 +408,10 @@ class _PublicationTransaction:
         )
         self.site_index = root / "site" / "index.html"
         self.styles_path = root / "site" / "styles.css"
+        self._report_was_present = self.report_dir.exists()
+        self._snapshot_was_present = self.snapshot_path.exists()
+        self._site_index_was_present = self.site_index.exists()
+        self._styles_was_present = self.styles_path.exists()
         self.backup_root = staged_report_dir.parents[1] / "backups"
         self.backup_report_dir = self.backup_root / "report"
         self.backup_snapshot_path = self.backup_root / "snapshot.json"
@@ -410,10 +425,11 @@ class _PublicationTransaction:
         self._styles_backed_up = False
         self._styles_published = False
         self._finished = False
+        self._rollback_attempted = False
 
     def publish(self) -> None:
-        self.backup_root.mkdir(parents=True, exist_ok=True)
         try:
+            self.backup_root.mkdir(parents=True, exist_ok=True)
             if self.report_dir.exists():
                 os.replace(self.report_dir, self.backup_report_dir)
                 self._report_backed_up = True
@@ -440,7 +456,7 @@ class _PublicationTransaction:
                 self.styles_path.parent.mkdir(parents=True, exist_ok=True)
                 os.replace(self.staged_styles_path, self.styles_path)
                 self._styles_published = True
-        except Exception:
+        except BaseException:
             self.rollback()
             raise
 
@@ -450,30 +466,120 @@ class _PublicationTransaction:
     def complete(self) -> None:
         """Discard rollback backups after every transactional step succeeds."""
 
+        if self.backup_root.exists():
+            shutil.rmtree(self.backup_root)
+            if self.backup_root.exists():
+                raise OSError(
+                    f"Could not remove publication backups: {self.backup_root}"
+                )
         self._finished = True
-        shutil.rmtree(self.backup_root, ignore_errors=True)
 
     def rollback(self) -> None:
         if self._finished:
             return
-        if self._styles_published:
-            self.styles_path.unlink(missing_ok=True)
-        if self._styles_backed_up and self.backup_styles.exists():
-            self.styles_path.parent.mkdir(parents=True, exist_ok=True)
-            os.replace(self.backup_styles, self.styles_path)
-        if self._site_index_published:
-            self.site_index.unlink(missing_ok=True)
-        if self._site_index_backed_up and self.backup_site_index.exists():
-            self.site_index.parent.mkdir(parents=True, exist_ok=True)
-            os.replace(self.backup_site_index, self.site_index)
-        if self._snapshot_published:
-            self.snapshot_path.unlink(missing_ok=True)
-        if self._report_published:
-            shutil.rmtree(self.report_dir, ignore_errors=True)
-        if self._report_backed_up and self.backup_report_dir.exists():
-            self.report_dir.parent.mkdir(parents=True, exist_ok=True)
-            os.replace(self.backup_report_dir, self.report_dir)
+        if self._rollback_attempted:
+            raise PublicationRollbackError(
+                "Publication rollback previously failed; recovery artifacts "
+                f"retained at {self.backup_root}"
+            )
+        self._rollback_attempted = True
+        try:
+            self._restore_path(
+                target=self.styles_path,
+                backup=self.backup_styles,
+                staged=self.staged_styles_path,
+                was_present=self._styles_was_present,
+                published=self._styles_published,
+            )
+            self._restore_path(
+                target=self.site_index,
+                backup=self.backup_site_index,
+                staged=self.staged_site_index,
+                was_present=self._site_index_was_present,
+                published=self._site_index_published,
+            )
+            if self.staged_snapshot_path is not None:
+                self._restore_path(
+                    target=self.snapshot_path,
+                    backup=self.backup_snapshot_path,
+                    staged=self.staged_snapshot_path,
+                    was_present=self._snapshot_was_present,
+                    published=self._snapshot_published,
+                )
+            self._restore_path(
+                target=self.report_dir,
+                backup=self.backup_report_dir,
+                staged=self.staged_report_dir,
+                was_present=self._report_was_present,
+                published=self._report_published,
+            )
+            self._verify_restored(
+                target=self.styles_path,
+                backup=self.backup_styles,
+                was_present=self._styles_was_present,
+            )
+            self._verify_restored(
+                target=self.site_index,
+                backup=self.backup_site_index,
+                was_present=self._site_index_was_present,
+            )
+            if self.staged_snapshot_path is not None:
+                self._verify_restored(
+                    target=self.snapshot_path,
+                    backup=self.backup_snapshot_path,
+                    was_present=self._snapshot_was_present,
+                )
+            self._verify_restored(
+                target=self.report_dir,
+                backup=self.backup_report_dir,
+                was_present=self._report_was_present,
+            )
+            shutil.rmtree(self.backup_root)
+            if self.backup_root.exists():
+                raise OSError(f"Could not remove publication backups: {self.backup_root}")
+        except BaseException as error:
+            if isinstance(error, PublicationRollbackError):
+                raise
+            raise PublicationRollbackError(
+                "Publication rollback failed; recovery artifacts retained at "
+                f"{self.backup_root}"
+            ) from error
         self._finished = True
+
+    def _restore_path(
+        self,
+        *,
+        target: Path,
+        backup: Path,
+        staged: Path | None,
+        was_present: bool,
+        published: bool,
+    ) -> None:
+        if backup.exists():
+            target.parent.mkdir(parents=True, exist_ok=True)
+            if target.is_dir():
+                shutil.rmtree(target)
+            else:
+                target.unlink(missing_ok=True)
+            os.replace(backup, target)
+            return
+        if was_present:
+            return
+        if published or (staged is not None and not staged.exists()):
+            if target.is_dir():
+                shutil.rmtree(target)
+            else:
+                target.unlink(missing_ok=True)
+
+    def _verify_restored(
+        self, *, target: Path, backup: Path, was_present: bool
+    ) -> None:
+        if backup.exists():
+            raise OSError(f"Publication backup remains: {backup}")
+        if was_present and not target.exists():
+            raise OSError(f"Publication target was not restored: {target}")
+        if not was_present and target.exists():
+            raise OSError(f"New publication target remains: {target}")
 
 
 def _fetch_direct(
@@ -722,6 +828,7 @@ def _project_root() -> Path:
 __all__ = [
     "PipelineError",
     "PipelineFailure",
+    "PublicationRollbackError",
     "ReportOutputs",
     "run_daily_report",
 ]

@@ -358,7 +358,7 @@ class MarketDataService:
                     self._cache._store_unlocked(
                         provider_name, code, start, end, document
                     )
-            except Exception:
+            except BaseException:
                 for path, previous in reversed(backups):
                     if previous is None:
                         path.unlink(missing_ok=True)

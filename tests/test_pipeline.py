@@ -5,6 +5,7 @@ import sys
 import threading
 import time
 from datetime import UTC, date, datetime, timedelta
+from pathlib import Path
 
 import pytest
 
@@ -728,11 +729,12 @@ def test_cache_commit_failure_restores_preimage_and_publication(
 
 def test_failed_rerun_never_deletes_unrelated_dated_reports(tmp_path, fixture_settings):
     watchlist = Watchlist(stocks=[{"code": "600519", "name": "one"}])
+    bars = make_bars("600519")[:-1]
     run_daily_report(
         fixture_settings,
         output_root=tmp_path,
         watchlist=watchlist,
-        provider=RecordingProvider({"600519": make_bars("600519")}),
+        provider=RecordingProvider({"600519": bars}),
         report_date=date(2026, 9, 3),
     )
     unrelated = tmp_path / "reports/2026-09-03"
@@ -743,9 +745,7 @@ def test_failed_rerun_never_deletes_unrelated_dated_reports(tmp_path, fixture_se
             fixture_settings,
             output_root=tmp_path,
             watchlist=watchlist,
-            provider=RecordingProvider(
-                {"600519": make_bars("600519")}, fail_code="600519"
-            ),
+            provider=RecordingProvider({"600519": bars}, fail_code="600519"),
             report_date=date(2026, 9, 4),
         )
 
@@ -802,6 +802,102 @@ def test_cli_handles_pipeline_failure_without_traceback(
     captured = capsys.readouterr()
     assert result == 1
     assert "snapshot_conflict" in captured.err
+    assert "Traceback" not in captured.err
+
+
+@pytest.mark.parametrize(
+    ("settings_contents", "expected_message"),
+    [
+        (None, "Configuration file not found"),
+        ("rule_version: []\n", "Invalid settings configuration"),
+    ],
+)
+def test_cli_handles_configuration_failure_without_traceback(
+    tmp_path, capsys, settings_contents, expected_message
+):
+    settings_path = tmp_path / "settings.yaml"
+    if settings_contents is not None:
+        settings_path.write_text(settings_contents, encoding="utf-8")
+    watchlist_path = tmp_path / "watchlist.yaml"
+    watchlist_path.write_text(
+        "stocks:\n  - code: '600519'\n    name: one\n", encoding="utf-8"
+    )
+
+    result = cli_module.main(
+        [
+            "daily",
+            "--date",
+            "2026-09-04",
+            "--settings",
+            str(settings_path),
+            "--watchlist",
+            str(watchlist_path),
+            "--output-root",
+            str(tmp_path / "published"),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert result == 1
+    assert expected_message in captured.err
+    assert "Traceback" not in captured.err
+
+
+def test_cli_handles_missing_watchlist_without_traceback(tmp_path, capsys):
+    settings_path = tmp_path / "settings.yaml"
+    settings_path.write_text(
+        "rule_version:\n  name: simplified\n  version: v1\n"
+        "notifications:\n  enabled_channels: []\n",
+        encoding="utf-8",
+    )
+
+    result = cli_module.main(
+        [
+            "daily",
+            "--date",
+            "2026-09-04",
+            "--settings",
+            str(settings_path),
+            "--watchlist",
+            str(tmp_path / "watchlist.yaml"),
+            "--output-root",
+            str(tmp_path / "published"),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert result == 1
+    assert "Configuration file not found" in captured.err
+    assert "Traceback" not in captured.err
+
+
+def test_cli_handles_invalid_watchlist_without_traceback(tmp_path, capsys):
+    settings_path = tmp_path / "settings.yaml"
+    settings_path.write_text(
+        "rule_version:\n  name: simplified\n  version: v1\n"
+        "notifications:\n  enabled_channels: []\n",
+        encoding="utf-8",
+    )
+    watchlist_path = tmp_path / "watchlist.yaml"
+    watchlist_path.write_text("stocks: []\n", encoding="utf-8")
+
+    result = cli_module.main(
+        [
+            "daily",
+            "--date",
+            "2026-09-04",
+            "--settings",
+            str(settings_path),
+            "--watchlist",
+            str(watchlist_path),
+            "--output-root",
+            str(tmp_path / "published"),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert result == 1
+    assert "Invalid watchlist configuration" in captured.err
     assert "Traceback" not in captured.err
 
 
@@ -942,6 +1038,158 @@ def test_quality_failure_leaves_no_success_artifacts(
     report_dir = tmp_path / "reports/2026-09-04"
     assert not any((report_dir / name).exists() for name in ("report.json", "report.md", "index.html"))
     assert not (tmp_path / "snapshots/2026-09-04/input.json").exists()
+
+
+def test_pipeline_rejects_provider_ignoring_end_with_future_dated_bar(
+    tmp_path, fixture_settings
+):
+    bars = make_bars("600519")
+    future = bars[-1].model_copy(update={"trade_date": date(2026, 9, 5)})
+    provider = RecordingProvider({"600519": [*bars, future]})
+
+    with pytest.raises(PipelineError) as error:
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+            provider=provider,
+            report_date=date(2026, 9, 4),
+        )
+
+    assert "future_trade_date" in error.value.failures[0].issue_codes
+    report_dir = tmp_path / "reports/2026-09-04"
+    assert not any(
+        (report_dir / name).exists() for name in ("report.json", "report.md", "index.html")
+    )
+    assert not (tmp_path / "snapshots/2026-09-04/input.json").exists()
+
+
+def test_interrupt_after_report_backup_rename_restores_old_report(
+    tmp_path, fixture_settings, monkeypatch
+):
+    watchlist = Watchlist(stocks=[{"code": "600519", "name": "one"}])
+    run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        report_date=date(2026, 9, 4),
+    )
+    report_dir = tmp_path / "reports/2026-09-04"
+    before = {path: path.read_bytes() for path in report_dir.iterdir()}
+    original_replace = pipeline_module.os.replace
+
+    def interrupt_after_report_backup(source, destination):
+        original_replace(source, destination)
+        if Path(source) == report_dir:
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(pipeline_module.os, "replace", interrupt_after_report_backup)
+
+    with pytest.raises(KeyboardInterrupt):
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=watchlist,
+            provider=RecordingProvider({"600519": make_bars("600519")}),
+            report_date=date(2026, 9, 4),
+        )
+
+    assert {path: path.read_bytes() for path in report_dir.iterdir()} == before
+    assert not list(tmp_path.glob(".publication-*"))
+
+
+def test_failed_rollback_retains_recovery_artifacts(
+    tmp_path, fixture_settings, monkeypatch
+):
+    watchlist = Watchlist(stocks=[{"code": "600519", "name": "one"}])
+    run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        report_date=date(2026, 9, 4),
+    )
+    report_dir = tmp_path / "reports/2026-09-04"
+    original_replace = pipeline_module.os.replace
+
+    def fail_restore(source, destination):
+        if Path(source) == report_dir:
+            original_replace(source, destination)
+            raise KeyboardInterrupt
+        if Path(source).name == "report" and Path(source).parent.name == "backups":
+            raise OSError("injected rollback failure")
+        return original_replace(source, destination)
+
+    monkeypatch.setattr(pipeline_module.os, "replace", fail_restore)
+
+    with pytest.raises(
+        pipeline_module.PublicationRollbackError,
+        match="recovery artifacts retained",
+    ):
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=watchlist,
+            provider=RecordingProvider({"600519": make_bars("600519")}),
+            report_date=date(2026, 9, 4),
+        )
+
+    recovery_backups = list(tmp_path.glob(".publication-*/backups"))
+    assert len(recovery_backups) == 1
+    assert (recovery_backups[0] / "report").exists()
+
+
+def test_prepublication_failure_discards_staged_cache_before_service_reuse(
+    tmp_path, fixture_settings, monkeypatch
+):
+    provider = RecordingProvider({"600519": make_bars("600519")})
+    service = MarketDataService(
+        {"fixture": provider, "unused": RecordingProvider({"600519": make_bars("600519")})},
+        primary_provider="fixture",
+        fallback_provider="unused",
+        cache_directory=tmp_path / "cache",
+        cache_ttl_seconds=3600,
+        quality_settings=DataQualitySettings(
+            minimum_history_bars=fixture_settings.market_data.minimum_history_bars,
+            max_completed_trading_day_lag=fixture_settings.market_data.max_completed_trading_day_lag,
+        ),
+    )
+    original_mkdir = Path.mkdir
+
+    def fail_output_root(path, *args, **kwargs):
+        if path == tmp_path:
+            raise OSError("injected output root failure")
+        return original_mkdir(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "mkdir", fail_output_root)
+
+    with pytest.raises(OSError, match="injected output root failure"):
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+            service=service,
+            report_date=date(2026, 9, 4),
+        )
+
+    assert service._staged_cache_writes == []
+    monkeypatch.undo()
+    provider.bars_by_code["600519"] = [
+        bar.model_copy(update={"open": 200.0, "high": 202.0, "low": 199.0, "close": 201.0})
+        for bar in make_bars("600519")
+    ]
+
+    run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+        service=service,
+        report_date=date(2026, 9, 4),
+    )
+
+    cached = service._cache.load("fixture", "600519", None, date(2026, 9, 4))
+    assert cached[-1]["close"] == 201.0
 
 
 def test_report_json_is_deterministic_and_contains_auditing_metadata(

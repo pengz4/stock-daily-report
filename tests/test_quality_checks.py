@@ -86,6 +86,20 @@ def test_quality_gate_rejects_stale_weekday_data_but_not_friday_on_weekend(bars)
     assert "stale_last_trade_date" not in weekend.issue_codes
 
 
+def test_quality_gate_rejects_future_trade_dates(bars):
+    future = bars[-1].model_copy(update={"trade_date": date(2026, 9, 5)})
+
+    result = validate_bars(
+        "600519",
+        [*bars, future],
+        as_of=date(2026, 9, 4),
+        settings=DataQualitySettings(minimum_history_bars=1),
+    )
+
+    assert result.analysis_allowed is False
+    assert "future_trade_date" in result.issue_codes
+
+
 class RecordingProvider:
     def __init__(self, name, response=None, error=None):
         self.name = name

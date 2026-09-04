@@ -7,7 +7,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
-from stock_daily_report.config import load_settings, load_watchlist
+from stock_daily_report.config import ConfigurationError, load_settings, load_watchlist
 from stock_daily_report.pipeline import PipelineError, run_daily_report
 from stock_daily_report.providers.fixture import FixtureMarketDataProvider
 
@@ -24,14 +24,14 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "daily":
-        settings = load_settings(args.settings)
-        watchlist = load_watchlist(args.watchlist)
-        provider = (
-            FixtureMarketDataProvider(args.fixture_directory)
-            if args.fixture_directory is not None
-            else None
-        )
         try:
+            settings = load_settings(args.settings)
+            watchlist = load_watchlist(args.watchlist)
+            provider = (
+                FixtureMarketDataProvider(args.fixture_directory)
+                if args.fixture_directory is not None
+                else None
+            )
             outputs = run_daily_report(
                 settings,
                 output_root=args.output_root,
@@ -39,7 +39,7 @@ def main(argv: list[str] | None = None) -> int:
                 provider=provider,
                 report_date=args.date,
             )
-        except PipelineError as error:
+        except (ConfigurationError, PipelineError) as error:
             print(error, file=sys.stderr)
             return 1
         print(outputs.html_path)

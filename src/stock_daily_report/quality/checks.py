@@ -142,6 +142,15 @@ def validate_bars(
             )
 
     _validate_date_sequence(trade_dates, issues)
+    for index, trade_date in trade_dates:
+        if trade_date > as_of:
+            issues.append(
+                DataQualityIssue(
+                    "future_trade_date",
+                    f"trade_date {trade_date.isoformat()} is after as_of",
+                    index,
+                )
+            )
     if len(bars) < active_settings.minimum_history_bars:
         issues.append(
             DataQualityIssue(
