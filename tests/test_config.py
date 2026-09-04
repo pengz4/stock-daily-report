@@ -129,6 +129,50 @@ def test_load_watchlist_rejects_duplicate_codes(tmp_path):
         load_watchlist(path)
 
 
+@pytest.mark.parametrize("tag", ["''", "'   '"])
+def test_load_watchlist_rejects_blank_tags(tmp_path, tag):
+    path = tmp_path / "watchlist.yaml"
+    path.write_text(
+        "stocks:\n"
+        "  - code: '600519'\n"
+        "    name: 贵州茅台\n"
+        f"    tags: [{tag}]\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ConfigurationError, match="tag must not be blank"):
+        load_watchlist(path)
+
+
+def test_load_watchlist_rejects_tags_duplicated_after_normalization(tmp_path):
+    path = tmp_path / "watchlist.yaml"
+    path.write_text(
+        "stocks:\n"
+        "  - code: '600519'\n"
+        "    name: 贵州茅台\n"
+        "    tags: ['value', ' value ']\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ConfigurationError, match="duplicate tag"):
+        load_watchlist(path)
+
+
+def test_load_watchlist_normalizes_valid_tags_by_stripping_whitespace(tmp_path):
+    path = tmp_path / "watchlist.yaml"
+    path.write_text(
+        "stocks:\n"
+        "  - code: '600519'\n"
+        "    name: 贵州茅台\n"
+        "    tags: [' value ', Growth]\n",
+        encoding="utf-8",
+    )
+
+    watchlist = load_watchlist(path)
+
+    assert watchlist.stocks[0].tags == ["value", "Growth"]
+
+
 @pytest.mark.parametrize(
     ("channel", "webhook"),
     [
@@ -177,6 +221,48 @@ def test_load_settings_allows_no_enabled_notification_channels(tmp_path):
     settings = load_settings(str(path))
 
     assert settings.notifications.enabled_channels == set()
+
+
+def test_load_settings_rejects_duplicate_enabled_channels(tmp_path):
+    path = tmp_path / "settings.yaml"
+    path.write_text(
+        "rule_version:\n  name: simplified\n  version: v1\n"
+        "notifications:\n"
+        "  enabled_channels: [wecom, wecom]\n"
+        "  wecom_webhook_url: https://example.com/wecom\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ConfigurationError, match="duplicate enabled channel"):
+        load_settings(path)
+
+
+def test_load_settings_rejects_unsupported_enabled_channels(tmp_path):
+    path = tmp_path / "settings.yaml"
+    path.write_text(
+        "rule_version:\n  name: simplified\n  version: v1\n"
+        "notifications:\n  enabled_channels: [slack]\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ConfigurationError, match="enabled_channels"):
+        load_settings(path)
+
+
+def test_load_settings_accepts_unique_enabled_channels(tmp_path):
+    path = tmp_path / "settings.yaml"
+    path.write_text(
+        "rule_version:\n  name: simplified\n  version: v1\n"
+        "notifications:\n"
+        "  enabled_channels: [wecom, feishu]\n"
+        "  wecom_webhook_url: https://example.com/wecom\n"
+        "  feishu_webhook_url: https://example.com/feishu\n",
+        encoding="utf-8",
+    )
+
+    settings = load_settings(path)
+
+    assert settings.notifications.enabled_channels == {"wecom", "feishu"}
 
 
 def test_load_settings_requires_explicit_notification_configuration(tmp_path):

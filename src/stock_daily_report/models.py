@@ -33,6 +33,7 @@ class WatchlistStock(BaseModel):
     code: str
     name: NonEmptyString
     group: str = "default"
+    # Tags are stripped of surrounding whitespace while retaining their case.
     tags: list[str] = Field(default_factory=list)
     news_enabled: bool = True
 
@@ -46,6 +47,16 @@ class WatchlistStock(BaseModel):
                 "STAR 688, BSE 920; legacy BSE aliases are not accepted)"
             )
         return value
+
+    @field_validator("tags")
+    @classmethod
+    def normalize_and_require_unique_tags(cls, value: list[str]) -> list[str]:
+        normalized_tags = [tag.strip() for tag in value]
+        if any(not tag for tag in normalized_tags):
+            raise ValueError("tag must not be blank")
+        if len(normalized_tags) != len(set(normalized_tags)):
+            raise ValueError("duplicate tag(s) are not allowed")
+        return normalized_tags
 
 
 class Watchlist(BaseModel):
@@ -88,6 +99,24 @@ class NotificationSettings(BaseModel):
     enabled_channels: set[Literal["wecom", "feishu"]] = Field(default_factory=set)
     wecom_webhook_url: AnyHttpUrl | None = None
     feishu_webhook_url: AnyHttpUrl | None = None
+
+    @field_validator("enabled_channels", mode="before")
+    @classmethod
+    def reject_duplicate_enabled_channels(cls, value: object) -> object:
+        if isinstance(value, list):
+            seen_channels: set[str] = set()
+            duplicates: set[str] = set()
+            for channel in value:
+                if isinstance(channel, str):
+                    if channel in seen_channels:
+                        duplicates.add(channel)
+                    seen_channels.add(channel)
+            if duplicates:
+                raise ValueError(
+                    "duplicate enabled channel(s) are not allowed: "
+                    f"{', '.join(sorted(duplicates))}"
+                )
+        return value
 
     @field_validator("wecom_webhook_url", "feishu_webhook_url", mode="before")
     @classmethod
