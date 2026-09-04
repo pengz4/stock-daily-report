@@ -1,0 +1,4 @@
+rule_version: strict-v1
+minimum_stroke_separation: 3
+minimum_central_strokes: 3
+require_next_bar_for_tradeability: true
