@@ -317,6 +317,16 @@ class StrictChanAnalyzer:
                         active = candidate
                 continue
             if (
+                active_kind == "top"
+                and current_kind == "bottom"
+                and candidate.event.price >= active.event.price
+            ) or (
+                active_kind == "bottom"
+                and current_kind == "top"
+                and candidate.event.price <= active.event.price
+            ):
+                continue
+            if (
                 candidate.processed_index - active.processed_index
                 < self.profile.minimum_stroke_separation
             ):

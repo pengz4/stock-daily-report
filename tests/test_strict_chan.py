@@ -315,6 +315,30 @@ def test_strict_advances_initial_active_extreme_before_first_stroke():
     assert result.strokes == ()
 
 
+def test_strict_rejects_opposite_fractal_on_wrong_side_of_frozen_endpoint():
+    result = StrictChanAnalyzer(load_strict_profile()).analyze(
+        _bars_from_ranges(
+            [
+                [8, 5],
+                [5, 4],
+                [10, 7],
+                [8, 5],
+                [17, 14],
+                [6, 5],
+                [20, 19],
+                [19.5, 18.5],
+                [19, 18.2],
+                [18.8, 18],
+                [19.5, 18.5],
+            ]
+        )
+    )
+
+    assert len(result.strokes) == 1
+    assert result.strokes[0].low == 4
+    assert result.strokes[0].high == 17
+
+
 def test_strict_analyzer_rejects_unordered_input_without_mutating_it():
     bars = _bars()
     original = list(bars)
