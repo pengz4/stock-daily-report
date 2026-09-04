@@ -12,6 +12,9 @@ dependencies = [
     "PyYAML>=6.0,<7",
 ]
 
+[project.scripts]
+stock-daily-report = "stock_daily_report.cli:main"
+
 [project.optional-dependencies]
 akshare = [
     "akshare>=1.13",

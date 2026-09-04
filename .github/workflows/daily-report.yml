@@ -1,0 +1,113 @@
+name: Daily A-share report
+
+on:
+  schedule:
+    - cron: "30 8 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      report_date:
+        description: "Trading date to report (YYYY-MM-DD); blank means today"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: stock-daily-report-pages
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      report_date: ${{ steps.report-date.outputs.report_date }}
+    env:
+      TZ: Asia/Shanghai
+      REPORT_BASE_URL: ${{ vars.REPORT_BASE_URL }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install project
+        run: python -m pip install --upgrade pip && python -m pip install ".[akshare]"
+      - name: Select report date
+        id: report-date
+        env:
+          REQUESTED_DATE: ${{ inputs.report_date }}
+        run: |
+          if [ -n "$REQUESTED_DATE" ]; then
+            report_date="$REQUESTED_DATE"
+          else
+            report_date="$(date +%F)"
+          fi
+          python - "$report_date" <<'PY'
+          import sys
+          from datetime import date
+          date.fromisoformat(sys.argv[1])
+          PY
+          echo "report_date=$report_date" >> "$GITHUB_OUTPUT"
+      - name: Generate report artifacts
+        env:
+          WECOM_WEBHOOK_URL: ${{ secrets.WECOM_WEBHOOK_URL }}
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+        run: |
+          python -m stock_daily_report.cli daily \
+            --date "${{ steps.report-date.outputs.report_date }}" \
+            --output-root . \
+            --skip-notifications
+      - name: Stage Pages artifact
+        run: python scripts/publish_site.py --root . --output public
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    needs: generate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  notify:
+    needs: [generate, deploy]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TZ: Asia/Shanghai
+      REPORT_BASE_URL: ${{ vars.REPORT_BASE_URL }}
+      WECOM_WEBHOOK_URL: ${{ secrets.WECOM_WEBHOOK_URL }}
+      FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install project
+        run: python -m pip install --upgrade pip && python -m pip install .
+      - name: Download deployed report artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          path: public
+      - name: Send notifications
+        run: |
+          python -m stock_daily_report.cli notify \
+            --report "public/reports/${{ needs.generate.outputs.report_date }}/report.json" \
+            --settings config/settings.yaml \
+            --report-url "${REPORT_BASE_URL}/reports/${{ needs.generate.outputs.report_date }}/"

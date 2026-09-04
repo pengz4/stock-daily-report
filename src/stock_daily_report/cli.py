@@ -8,6 +8,8 @@ import sys
 from datetime import date
 from pathlib import Path
 
+from pydantic import ValidationError
+
 from stock_daily_report.config import ConfigurationError, load_settings, load_watchlist
 from stock_daily_report.notify import NotificationDeliveryError, NotificationService
 from stock_daily_report.pipeline import (
@@ -17,6 +19,7 @@ from stock_daily_report.pipeline import (
 )
 from stock_daily_report.providers.fixture import FixtureMarketDataProvider
 from stock_daily_report.providers.service import CacheRollbackError
+from stock_daily_report.report.models import ReportDocument
 from stock_daily_report.snapshots import SnapshotError
 
 
@@ -30,9 +33,22 @@ def main(argv: list[str] | None = None) -> int:
     daily.add_argument("--output-root", type=Path, default=Path.cwd())
     daily.add_argument("--fixture-directory", type=Path)
     daily.add_argument(
+        "--skip-notifications",
+        action="store_true",
+        help="defer notifications until after static-site deployment",
+    )
+    daily.add_argument(
         "--report-url",
         help="Final absolute published report URL; otherwise REPORT_BASE_URL is used",
     )
+    notify = subparsers.add_parser(
+        "notify", help="send notifications for an already published report"
+    )
+    notify.add_argument("--report", type=Path, required=True)
+    notify.add_argument(
+        "--settings", type=Path, default=_project_root() / "config/settings.yaml"
+    )
+    notify.add_argument("--report-url", required=True)
     args = parser.parse_args(argv)
 
     if args.command == "daily":
@@ -51,7 +67,7 @@ def main(argv: list[str] | None = None) -> int:
                 provider=provider,
                 report_date=args.date,
             )
-            if settings.notifications.enabled_channels:
+            if settings.notifications.enabled_channels and not args.skip_notifications:
                 if args.report_url:
                     report_url = args.report_url
                 else:
@@ -76,6 +92,26 @@ def main(argv: list[str] | None = None) -> int:
             print(error, file=sys.stderr)
             return 1
         print(outputs.html_path)
+        return 0
+    if args.command == "notify":
+        try:
+            settings = load_settings(args.settings)
+            report = ReportDocument.model_validate_json(
+                args.report.read_text(encoding="utf-8")
+            )
+            NotificationService(settings.notifications).send_report(
+                report,
+                report_url=args.report_url,
+            )
+        except (
+            ConfigurationError,
+            NotificationDeliveryError,
+            OSError,
+            ValidationError,
+        ) as error:
+            print(error, file=sys.stderr)
+            return 1
+        print("Notifications delivered")
         return 0
     return 2
 

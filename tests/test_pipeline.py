@@ -1948,6 +1948,37 @@ def test_cli_notifies_only_after_report_pipeline_returns(
     assert capsys.readouterr().out.endswith("\n")
 
 
+def test_cli_can_skip_notifications_for_deferred_pages_delivery(
+    fixture_settings, monkeypatch
+):
+    settings_data = fixture_settings.model_dump()
+    settings_data["notifications"] = {"enabled_channels": ["wecom"]}
+    settings = Settings.model_validate(settings_data)
+    calls = []
+
+    class FakeNotificationService:
+        def __init__(self, _configured_settings):
+            calls.append("created")
+
+    monkeypatch.setattr(cli_module, "load_settings", lambda _path: settings)
+    monkeypatch.setattr(
+        cli_module,
+        "load_watchlist",
+        lambda _path: Watchlist(stocks=[{"code": "600519", "name": "one"}]),
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "run_daily_report",
+        lambda *args, **kwargs: SimpleNamespace(
+            report=object(), html_path="/tmp/reports/2026-09-04/index.html"
+        ),
+    )
+    monkeypatch.setattr(cli_module, "NotificationService", FakeNotificationService)
+
+    assert cli_module.main(["daily", "--date", "2026-09-04", "--skip-notifications"]) == 0
+    assert calls == []
+
+
 def test_cli_treats_explicit_report_url_as_final_url(
     fixture_settings, monkeypatch
 ):
@@ -1989,6 +2020,50 @@ def test_cli_treats_explicit_report_url_as_final_url(
     )
 
     assert calls == ["https://reports.example/reports/2026-09-04/"]
+
+
+def test_cli_notify_delivers_an_existing_published_report(
+    fixture_settings, monkeypatch, tmp_path, capsys
+):
+    settings_data = fixture_settings.model_dump()
+    settings_data["notifications"] = {"enabled_channels": ["wecom"]}
+    settings = Settings.model_validate(settings_data)
+    report_path = tmp_path / "reports/2026-09-04/report.json"
+    report_path.parent.mkdir(parents=True)
+    report_path.write_text(
+        __import__("test_report_render", fromlist=["_document"])
+        ._document("visible")
+        .model_dump_json(),
+        encoding="utf-8",
+    )
+    calls = []
+
+    class FakeNotificationService:
+        def __init__(self, _configured_settings):
+            pass
+
+        def send_report(self, report, *, report_url):
+            calls.append((report, report_url))
+
+    monkeypatch.setattr(cli_module, "load_settings", lambda _path: settings)
+    monkeypatch.setattr(cli_module, "NotificationService", FakeNotificationService)
+
+    result = cli_module.main(
+        [
+            "notify",
+            "--report",
+            str(report_path),
+            "--settings",
+            str(tmp_path / "settings.yaml"),
+            "--report-url",
+            "https://reports.example/reports/2026-09-04/",
+        ]
+    )
+
+    assert result == 0
+    assert calls[0][0].metadata.report_date.isoformat() == "2026-09-04"
+    assert calls[0][1] == "https://reports.example/reports/2026-09-04/"
+    assert "Notifications delivered" in capsys.readouterr().out
 
 
 def test_cli_reports_notification_failure_without_traceback(
