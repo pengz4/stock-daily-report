@@ -242,8 +242,8 @@ class StrictChanAnalyzer:
                 reason = "strict_bottom_fractal"
             else:
                 continue
-            confirmed_at = right.source_dates[-1]
-            right_source_index = right.source_indices[-1]
+            confirmed_at = right.source_dates[0]
+            right_source_index = right.source_indices[0]
             tradable_at = (
                 bars[right_source_index + 1].trade_date
                 if right_source_index + 1 < len(bars)
@@ -271,9 +271,7 @@ class StrictChanAnalyzer:
     def _find_strokes(
         self, fractals: list[_FractalCandidate]
     ) -> list[_StrokeCandidate]:
-        eligible = [
-            fractal for fractal in fractals if fractal.event.tradable_at is not None
-        ]
+        eligible = [fractal for fractal in fractals if fractal.event.confirmed_at]
         strokes: list[_StrokeCandidate] = []
         active: _FractalCandidate | None = None
         active_kind: str | None = None
@@ -416,40 +414,49 @@ class StrictChanAnalyzer:
         area = central_areas[-1]
         if area.high is None or area.low is None:
             return []
-        for index in range(len(bars) - 1, -1, -1):
-            bar = bars[index]
-            if bar.close > area.high or bar.close < area.low:
-                direction = "up" if bar.close > area.high else "down"
-                confirmed_at = (
-                    bars[index + 1].trade_date
-                    if index + 1 < len(bars)
-                    and (
-                        (
-                            direction == "up"
-                            and bars[index + 1].close > area.high
-                        )
-                        or (
-                            direction == "down"
-                            and bars[index + 1].close < area.low
-                        )
-                    )
-                    else None
-                )
+        candidate: tuple[int, str] | None = None
+        for index, bar in enumerate(bars):
+            if area.confirmed_at is not None and bar.trade_date <= area.confirmed_at:
+                continue
+            direction = (
+                "up"
+                if bar.close > area.high
+                else "down"
+                if bar.close < area.low
+                else None
+            )
+            if direction is None:
+                candidate = None
+                continue
+            if candidate is not None and candidate[1] == direction:
+                formed_index = candidate[0]
+                confirmed_at = bar.trade_date
                 tradable_at = (
-                    bars[index + 2].trade_date
-                    if confirmed_at is not None and index + 2 < len(bars)
-                    else None
+                    bars[index + 1].trade_date if index + 1 < len(bars) else None
                 )
                 return [
                     StrictEvent(
                         kind="signal",
-                        formed_at=bar.trade_date,
+                        formed_at=bars[formed_index].trade_date,
                         confirmed_at=confirmed_at,
                         tradable_at=tradable_at,
-                        status="confirmed" if confirmed_at else "candidate",
+                        status="confirmed",
                         reason_code=f"strict_breakout_{direction}_candidate",
                     )
                 ]
+            candidate = (index, direction)
+        if candidate is not None:
+            index, direction = candidate
+            return [
+                StrictEvent(
+                    kind="signal",
+                    formed_at=bars[index].trade_date,
+                    confirmed_at=None,
+                    tradable_at=None,
+                    status="candidate",
+                    reason_code=f"strict_breakout_{direction}_candidate",
+                )
+            ]
         return []
 
 

@@ -6,6 +6,7 @@ import pytest
 
 from stock_daily_report.chan.strict import (
     StrictChanAnalyzer,
+    StrictEvent,
     load_strict_profile,
 )
 from stock_daily_report.models import DailyBar
@@ -87,6 +88,68 @@ def test_strict_fractal_is_confirmed_by_right_bar_even_without_next_bar():
     assert top.status == "confirmed"
     assert top.confirmed_at == date(2026, 1, 3)
     assert top.tradable_at is None
+
+
+def test_strict_confirmed_fractal_can_form_stroke_before_tradeability():
+    result = StrictChanAnalyzer(load_strict_profile()).analyze(
+        _bars_from_ranges(
+            [
+                [10, 8],
+                [15, 12],
+                [13, 10],
+                [12, 9],
+                [8, 5],
+                [10, 7],
+                [11, 8],
+                [16, 13],
+                [14, 11],
+            ]
+        )
+    )
+
+    assert len(result.strokes) == 2
+    assert result.strokes[-1].confirmed_at == date(2026, 1, 9)
+    assert result.strokes[-1].tradable_at is None
+
+
+def test_strict_fractal_confirmation_date_is_stable_after_inclusion():
+    analyzer = StrictChanAnalyzer(load_strict_profile())
+
+    initial = analyzer.analyze(
+        _bars_from_ranges([[10, 8], [13, 11], [11, 9]])
+    ).fractals[0]
+    extended = analyzer.analyze(
+        _bars_from_ranges([[10, 8], [13, 11], [11, 9], [10, 9.5]])
+    ).fractals[0]
+
+    assert initial.confirmed_at == date(2026, 1, 3)
+    assert extended.confirmed_at == initial.confirmed_at
+    assert extended.tradable_at == date(2026, 1, 4)
+
+
+def test_strict_breakout_signal_requires_two_chronological_bars():
+    area = StrictEvent(
+        kind="central_area",
+        formed_at=date(2026, 1, 3),
+        confirmed_at=date(2026, 1, 3),
+        tradable_at=date(2026, 1, 4),
+        status="confirmed",
+        reason_code="strict_three_stroke_overlap",
+        low=5,
+        high=10,
+    )
+    bars = _bars_from_ranges(
+        [[9, 7], [11.5, 10.5], [13, 11], [14, 12], [15, 13], [16, 14]]
+    )
+
+    candidate = StrictChanAnalyzer._find_signals(bars[:4], [area])[0]
+    confirmed = StrictChanAnalyzer._find_signals(bars, [area])[0]
+
+    assert candidate.formed_at == date(2026, 1, 4)
+    assert candidate.confirmed_at is None
+    assert confirmed.formed_at == date(2026, 1, 4)
+    assert confirmed.confirmed_at == date(2026, 1, 5)
+    assert confirmed.tradable_at == date(2026, 1, 6)
 
 
 def test_strict_central_candidate_does_not_crash_on_overlapping_strokes():

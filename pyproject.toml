@@ -31,7 +31,7 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [tool.setuptools.package-data]
-stock_daily_report.chan = ["strict_chan_rules.yaml"]
+"stock_daily_report.chan" = ["strict_chan_rules.yaml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
