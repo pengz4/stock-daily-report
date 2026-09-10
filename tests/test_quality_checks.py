@@ -1065,6 +1065,23 @@ def test_akshare_adapter_maps_complete_source_records_without_network():
     }
 
 
+def test_akshare_adapter_bounds_qfq_history_when_end_date_is_supplied():
+    from stock_daily_report.providers.akshare import AkShareMarketDataProvider
+
+    request = {}
+
+    def fetcher(**kwargs):
+        request.update(kwargs)
+        return []
+
+    provider = AkShareMarketDataProvider(fetcher=fetcher)
+
+    provider.get_daily_bars("600519", end=date(2026, 9, 10))
+
+    assert request["start_date"] == "20240910"
+    assert request["end_date"] == "20260910"
+
+
 def test_akshare_adapter_distinguishes_invalid_data_from_availability_errors():
     from stock_daily_report.providers.akshare import AkShareMarketDataProvider
     from stock_daily_report.providers.base import (

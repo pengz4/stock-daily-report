@@ -1,7 +1,7 @@
 """Optional AkShare adapter that normalizes complete daily history records."""
 
 from collections.abc import Callable, Mapping, Sequence
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from stock_daily_report.models import DailyBar
@@ -21,6 +21,7 @@ _SOURCE_FIELDS = {
     "成交额": "amount",
     "换手率": "turnover_rate",
 }
+_DEFAULT_HISTORY_DAYS = 730
 
 
 class AkShareMarketDataProvider:
@@ -48,11 +49,22 @@ class AkShareMarketDataProvider:
     ) -> list[DailyBar | Mapping[str, object]]:
         """Fetch and map AkShare's daily A-share field names to canonical names."""
 
+        effective_start = (
+            start
+            if start is not None
+            else end - timedelta(days=_DEFAULT_HISTORY_DAYS)
+            if end is not None
+            else None
+        )
         try:
             response = self._resolve_fetcher()(
                 symbol=code,
                 period="daily",
-                start_date=start.strftime("%Y%m%d") if start else "",
+                start_date=(
+                    effective_start.strftime("%Y%m%d")
+                    if effective_start
+                    else ""
+                ),
                 end_date=end.strftime("%Y%m%d") if end else "",
                 adjust=self._adjustment_mode,
             )
