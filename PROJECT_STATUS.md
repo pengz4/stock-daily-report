@@ -30,7 +30,7 @@
 
 The latest local verification completed with:
 
-- `pytest -q`: 312 tests passed.
+- `pytest -q`: 317 tests passed.
 - `ruff check .`: passed.
 - `git diff --check`: passed.
 - Fixture CLI smoke report: `reports/backtests/2026-09-04/report.json`.
@@ -38,6 +38,16 @@ The latest local verification completed with:
 The committed fixture is intentionally a small deterministic smoke fixture.
 Its backtest evaluations are expected to report `not_enough_evidence`; they
 must not be interpreted as performance evidence.
+
+## Daily publication status
+
+- The 2026-09-10 daily workflow completed successfully.
+- Report artifacts are persisted on `reports-history` under
+  `reports/2026-09-10/`.
+- GitHub Pages is enabled with GitHub Actions as its build source.
+- Production market data uses AkShare/Eastmoney first and the independent
+  AkShare/Sina endpoint as fallback; the short fixture is no longer the
+  production fallback.
 
 ## Known boundaries
 
