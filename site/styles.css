@@ -1,0 +1,38 @@
+:root {
+  color-scheme: light;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+body {
+  background: #f5f7fa;
+  color: #1f2933;
+  margin: 0;
+}
+
+main {
+  background: #fff;
+  margin: 2rem auto;
+  max-width: 64rem;
+  padding: 1.5rem;
+}
+
+a {
+  color: #075985;
+}
+
+.metadata {
+  display: grid;
+  gap: 0.35rem 1rem;
+  grid-template-columns: max-content 1fr;
+}
+
+.metadata dt {
+  font-weight: 700;
+}
+
+.stock {
+  border-top: 1px solid #d9e2ec;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+}
