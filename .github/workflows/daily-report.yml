@@ -80,6 +80,8 @@ jobs:
         run: |
           python -m stock_daily_report.cli daily \
             --date "${{ steps.report-date.outputs.report_date }}" \
+            --settings config/settings.yaml \
+            --watchlist config/watchlist.yaml \
             --output-root . \
             --skip-notifications
       - name: Persist report history
