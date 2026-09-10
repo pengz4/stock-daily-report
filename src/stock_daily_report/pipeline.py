@@ -1540,7 +1540,10 @@ class _PublicationTransaction:
             "report": self._report_was_present,
             "snapshot": False,
             "site-index": self._site_index_was_present,
-            "styles": self._styles_was_present,
+            "styles": (
+                self._styles_was_present
+                and self.staged_styles_path is not None
+            ),
         }
         self._published_artifacts = {
             "report": _describe_artifact(self.staged_report_dir),

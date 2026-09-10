@@ -924,6 +924,33 @@ def test_existing_stylesheet_is_published_without_touching_unrelated_site_files(
     assert unrelated.read_bytes() == b"unrelated"
 
 
+def test_publication_does_not_require_backup_for_unchanged_styles(tmp_path):
+    site_directory = tmp_path / "site"
+    site_directory.mkdir()
+    stylesheet = site_directory / "styles.css"
+    stylesheet.write_bytes(b"existing stylesheet")
+    (site_directory / "index.html").write_bytes(b"old index")
+    transaction_root = tmp_path / ".publication-unchanged-styles"
+    staged_report = transaction_root / "reports/2026-09-04"
+    staged_report.mkdir(parents=True)
+    staged_index = transaction_root / "site/index.html"
+    staged_index.parent.mkdir(parents=True)
+    staged_index.write_bytes(b"new index")
+    transaction = pipeline_module._PublicationTransaction(
+        root=tmp_path,
+        report_date=date(2026, 9, 4),
+        staged_report_dir=staged_report,
+        staged_snapshot_path=None,
+        staged_site_index=staged_index,
+        staged_styles_path=None,
+    )
+
+    transaction.publish()
+    transaction.complete()
+
+    assert stylesheet.read_bytes() == b"existing stylesheet"
+
+
 def test_stylesheet_is_restored_when_publication_finalize_fails(
     tmp_path, fixture_settings, monkeypatch
 ):
