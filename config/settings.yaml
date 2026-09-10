@@ -7,7 +7,7 @@ notifications:
   max_attempts: 3
 market_data:
   primary_provider: akshare
-  fallback_provider: fixture
+  fallback_provider: sina
   # Local ignored cache. TTL is in seconds; weekday staleness omits holidays.
   cache_directory: .cache/stock-daily-report
   cache_ttl_seconds: 3600

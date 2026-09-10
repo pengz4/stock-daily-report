@@ -36,6 +36,7 @@ from stock_daily_report.providers.service import (
     MarketDataService,
     RawResponseCache,
 )
+from stock_daily_report.providers.sina import SinaMarketDataProvider
 from stock_daily_report.quality.checks import (
     DataQualityResult,
     DataQualitySettings,
@@ -2115,6 +2116,7 @@ def _build_default_service(
     fixture_path = Path(fixture_directory or _project_root() / "fixtures" / "bars")
     active_providers.setdefault("fixture", FixtureMarketDataProvider(fixture_path))
     active_providers.setdefault("akshare", AkShareMarketDataProvider(now=now))
+    active_providers.setdefault("sina", SinaMarketDataProvider(now=now))
     cache_directory = Path(settings.market_data.cache_directory)
     if not cache_directory.is_absolute():
         cache_directory = output_root / cache_directory
