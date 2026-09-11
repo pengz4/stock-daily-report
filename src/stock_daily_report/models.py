@@ -250,6 +250,40 @@ class BacktestSettings(BaseModel):
         return value
 
 
+class MarketScanSettings(BaseModel):
+    """Versioned limits and eligibility thresholds for full-market scans."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    rule_version: Literal["market-scan-v1"]
+    trend_limit: int = Field(gt=0)
+    balanced_limit: int = Field(gt=0)
+    minimum_history_bars: int = Field(gt=0)
+    minimum_latest_amount: float = Field(gt=0.0)
+    minimum_coverage_ratio: float = Field(gt=0.0, le=1.0)
+    max_workers: int = Field(gt=0)
+    max_candidates: int = Field(gt=0)
+
+    @field_validator(
+        "minimum_latest_amount",
+        "minimum_coverage_ratio",
+        mode="before",
+    )
+    @classmethod
+    def require_finite_thresholds(cls, value: object) -> object:
+        if isinstance(value, bool):
+            raise ValueError(  # noqa: TRY004
+                "market scan thresholds must be numeric"
+            )
+        try:
+            numeric_value = float(value)
+        except (TypeError, ValueError):
+            return value
+        if not math.isfinite(numeric_value):
+            raise ValueError("market scan thresholds must be finite")
+        return value
+
+
 class DailyBar(BaseModel):
     """One normalized daily OHLC bar from a named market-data provider.
 

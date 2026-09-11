@@ -1,10 +1,23 @@
 import pytest
+from pydantic import ValidationError
 
 from stock_daily_report.config import (
     ConfigurationError,
     load_backtest_settings,
+    load_market_scan_settings,
     load_settings,
     load_watchlist,
+)
+
+VALID_MARKET_SCAN_YAML = (
+    "rule_version: market-scan-v1\n"
+    "trend_limit: 30\n"
+    "balanced_limit: 30\n"
+    "minimum_history_bars: 120\n"
+    "minimum_latest_amount: 50000000\n"
+    "minimum_coverage_ratio: 0.80\n"
+    "max_workers: 8\n"
+    "max_candidates: 1200\n"
 )
 
 
@@ -369,3 +382,165 @@ def test_load_backtest_settings_rejects_infinite_price_tick(tmp_path):
 
     with pytest.raises(ConfigurationError, match="finite"):
         load_backtest_settings(path)
+
+
+def test_load_market_scan_settings_validates_versioned_limits(tmp_path):
+    path = tmp_path / "market_scan.yaml"
+    path.write_text(VALID_MARKET_SCAN_YAML, encoding="utf-8")
+
+    settings = load_market_scan_settings(path)
+
+    assert settings.rule_version == "market-scan-v1"
+    assert settings.trend_limit == 30
+    assert settings.balanced_limit == 30
+    assert settings.minimum_history_bars == 120
+    assert settings.minimum_latest_amount == 50_000_000
+    assert settings.minimum_coverage_ratio == 0.8
+    assert settings.max_workers == 8
+    assert settings.max_candidates == 1200
+
+
+def test_market_scan_settings_are_frozen(tmp_path):
+    path = tmp_path / "market_scan.yaml"
+    path.write_text(VALID_MARKET_SCAN_YAML, encoding="utf-8")
+    settings = load_market_scan_settings(path)
+
+    with pytest.raises(ValidationError, match="Instance is frozen"):
+        settings.trend_limit = 20
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "trend_limit",
+        "balanced_limit",
+        "minimum_history_bars",
+        "minimum_latest_amount",
+        "max_workers",
+        "max_candidates",
+    ],
+)
+@pytest.mark.parametrize("invalid_value", [0, -1])
+def test_load_market_scan_settings_requires_positive_limits(
+    tmp_path, field, invalid_value
+):
+    path = tmp_path / "market_scan.yaml"
+    document = VALID_MARKET_SCAN_YAML.replace(
+        f"{field}: {dict(line.split(': ', 1) for line in VALID_MARKET_SCAN_YAML.splitlines())[field]}",
+        f"{field}: {invalid_value}",
+    )
+    path.write_text(document, encoding="utf-8")
+
+    with pytest.raises(ConfigurationError, match=field):
+        load_market_scan_settings(path)
+
+
+@pytest.mark.parametrize("valid_ratio", [0.01, 0.8, 1.0])
+def test_load_market_scan_settings_accepts_coverage_ratio_in_range(
+    tmp_path, valid_ratio
+):
+    path = tmp_path / "market_scan.yaml"
+    path.write_text(
+        VALID_MARKET_SCAN_YAML.replace(
+            "minimum_coverage_ratio: 0.80",
+            f"minimum_coverage_ratio: {valid_ratio}",
+        ),
+        encoding="utf-8",
+    )
+
+    assert load_market_scan_settings(path).minimum_coverage_ratio == valid_ratio
+
+
+@pytest.mark.parametrize("invalid_ratio", [0, -0.01, 1.01])
+def test_load_market_scan_settings_rejects_coverage_ratio_outside_range(
+    tmp_path, invalid_ratio
+):
+    path = tmp_path / "market_scan.yaml"
+    path.write_text(
+        VALID_MARKET_SCAN_YAML.replace(
+            "minimum_coverage_ratio: 0.80",
+            f"minimum_coverage_ratio: {invalid_ratio}",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ConfigurationError, match="minimum_coverage_ratio"):
+        load_market_scan_settings(path)
+
+
+@pytest.mark.parametrize(
+    ("field", "yaml_value"),
+    [
+        ("minimum_latest_amount", ".inf"),
+        ("minimum_latest_amount", ".nan"),
+        ("minimum_coverage_ratio", ".inf"),
+        ("minimum_coverage_ratio", ".nan"),
+    ],
+)
+def test_load_market_scan_settings_rejects_non_finite_thresholds(
+    tmp_path, field, yaml_value
+):
+    path = tmp_path / "market_scan.yaml"
+    current_value = dict(
+        line.split(": ", 1) for line in VALID_MARKET_SCAN_YAML.splitlines()
+    )[field]
+    path.write_text(
+        VALID_MARKET_SCAN_YAML.replace(
+            f"{field}: {current_value}",
+            f"{field}: {yaml_value}",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ConfigurationError, match="finite"):
+        load_market_scan_settings(path)
+
+
+@pytest.mark.parametrize(
+    "field", ["minimum_latest_amount", "minimum_coverage_ratio"]
+)
+def test_load_market_scan_settings_rejects_boolean_thresholds(tmp_path, field):
+    path = tmp_path / "market_scan.yaml"
+    current_value = dict(
+        line.split(": ", 1) for line in VALID_MARKET_SCAN_YAML.splitlines()
+    )[field]
+    path.write_text(
+        VALID_MARKET_SCAN_YAML.replace(
+            f"{field}: {current_value}",
+            f"{field}: true",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ConfigurationError, match="numeric"):
+        load_market_scan_settings(path)
+
+
+def test_load_market_scan_settings_rejects_unknown_rule_version(tmp_path):
+    path = tmp_path / "market_scan.yaml"
+    path.write_text(
+        VALID_MARKET_SCAN_YAML.replace("market-scan-v1", "market-scan-v2"),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ConfigurationError, match="rule_version"):
+        load_market_scan_settings(path)
+
+
+def test_load_market_scan_settings_rejects_extra_keys_and_scoring_weights(tmp_path):
+    path = tmp_path / "market_scan.yaml"
+    path.write_text(
+        VALID_MARKET_SCAN_YAML + "trend_weights:\n  momentum: 1.0\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ConfigurationError, match="Extra inputs are not permitted"):
+        load_market_scan_settings(path)
+
+
+def test_load_market_scan_settings_rejects_arbitrary_yaml_objects(tmp_path):
+    path = tmp_path / "market_scan.yaml"
+    path.write_text("!!python/object/apply:os.system ['echo unsafe']\n", encoding="utf-8")
+
+    with pytest.raises(ConfigurationError, match="Invalid YAML"):
+        load_market_scan_settings(path)

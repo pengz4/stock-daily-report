@@ -6,7 +6,12 @@ from typing import TypeVar
 import yaml
 from pydantic import BaseModel, ValidationError
 
-from stock_daily_report.models import BacktestSettings, Settings, Watchlist
+from stock_daily_report.models import (
+    BacktestSettings,
+    MarketScanSettings,
+    Settings,
+    Watchlist,
+)
 
 ConfigModel = TypeVar("ConfigModel", bound=BaseModel)
 
@@ -67,3 +72,9 @@ def load_backtest_settings(path: str | Path) -> BacktestSettings:
     """Load and validate execution-aware backtest assumptions."""
 
     return _load_model(path, BacktestSettings, "backtest")
+
+
+def load_market_scan_settings(path: str | Path) -> MarketScanSettings:
+    """Load and validate versioned full-market scan settings."""
+
+    return _load_model(path, MarketScanSettings, "market scan")
