@@ -85,10 +85,51 @@ jobs:
           FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
         run: |
           report_date="${{ steps.report-date.outputs.report_date }}"
-          if [ -f "reports/${{ steps.report-date.outputs.report_date }}/report.json" ] && \
-             [ -f "snapshots/${{ steps.report-date.outputs.report_date }}/input.json" ]; then
-            echo "Report already exists; reusing immutable artifacts"
-          else
+          report_path="reports/${report_date}/report.json"
+          snapshot_path="snapshots/${report_date}/input.json"
+          scan_path="market-scans/${report_date}/scan.json"
+          reuse_report=false
+          if [ -f "$report_path" ] && [ -f "$snapshot_path" ]; then
+            reuse_report=true
+            if [ -f "$scan_path" ]; then
+              if python - "$report_path" "$scan_path" <<'PY'
+          import sys
+          from pathlib import Path
+
+          from stock_daily_report.market_scan.report import load_scan_artifact
+          from stock_daily_report.report.models import ReportDocument
+
+          try:
+              report = ReportDocument.model_validate_json(
+                  Path(sys.argv[1]).read_text(encoding="utf-8")
+              )
+              scan = load_scan_artifact(sys.argv[2])
+          except (OSError, ValueError):
+              raise SystemExit(1)
+
+          rankings = report.market_rankings
+          raise SystemExit(
+              0
+              if (
+                  rankings.scan_date == scan.report_date
+                  and rankings.rule_version == scan.rule_version
+                  and rankings.config_hash == scan.config_hash
+                  and rankings.input_hash == scan.input_hash
+              )
+              else 1
+          )
+          PY
+              then
+                echo "Report already exists with current scan; reusing immutable artifacts"
+              else
+                reuse_report=false
+                echo "Existing report does not include the current scan; regenerating"
+              fi
+            else
+              echo "No scan artifact for this date; reusing immutable report"
+            fi
+          fi
+          if [ "$reuse_report" != true ]; then
             python -m stock_daily_report.cli daily \
               --date "$report_date" \
               --settings config/settings.yaml \

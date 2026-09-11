@@ -47,6 +47,23 @@ def test_daily_workflow_reuses_an_existing_immutable_report():
         if step["name"] == "Generate report artifacts"
     )
 
-    assert 'reports/${{ steps.report-date.outputs.report_date }}/report.json' in command
-    assert 'snapshots/${{ steps.report-date.outputs.report_date }}/input.json' in command
-    assert "Report already exists; reusing immutable artifacts" in command
+    assert 'report_path="reports/${report_date}/report.json"' in command
+    assert 'snapshot_path="snapshots/${report_date}/input.json"' in command
+    assert (
+        "Report already exists with current scan; reusing immutable artifacts"
+        in command
+    )
+
+
+def test_daily_workflow_regenerates_when_a_new_scan_is_available():
+    workflow = _workflow()
+    steps = workflow["jobs"]["generate"]["steps"]
+    command = next(
+        step["run"]
+        for step in steps
+        if step["name"] == "Generate report artifacts"
+    )
+
+    assert 'scan_path="market-scans/${report_date}/scan.json"' in command
+    assert "market_rankings" in command
+    assert "Report already exists with current scan; reusing immutable artifacts" in command
