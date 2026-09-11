@@ -18,6 +18,7 @@ Market = Literal["SH", "SZ", "BJ"]
 _SHANGHAI_TIME = ZoneInfo("Asia/Shanghai")
 _REQUIRED_FIELDS = frozenset({"代码", "名称", "最新价", "成交量", "成交额"})
 _MISSING_QUOTE_VALUES = frozenset({"", "-", "--"})
+_PROVIDER_SCHEMA_ERRORS = (KeyError, TypeError, ValueError, ZeroDivisionError)
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,13 +65,17 @@ class AkShareUniverseProvider:
             raise ProviderAvailabilityError(
                 self.name, "network_error", str(error)
             ) from error
+        except _PROVIDER_SCHEMA_ERRORS as error:
+            raise ProviderDataError(
+                self.name, "provider_schema_invalid", str(error)
+            ) from error
 
         try:
             records = _records_from_response(response)
             quote_date = _date_from_clock(self._clock())
         except ProviderError:
             raise
-        except (TypeError, ValueError) as error:
+        except _PROVIDER_SCHEMA_ERRORS as error:
             raise ProviderDataError(
                 self.name, "provider_schema_invalid", str(error)
             ) from error
@@ -145,6 +150,8 @@ def _records_from_response(response: object) -> Sequence[Mapping[str, object]]:
         response = response.to_dict("records")  # type: ignore[union-attr]
     if not isinstance(response, Sequence) or isinstance(response, (str, bytes)):
         raise TypeError("AkShare universe response is not a sequence of records")
+    if not response:
+        raise ValueError("AkShare universe response is empty")
     if not all(isinstance(item, Mapping) for item in response):
         raise ValueError("AkShare universe response contains a non-mapping record")
     return response  # type: ignore[return-value]

@@ -120,6 +120,46 @@ def test_universe_request_failures_raise_availability_error():
         provider.get_quotes()
 
 
+@pytest.mark.parametrize(
+    "error",
+    [
+        KeyError("代码"),
+        TypeError("unexpected schema"),
+        ValueError("could not parse"),
+        ZeroDivisionError("division by zero"),
+    ],
+)
+def test_fetch_time_parsing_failures_raise_provider_data_error(error):
+    def malformed_response():
+        raise error
+
+    provider = AkShareUniverseProvider(fetcher=malformed_response)
+
+    with pytest.raises(
+        ProviderDataError,
+        match=r"akshare\[provider_schema_invalid\]",
+    ) as raised:
+        provider.get_quotes()
+
+    assert raised.value.provider == "akshare"
+    assert raised.value.code == "provider_schema_invalid"
+    assert str(error) in str(raised.value)
+
+
+@pytest.mark.parametrize("response", [[], FakeFrame([])])
+def test_empty_universe_snapshots_raise_provider_data_error(response):
+    provider = AkShareUniverseProvider(fetcher=lambda: response)
+
+    with pytest.raises(
+        ProviderDataError,
+        match=r"akshare\[provider_schema_invalid\].*empty",
+    ) as raised:
+        provider.get_quotes()
+
+    assert raised.value.provider == "akshare"
+    assert raised.value.code == "provider_schema_invalid"
+
+
 def test_duplicate_universe_codes_are_rejected():
     provider = AkShareUniverseProvider(
         fetcher=lambda: [
