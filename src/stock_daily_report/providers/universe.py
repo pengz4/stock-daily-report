@@ -20,6 +20,7 @@ _REQUIRED_FIELDS = frozenset({"代码", "名称", "最新价", "成交量", "成
 _MISSING_QUOTE_VALUES = frozenset({"", "-", "--"})
 _PROVIDER_SCHEMA_ERRORS = (KeyError, TypeError, ValueError, ZeroDivisionError)
 _DEFAULT_MINIMUM_UNIVERSE_SIZE = 4_000
+_MISSING_CODE_DETAIL_LIMIT = 10
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,7 +51,9 @@ class AkShareUniverseProvider:
         self,
         *,
         fetcher: Callable[[], object] | None = None,
+        expected_codes_fetcher: Callable[[], object] | None = None,
         clock: Callable[[], date | datetime] | None = None,
+        use_minimum_size_fallback: bool = False,
         minimum_universe_size: int = _DEFAULT_MINIMUM_UNIVERSE_SIZE,
     ) -> None:
         if (
@@ -59,8 +62,15 @@ class AkShareUniverseProvider:
             or minimum_universe_size < 1
         ):
             raise ValueError("minimum_universe_size must be a positive integer")
+        if expected_codes_fetcher is not None and use_minimum_size_fallback:
+            raise ValueError(
+                "expected_codes_fetcher and use_minimum_size_fallback "
+                "are mutually exclusive"
+            )
         self._fetcher = fetcher
+        self._expected_codes_fetcher = expected_codes_fetcher
         self._clock = clock or (lambda: datetime.now(_SHANGHAI_TIME))
+        self._use_minimum_size_fallback = use_minimum_size_fallback
         self._minimum_universe_size = minimum_universe_size
 
     def get_quotes(self) -> list[UniverseQuote]:
@@ -81,7 +91,10 @@ class AkShareUniverseProvider:
 
         try:
             records = _records_from_response(response)
-            if len(records) < self._minimum_universe_size:
+            if (
+                self._use_minimum_size_fallback
+                and len(records) < self._minimum_universe_size
+            ):
                 raise ProviderDataError(
                     self.name,
                     "provider_snapshot_incomplete",
@@ -108,6 +121,23 @@ class AkShareUniverseProvider:
                 )
             seen_codes.add(quote.code)
             quotes.append(quote)
+
+        if not self._use_minimum_size_fallback:
+            expected_codes = self._get_expected_codes()
+            missing_codes = sorted(expected_codes.difference(seen_codes))
+            if missing_codes:
+                examples = ", ".join(
+                    missing_codes[:_MISSING_CODE_DETAIL_LIMIT]
+                )
+                remaining = len(missing_codes) - _MISSING_CODE_DETAIL_LIMIT
+                suffix = f" (+{remaining} more)" if remaining > 0 else ""
+                raise ProviderDataError(
+                    self.name,
+                    "provider_snapshot_incomplete",
+                    f"AkShare universe response received {len(seen_codes)} "
+                    f"supported codes; expected {len(expected_codes)}; "
+                    f"missing {len(missing_codes)}: {examples}{suffix}",
+                )
         return quotes
 
     def _resolve_fetcher(self) -> Callable[[], object]:
@@ -122,6 +152,50 @@ class AkShareUniverseProvider:
                 "Install stock-daily-report[akshare] to enable this provider",
             ) from error
         return akshare.stock_zh_a_spot_em
+
+    def _get_expected_codes(self) -> set[str]:
+        try:
+            response = self._resolve_expected_codes_fetcher()()
+        except ProviderError:
+            raise
+        except OSError as error:
+            raise ProviderAvailabilityError(
+                self.name,
+                "network_error",
+                f"expected-code universe request failed: {error}",
+            ) from error
+        except _PROVIDER_SCHEMA_ERRORS as error:
+            raise ProviderDataError(
+                self.name,
+                "provider_schema_invalid",
+                f"expected-code universe fetch failed: {error}",
+            ) from error
+
+        try:
+            return _expected_codes_from_response(response)
+        except ProviderError:
+            raise
+        except _PROVIDER_SCHEMA_ERRORS as error:
+            raise ProviderDataError(
+                self.name,
+                "provider_schema_invalid",
+                f"expected-code universe response is invalid: {error}",
+            ) from error
+
+    def _resolve_expected_codes_fetcher(self) -> Callable[[], object]:
+        if self._expected_codes_fetcher is not None:
+            return self._expected_codes_fetcher
+        try:
+            import akshare  # type: ignore[import-not-found]
+        except ImportError as error:
+            raise ProviderAvailabilityError(
+                self.name,
+                "dependency_unavailable",
+                "Install stock-daily-report[akshare] to enable this provider",
+            ) from error
+        # AkShare defines this as the combined Shanghai, Shenzhen, STAR, and
+        # Beijing Stock Exchange A-share code list.
+        return akshare.stock_info_a_code_name
 
     def _map_record(
         self,
@@ -171,6 +245,30 @@ def _records_from_response(response: object) -> Sequence[Mapping[str, object]]:
     if not all(isinstance(item, Mapping) for item in response):
         raise ValueError("AkShare universe response contains a non-mapping record")
     return response  # type: ignore[return-value]
+
+
+def _expected_codes_from_response(response: object) -> set[str]:
+    records = _records_from_response(response)
+    expected_codes: set[str] = set()
+    for index, record in enumerate(records):
+        if "code" in record:
+            value = record["code"]
+        elif "证券代码" in record:
+            value = record["证券代码"]
+        else:
+            raise KeyError(
+                f"expected-code row {index} is missing code or 证券代码"
+            )
+        if not isinstance(value, str):
+            raise TypeError(f"expected-code row {index} code must be a string")
+        code = value.strip()
+        if A_SHARE_CODE_PATTERN.fullmatch(code):
+            expected_codes.add(code)
+    if not expected_codes:
+        raise ValueError(
+            "expected-code universe contains no supported A-share codes"
+        )
+    return expected_codes
 
 
 def _normalize_code(value: object) -> str:
