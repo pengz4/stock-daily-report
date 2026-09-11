@@ -21,6 +21,8 @@ _MISSING_QUOTE_VALUES = frozenset({"", "-", "--"})
 _PROVIDER_SCHEMA_ERRORS = (KeyError, TypeError, ValueError, ZeroDivisionError)
 _DEFAULT_MINIMUM_UNIVERSE_SIZE = 4_000
 _MISSING_CODE_DETAIL_LIMIT = 10
+_PRIMARY_ENDPOINT = "stock_zh_a_spot_em"
+_FALLBACK_ENDPOINT = "stock_zh_a_spot"
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,6 +53,7 @@ class AkShareUniverseProvider:
         self,
         *,
         fetcher: Callable[[], object] | None = None,
+        fallback_fetcher: Callable[[], object] | None = None,
         expected_codes_fetcher: Callable[[], object] | None = None,
         clock: Callable[[], date | datetime] | None = None,
         use_minimum_size_fallback: bool = False,
@@ -68,6 +71,7 @@ class AkShareUniverseProvider:
                 "are mutually exclusive"
             )
         self._fetcher = fetcher
+        self._fallback_fetcher = fallback_fetcher
         self._expected_codes_fetcher = expected_codes_fetcher
         self._clock = clock or (lambda: datetime.now(_SHANGHAI_TIME))
         self._use_minimum_size_fallback = use_minimum_size_fallback
@@ -76,18 +80,7 @@ class AkShareUniverseProvider:
     def get_quotes(self) -> list[UniverseQuote]:
         """Fetch and normalize one bulk quote snapshot."""
 
-        try:
-            response = self._resolve_fetcher()()
-        except ProviderError:
-            raise
-        except OSError as error:
-            raise ProviderAvailabilityError(
-                self.name, "network_error", str(error)
-            ) from error
-        except _PROVIDER_SCHEMA_ERRORS as error:
-            raise ProviderDataError(
-                self.name, "provider_schema_invalid", str(error)
-            ) from error
+        response, endpoint = self._fetch_quote_response()
 
         try:
             records = _records_from_response(response)
@@ -112,7 +105,7 @@ class AkShareUniverseProvider:
         quotes: list[UniverseQuote] = []
         seen_codes: set[str] = set()
         for index, record in enumerate(records):
-            quote = self._map_record(record, index, quote_date)
+            quote = self._map_record(record, index, quote_date, endpoint)
             if quote.code in seen_codes:
                 raise ProviderDataError(
                     self.name,
@@ -140,6 +133,53 @@ class AkShareUniverseProvider:
                 )
         return quotes
 
+    def _fetch_quote_response(self) -> tuple[object, str]:
+        try:
+            return self._resolve_fetcher()(), _PRIMARY_ENDPOINT
+        except ProviderAvailabilityError as error:
+            primary_error = error
+        except ProviderError:
+            raise
+        except OSError as error:
+            primary_error = ProviderAvailabilityError(
+                self.name, "network_error", str(error)
+            )
+        except _PROVIDER_SCHEMA_ERRORS as error:
+            raise ProviderDataError(
+                self.name, "provider_schema_invalid", str(error)
+            ) from error
+
+        if self._fallback_fetcher is None and (
+            self._fetcher is not None
+            or primary_error.code == "dependency_unavailable"
+        ):
+            raise primary_error
+
+        try:
+            return self._resolve_fallback_fetcher()(), _FALLBACK_ENDPOINT
+        except ProviderAvailabilityError as error:
+            fallback_error = error
+        except ProviderError:
+            raise
+        except OSError as error:
+            fallback_error = ProviderAvailabilityError(
+                self.name, "network_error", str(error)
+            )
+        except _PROVIDER_SCHEMA_ERRORS as error:
+            raise ProviderDataError(
+                self.name, "provider_schema_invalid", str(error)
+            ) from error
+
+        detail = (
+            f"{_PRIMARY_ENDPOINT} attempt failed: {primary_error}; "
+            f"{_FALLBACK_ENDPOINT} attempt failed: {fallback_error}"
+        )
+        raise ProviderAvailabilityError(
+            self.name,
+            "all_endpoints_unavailable",
+            detail,
+        ) from fallback_error
+
     def _resolve_fetcher(self) -> Callable[[], object]:
         if self._fetcher is not None:
             return self._fetcher
@@ -152,6 +192,19 @@ class AkShareUniverseProvider:
                 "Install stock-daily-report[akshare] to enable this provider",
             ) from error
         return akshare.stock_zh_a_spot_em
+
+    def _resolve_fallback_fetcher(self) -> Callable[[], object]:
+        if self._fallback_fetcher is not None:
+            return self._fallback_fetcher
+        try:
+            import akshare  # type: ignore[import-not-found]
+        except ImportError as error:
+            raise ProviderAvailabilityError(
+                self.name,
+                "dependency_unavailable",
+                "Install stock-daily-report[akshare] to enable this provider",
+            ) from error
+        return akshare.stock_zh_a_spot
 
     def _get_expected_codes(self) -> set[str]:
         try:
@@ -202,6 +255,7 @@ class AkShareUniverseProvider:
         record: Mapping[str, object],
         index: int,
         quote_date: date,
+        endpoint: str,
     ) -> UniverseQuote:
         context = _row_context(record, index)
         missing = sorted(_REQUIRED_FIELDS.difference(record))
@@ -214,7 +268,10 @@ class AkShareUniverseProvider:
             )
 
         try:
-            code = _normalize_code(record["代码"])
+            code = _normalize_code(
+                record["代码"],
+                allow_exchange_prefix=endpoint == _FALLBACK_ENDPOINT,
+            )
             name = _normalize_name(record["名称"])
             return UniverseQuote(
                 code=code,
@@ -271,13 +328,26 @@ def _expected_codes_from_response(response: object) -> set[str]:
     return expected_codes
 
 
-def _normalize_code(value: object) -> str:
+def _normalize_code(
+    value: object,
+    *,
+    allow_exchange_prefix: bool = False,
+) -> str:
     if not isinstance(value, str):
         raise TypeError("代码 must be a string")
     code = value.strip()
+    exchange_prefix = ""
+    if allow_exchange_prefix and len(code) == 8:
+        exchange_prefix = code[:2].lower()
+        if exchange_prefix in {"sh", "sz", "bj"}:
+            code = code[2:]
     if not A_SHARE_CODE_PATTERN.fullmatch(code):
         raise ProviderDataError(
             "akshare", "unsupported_symbol", f"Unsupported code: {code or value!s}"
+        )
+    if exchange_prefix and exchange_prefix.upper() != _market_for_code(code):
+        raise ProviderDataError(
+            "akshare", "unsupported_symbol", f"Unsupported code: {value}"
         )
     return code
 

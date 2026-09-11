@@ -131,6 +131,87 @@ def test_universe_request_failures_raise_availability_error():
         provider.get_quotes()
 
 
+def test_universe_request_availability_failure_uses_injected_fallback():
+    calls = []
+
+    def unavailable():
+        calls.append("primary")
+        raise ProviderAvailabilityError(
+            "akshare",
+            "network_error",
+            "eastmoney disconnected",
+        )
+
+    def fallback():
+        calls.append("fallback")
+        return [_row("sh600519", "贵州茅台")]
+
+    quotes = AkShareUniverseProvider(
+        fetcher=unavailable,
+        fallback_fetcher=fallback,
+        expected_codes_fetcher=lambda: _expected_codes("600519"),
+    ).get_quotes()
+
+    assert [quote.code for quote in quotes] == ["600519"]
+    assert calls == ["primary", "fallback"]
+
+
+def test_universe_request_reports_both_unavailable_attempts():
+    calls = []
+
+    def unavailable_primary():
+        calls.append("primary")
+        raise OSError("eastmoney disconnected")
+
+    def unavailable_fallback():
+        calls.append("fallback")
+        raise OSError("sina disconnected")
+
+    provider = AkShareUniverseProvider(
+        fetcher=unavailable_primary,
+        fallback_fetcher=unavailable_fallback,
+    )
+
+    with pytest.raises(ProviderAvailabilityError) as raised:
+        provider.get_quotes()
+
+    assert raised.value.provider == "akshare"
+    assert raised.value.code == "all_endpoints_unavailable"
+    assert "stock_zh_a_spot_em" in raised.value.detail
+    assert "eastmoney disconnected" in raised.value.detail
+    assert "stock_zh_a_spot" in raised.value.detail
+    assert "sina disconnected" in raised.value.detail
+    assert calls == ["primary", "fallback"]
+
+
+def test_universe_request_data_error_does_not_use_fallback():
+    calls = []
+    primary_error = ProviderDataError(
+        "akshare",
+        "provider_schema_invalid",
+        "malformed primary response",
+    )
+
+    def malformed_primary():
+        calls.append("primary")
+        raise primary_error
+
+    def fallback():
+        calls.append("fallback")
+        return [_row("600519", "贵州茅台")]
+
+    provider = AkShareUniverseProvider(
+        fetcher=malformed_primary,
+        fallback_fetcher=fallback,
+    )
+
+    with pytest.raises(ProviderDataError) as raised:
+        provider.get_quotes()
+
+    assert raised.value is primary_error
+    assert calls == ["primary"]
+
+
 @pytest.mark.parametrize(
     "error",
     [
@@ -237,6 +318,35 @@ def test_default_expected_codes_fetcher_uses_full_a_share_code_list(monkeypatch)
 
     assert [quote.code for quote in quotes] == ["600519"]
     assert calls == ["quotes", "expected"]
+
+
+def test_default_universe_fallback_resolves_sina_only_after_primary_failure(
+    monkeypatch,
+):
+    calls = []
+    akshare = ModuleType("akshare")
+
+    def fetch_primary():
+        calls.append("primary")
+        raise OSError("eastmoney disconnected")
+
+    def fetch_fallback():
+        calls.append("fallback")
+        return [_row("sh600519", "贵州茅台")]
+
+    def fetch_expected_codes():
+        calls.append("expected")
+        return FakeFrame(_expected_codes("600519"))
+
+    akshare.stock_zh_a_spot_em = fetch_primary
+    akshare.stock_zh_a_spot = fetch_fallback
+    akshare.stock_info_a_code_name = fetch_expected_codes
+    monkeypatch.setitem(sys.modules, "akshare", akshare)
+
+    quotes = AkShareUniverseProvider().get_quotes()
+
+    assert [quote.code for quote in quotes] == ["600519"]
+    assert calls == ["primary", "fallback", "expected"]
 
 
 def test_explicit_metadata_fallback_uses_minimum_universe_size():
