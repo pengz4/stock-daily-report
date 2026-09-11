@@ -133,6 +133,41 @@ def test_percentage_return_defines_zero_denominator(current, expected):
     assert _percentage_return(current, 0.0) == expected
 
 
+@pytest.mark.parametrize(
+    ("current", "expected_sign"),
+    [
+        (sys.float_info.max, 1.0),
+        (-sys.float_info.max, -1.0),
+    ],
+)
+def test_percentage_return_saturates_finite_overflow_with_direction(
+    current, expected_sign
+):
+    from stock_daily_report.indicators.technical import _percentage_return
+
+    result = _percentage_return(current, math.ulp(0.0))
+
+    assert result is not None
+    assert math.isfinite(result)
+    assert math.copysign(1.0, result) == expected_sign
+
+
+@pytest.mark.parametrize(
+    ("current", "previous", "expected"),
+    [
+        (2.0, 1.0, 1.0),
+        (1.0, 2.0, -0.5),
+        (1.0, 1.0, 0.0),
+    ],
+)
+def test_percentage_return_preserves_normal_range_semantics(
+    current, previous, expected
+):
+    from stock_daily_report.indicators.technical import _percentage_return
+
+    assert _percentage_return(current, previous) == pytest.approx(expected)
+
+
 def test_technical_metrics_calculates_exact_macd_and_rsi_after_warmup():
     from stock_daily_report.indicators.technical import calculate_technical_metrics
 

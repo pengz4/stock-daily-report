@@ -85,6 +85,30 @@ def high_risk_bars() -> list[DailyBar]:
     return make_bars(closes)
 
 
+def extreme_price_bars() -> list[DailyBar]:
+    smallest_positive = math.ulp(0.0)
+    maximum = sys.float_info.max
+    closes = [smallest_positive] * 100 + [maximum] * 20
+    start = date(2026, 1, 1)
+    return [
+        DailyBar(
+            trade_date=start + timedelta(days=index),
+            open=close,
+            high=close,
+            low=close,
+            close=close,
+            volume=0.0,
+            amount=0.0,
+            turnover_rate=0.0,
+            adjustment_mode="qfq",
+            provider_name="test",
+            source_timestamp=datetime(2026, 1, 1, tzinfo=UTC)
+            + timedelta(days=index),
+        )
+        for index, close in enumerate(closes)
+    ]
+
+
 def _all_scores(result):
     return (result.trend, result.balanced)
 
@@ -194,6 +218,32 @@ def test_high_volatility_and_deep_drawdown_reduce_risk_component():
     assert high_risk.components.risk < clean.components.risk
     assert "high_realized_volatility" in high_risk.risk_codes
     assert "deep_trailing_drawdown" in high_risk.risk_codes
+
+
+def test_extreme_finite_prices_remain_bounded_and_are_not_scored_as_moderate_risk():
+    from stock_daily_report.market_scan.scoring import score_candidate
+
+    result = score_candidate("600005", extreme_price_bars())
+
+    for score in _all_scores(result):
+        assert all(
+            math.isfinite(value) and 0.0 <= value <= 100.0
+            for value in (
+                score.total,
+                score.components.trend,
+                score.components.momentum,
+                score.components.volume,
+                score.components.structure,
+                score.components.risk,
+            )
+        )
+        assert score.components.risk <= 60.0
+        assert "high_realized_volatility" in score.risk_codes
+        assert "overheated_short_term_momentum" in score.risk_codes
+        assert (
+            "risk_measures_within_moderate_ranges"
+            not in score.evidence_codes
+        )
 
 
 def test_as_of_scoring_ignores_later_bars():

@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import math
 import statistics
+import sys
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import date
@@ -43,6 +44,10 @@ MACD_SLOW_PERIOD = 26
 MACD_SIGNAL_PERIOD = 9
 TRADING_DAYS_PER_YEAR = 252
 _ADJUSTED_MODES = frozenset({"qfq", "hfq"})
+_PERCENTAGE_RETURN_CAP = math.nextafter(
+    sys.float_info.max / math.sqrt(TRADING_DAYS_PER_YEAR),
+    0.0,
+)
 
 
 @dataclass(frozen=True)
@@ -279,10 +284,12 @@ def _mean(values: Sequence[float]) -> float | None:
 def _percentage_return(current: float, previous: float) -> float | None:
     if previous == 0.0:
         return 0.0 if current == 0.0 else None
-    try:
-        return _finite_or_none(current / previous - 1.0)
-    except OverflowError:
+    ratio = current / previous
+    if math.isinf(ratio):
+        if math.isfinite(current) and math.isfinite(previous):
+            return math.copysign(_PERCENTAGE_RETURN_CAP, ratio)
         return None
+    return _finite_or_none(ratio - 1.0)
 
 
 def _finite_or_none(value: float) -> float | None:
