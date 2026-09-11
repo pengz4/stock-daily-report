@@ -112,11 +112,11 @@ def scan_market(
     selected = candidates[: settings.max_candidates]
     for quote in candidates[settings.max_candidates :]:
         reason = "candidate_limit_exceeded"
-        exclusion_counts[reason] += 1
+        failure_counts[reason] += 1
         statuses[quote.code] = ScanStatus(
             code=quote.code,
             name=quote.name,
-            status="universe_excluded",
+            status="not_processed",
             reason_codes=(reason,),
         )
 
@@ -151,12 +151,13 @@ def scan_market(
             trend_scores.append(result.scores.trend)
             balanced_scores.append(result.scores.balanced)
 
-    eligible_count = len(selected)
+    eligible_count = len(candidates)
     valid_count = len(valid_results)
     coverage = valid_count / eligible_count if eligible_count else 0.0
     rankings = ProfileRankings()
     consensus: tuple[ConsensusRecord, ...] = ()
-    if coverage >= settings.minimum_coverage_ratio:
+    scan_complete = len(selected) == len(candidates)
+    if scan_complete and coverage >= settings.minimum_coverage_ratio:
         trend = _ranking_records(
             rank_scores(trend_scores),
             valid_results,
@@ -256,7 +257,7 @@ def _process_candidate(
             provider_name=_provider_name(history_provider),
         )
 
-    history_hash = _hash_json([bar.model_dump(mode="json") for bar in bars])
+    history_hash = _hash_json([_stable_bar_payload(bar) for bar in bars])
     providers = tuple(sorted({bar.provider_name for bar in bars} | {provider_name}))
     eligibility = filter_history(
         quote.code,
@@ -469,6 +470,21 @@ def _input_hash(
             },
         }
     )
+
+
+def _stable_bar_payload(bar: DailyBar) -> dict[str, object]:
+    return {
+        "trade_date": bar.trade_date.isoformat(),
+        "open": bar.open,
+        "high": bar.high,
+        "low": bar.low,
+        "close": bar.close,
+        "volume": bar.volume,
+        "amount": bar.amount,
+        "turnover_rate": bar.turnover_rate,
+        "adjustment_mode": bar.adjustment_mode,
+        "provider_name": bar.provider_name,
+    }
 
 
 def _hash_json(value: object) -> str:

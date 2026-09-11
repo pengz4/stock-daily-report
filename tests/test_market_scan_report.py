@@ -159,7 +159,7 @@ def test_same_date_different_artifact_raises_explicit_conflict(tmp_path):
         ),
         (
             {"failure_counts": {"network_error": 1}},
-            "failure_counts must match history_failed status reasons",
+            "failure_counts must match failed or unprocessed status reasons",
         ),
     ],
 )
@@ -170,3 +170,104 @@ def test_scan_artifact_rejects_counts_inconsistent_with_statuses(updates, messag
 
     with pytest.raises(ValueError, match=message):
         MarketScanArtifact.model_validate(document)
+
+
+def test_scan_artifact_rejects_ranking_code_without_valid_status():
+    artifact = _artifact(generated_at=datetime(2026, 9, 11, 8, 0, tzinfo=UTC))
+    document = artifact.model_dump()
+    unscanned = _ranking("trend", 82.0).model_copy(
+        update={"code": "000001", "name": "Unscanned"}
+    )
+    document["rankings"] = ProfileRankings(trend=(unscanned,))
+    document["consensus"] = ()
+
+    with pytest.raises(
+        ValueError,
+        match="ranking code must reference a valid status",
+    ):
+        MarketScanArtifact.model_validate(document)
+
+
+@pytest.mark.parametrize(
+    ("location", "message"),
+    [
+        ("rankings", "ranking latest_trade_date must not exceed report_date"),
+        ("consensus", "consensus latest_trade_date must not exceed report_date"),
+    ],
+)
+def test_scan_artifact_rejects_future_dated_ranking_evidence(location, message):
+    artifact = _artifact(generated_at=datetime(2026, 9, 11, 8, 0, tzinfo=UTC))
+    document = artifact.model_dump()
+    future_date = date(2026, 9, 12)
+    if location == "rankings":
+        document["rankings"]["trend"][0]["latest_trade_date"] = future_date
+        document["rankings"]["balanced"][0]["latest_trade_date"] = future_date
+    else:
+        document["consensus"][0]["latest_trade_date"] = future_date
+
+    with pytest.raises(ValueError, match=message):
+        MarketScanArtifact.model_validate(document)
+
+
+@pytest.mark.parametrize(
+    ("location", "field", "value", "message"),
+    [
+        ("trend", "name", "Wrong Name", "ranking metadata must match valid status"),
+        (
+            "balanced",
+            "provider_name",
+            "wrong-provider",
+            "ranking metadata must match valid status",
+        ),
+        (
+            "balanced",
+            "latest_trade_date",
+            date(2026, 9, 10),
+            "ranking metadata must match across profiles",
+        ),
+        (
+            "consensus",
+            "name",
+            "Wrong Name",
+            "consensus metadata must match rankings",
+        ),
+        (
+            "consensus",
+            "provider_name",
+            "wrong-provider",
+            "consensus metadata must match rankings",
+        ),
+        (
+            "consensus",
+            "latest_trade_date",
+            date(2026, 9, 10),
+            "consensus metadata must match rankings",
+        ),
+    ],
+)
+def test_scan_artifact_rejects_inconsistent_code_metadata(
+    location,
+    field,
+    value,
+    message,
+):
+    artifact = _artifact(generated_at=datetime(2026, 9, 11, 8, 0, tzinfo=UTC))
+    document = artifact.model_dump()
+    if location == "consensus":
+        document["consensus"][0][field] = value
+    else:
+        document["rankings"][location][0][field] = value
+
+    with pytest.raises(ValueError, match=message):
+        MarketScanArtifact.model_validate(document)
+
+
+@pytest.mark.parametrize("field", ["exclusion_counts", "failure_counts"])
+def test_reason_count_mappings_cannot_be_mutated(field):
+    artifact = _artifact(generated_at=datetime(2026, 9, 11, 8, 0, tzinfo=UTC))
+    canonical_before = artifact.model_dump_json()
+
+    with pytest.raises(TypeError):
+        getattr(artifact, field)["new_reason"] = 1
+
+    assert artifact.model_dump_json() == canonical_before

@@ -4,18 +4,38 @@ from __future__ import annotations
 
 import math
 from collections import Counter
+from collections.abc import Mapping
 from datetime import UTC, date, datetime
-from typing import Literal
+from types import MappingProxyType
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    PlainSerializer,
+    field_validator,
+    model_validator,
+)
 
 SCAN_SCHEMA_VERSION = 1
 Profile = Literal["trend", "balanced"]
 ScanStatusValue = Literal[
     "universe_excluded",
+    "not_processed",
     "history_excluded",
     "history_failed",
     "valid",
+]
+
+
+def _serialize_reason_counts(value: Mapping[str, int]) -> dict[str, int]:
+    return dict(value)
+
+
+ReasonCounts = Annotated[
+    Mapping[str, int],
+    PlainSerializer(_serialize_reason_counts, return_type=dict[str, int]),
 ]
 
 
@@ -176,8 +196,8 @@ class MarketScanArtifact(BaseModel):
     eligible_count: int = Field(ge=0)
     valid_count: int = Field(ge=0)
     coverage: float = Field(ge=0.0, le=1.0)
-    exclusion_counts: dict[str, int]
-    failure_counts: dict[str, int]
+    exclusion_counts: ReasonCounts
+    failure_counts: ReasonCounts
     rankings: ProfileRankings
     consensus: tuple[ConsensusRecord, ...]
     statuses: tuple[ScanStatus, ...]
@@ -207,12 +227,12 @@ class MarketScanArtifact(BaseModel):
 
     @field_validator("exclusion_counts", "failure_counts")
     @classmethod
-    def validate_reason_counts(cls, value: dict[str, int]) -> dict[str, int]:
+    def validate_reason_counts(cls, value: Mapping[str, int]) -> Mapping[str, int]:
         if any(not reason.strip() for reason in value):
             raise ValueError("reason count keys must not be blank")
         if any(isinstance(count, bool) or count < 1 for count in value.values()):
             raise ValueError("reason counts must be positive integers")
-        return dict(sorted(value.items()))
+        return MappingProxyType(dict(sorted(value.items())))
 
     @field_validator("provider_names")
     @classmethod
@@ -260,14 +280,44 @@ class MarketScanArtifact(BaseModel):
         expected_failure_counts = Counter(
             reason
             for status in self.statuses
-            if status.status == "history_failed"
+            if status.status in {"not_processed", "history_failed"}
             for reason in status.reason_codes
         )
         if self.failure_counts != dict(sorted(expected_failure_counts.items())):
-            raise ValueError("failure_counts must match history_failed status reasons")
+            raise ValueError(
+                "failure_counts must match failed or unprocessed status reasons"
+            )
 
+        statuses = {status.code: status for status in self.statuses}
         trend = {record.code: record for record in self.rankings.trend}
         balanced = {record.code: record for record in self.rankings.balanced}
+        for records in (self.rankings.trend, self.rankings.balanced):
+            for record in records:
+                status = statuses.get(record.code)
+                if status is None or status.status != "valid":
+                    raise ValueError(
+                        "ranking code must reference a valid status"
+                    )
+                if record.latest_trade_date > self.report_date:
+                    raise ValueError(
+                        "ranking latest_trade_date must not exceed report_date"
+                    )
+                if (
+                    record.name != status.name
+                    or record.provider_name != status.provider_name
+                ):
+                    raise ValueError("ranking metadata must match valid status")
+        for code in set(trend).intersection(balanced):
+            trend_record = trend[code]
+            balanced_record = balanced[code]
+            if (
+                trend_record.name != balanced_record.name
+                or trend_record.provider_name != balanced_record.provider_name
+                or trend_record.latest_trade_date
+                != balanced_record.latest_trade_date
+            ):
+                raise ValueError("ranking metadata must match across profiles")
+
         expected_codes = set(trend).intersection(balanced)
         actual_codes = {record.code for record in self.consensus}
         if actual_codes != expected_codes or len(actual_codes) != len(self.consensus):
@@ -275,6 +325,10 @@ class MarketScanArtifact(BaseModel):
         for record in self.consensus:
             trend_record = trend[record.code]
             balanced_record = balanced[record.code]
+            if record.latest_trade_date > self.report_date:
+                raise ValueError(
+                    "consensus latest_trade_date must not exceed report_date"
+                )
             if (
                 record.trend_rank != trend_record.rank
                 or record.balanced_rank != balanced_record.rank
@@ -282,6 +336,12 @@ class MarketScanArtifact(BaseModel):
                 or record.balanced_score != balanced_record.score
             ):
                 raise ValueError("consensus ranks and scores must match rankings")
+            if (
+                record.name != trend_record.name
+                or record.provider_name != trend_record.provider_name
+                or record.latest_trade_date != trend_record.latest_trade_date
+            ):
+                raise ValueError("consensus metadata must match rankings")
         return self
 
 

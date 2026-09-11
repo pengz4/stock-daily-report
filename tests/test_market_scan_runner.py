@@ -262,6 +262,57 @@ def test_coverage_below_minimum_suppresses_both_rankings():
     assert artifact.consensus == ()
 
 
+def test_candidate_cap_keeps_full_eligible_denominator_and_suppresses_rankings():
+    codes = _codes(2)
+    provider = FakeHistoryProvider({code: _bars(code) for code in codes})
+
+    artifact = _scan(
+        codes,
+        provider,
+        max_candidates=1,
+        minimum_coverage_ratio=0.5,
+    )
+
+    assert artifact.eligible_count == 2
+    assert artifact.valid_count == 1
+    assert artifact.coverage == 0.5
+    assert artifact.exclusion_counts == {}
+    assert artifact.failure_counts == {"candidate_limit_exceeded": 1}
+    assert artifact.rankings.trend == ()
+    assert artifact.rankings.balanced == ()
+    assert artifact.consensus == ()
+    skipped = next(status for status in artifact.statuses if status.code == codes[1])
+    assert skipped.status == "not_processed"
+    assert skipped.reason_codes == ("candidate_limit_exceeded",)
+
+
+def test_source_timestamps_do_not_change_input_hash_or_artifact_identity(tmp_path):
+    from stock_daily_report.market_scan.report import (
+        load_scan_artifact,
+        write_scan_artifact,
+    )
+
+    code = _codes(1)[0]
+    first_bars = _bars(code)
+    later_bars = [
+        bar.model_copy(
+            update={"source_timestamp": bar.source_timestamp + timedelta(hours=1)}
+        )
+        for bar in first_bars
+    ]
+
+    first = _scan([code], FakeHistoryProvider({code: first_bars}))
+    rerun = _scan([code], FakeHistoryProvider({code: later_bars}))
+
+    assert first.input_hash == rerun.input_hash
+    path = write_scan_artifact(tmp_path, first)
+    original_bytes = path.read_bytes()
+    reused_path = write_scan_artifact(tmp_path, rerun)
+    assert reused_path == path
+    assert path.read_bytes() == original_bytes
+    assert load_scan_artifact(path) == first
+
+
 def test_rankings_are_limited_unique_and_consensus_is_exact_intersection():
     codes = _codes(35)
     provider = FakeHistoryProvider({code: _bars(code) for code in codes})
