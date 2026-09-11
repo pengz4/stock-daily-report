@@ -86,9 +86,8 @@ def high_risk_bars() -> list[DailyBar]:
 
 
 def extreme_price_bars() -> list[DailyBar]:
-    smallest_positive = math.ulp(0.0)
     maximum = sys.float_info.max
-    closes = [smallest_positive] * 100 + [maximum] * 20
+    closes = [1.0] * 100 + [maximum] * 20
     start = date(2026, 1, 1)
     return [
         DailyBar(
@@ -221,9 +220,20 @@ def test_high_volatility_and_deep_drawdown_reduce_risk_component():
 
 
 def test_extreme_finite_prices_remain_bounded_and_are_not_scored_as_moderate_risk():
+    from stock_daily_report.indicators.technical import (
+        _PERCENTAGE_RETURN_CAP,
+        calculate_technical_metrics,
+    )
     from stock_daily_report.market_scan.scoring import score_candidate
 
-    result = score_candidate("600005", extreme_price_bars())
+    bars = extreme_price_bars()
+    metrics = calculate_technical_metrics(bars)
+    result = score_candidate("600005", bars)
+
+    assert metrics.return20 == _PERCENTAGE_RETURN_CAP
+    assert math.isfinite(metrics.return20)
+    assert metrics.realized_volatility20 is not None
+    assert math.isfinite(metrics.realized_volatility20)
 
     for score in _all_scores(result):
         assert all(

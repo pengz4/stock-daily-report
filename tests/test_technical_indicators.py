@@ -126,11 +126,28 @@ def test_technical_metrics_averages_maximum_finite_prices_without_overflow():
     assert metrics.ma60_slope5 == pytest.approx(0.0)
 
 
-@pytest.mark.parametrize(("current", "expected"), [(0.0, 0.0), (1.0, None)])
-def test_percentage_return_defines_zero_denominator(current, expected):
+def test_percentage_return_defines_zero_over_zero():
     from stock_daily_report.indicators.technical import _percentage_return
 
-    assert _percentage_return(current, 0.0) == expected
+    assert _percentage_return(0.0, 0.0) == 0.0
+
+
+@pytest.mark.parametrize(
+    ("current", "expected_sign"),
+    [
+        (1.0, 1.0),
+        (-1.0, -1.0),
+    ],
+)
+def test_percentage_return_saturates_nonzero_over_zero(current, expected_sign):
+    from stock_daily_report.indicators.technical import (
+        _PERCENTAGE_RETURN_CAP,
+        _percentage_return,
+    )
+
+    result = _percentage_return(current, 0.0)
+
+    assert result == math.copysign(_PERCENTAGE_RETURN_CAP, expected_sign)
 
 
 @pytest.mark.parametrize(
@@ -150,6 +167,24 @@ def test_percentage_return_saturates_finite_overflow_with_direction(
     assert result is not None
     assert math.isfinite(result)
     assert math.copysign(1.0, result) == expected_sign
+
+
+@pytest.mark.parametrize(
+    ("current", "expected_sign"),
+    [
+        (sys.float_info.max, 1.0),
+        (-sys.float_info.max, -1.0),
+    ],
+)
+def test_percentage_return_caps_finite_extreme_values(current, expected_sign):
+    from stock_daily_report.indicators.technical import (
+        _PERCENTAGE_RETURN_CAP,
+        _percentage_return,
+    )
+
+    result = _percentage_return(current, 1.0)
+
+    assert result == math.copysign(_PERCENTAGE_RETURN_CAP, expected_sign)
 
 
 @pytest.mark.parametrize(

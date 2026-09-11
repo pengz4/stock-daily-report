@@ -283,13 +283,23 @@ def _mean(values: Sequence[float]) -> float | None:
 
 def _percentage_return(current: float, previous: float) -> float | None:
     if previous == 0.0:
-        return 0.0 if current == 0.0 else None
+        return (
+            0.0
+            if current == 0.0
+            else math.copysign(_PERCENTAGE_RETURN_CAP, current)
+        )
     ratio = current / previous
     if math.isinf(ratio):
         if math.isfinite(current) and math.isfinite(previous):
             return math.copysign(_PERCENTAGE_RETURN_CAP, ratio)
         return None
-    return _finite_or_none(ratio - 1.0)
+    percentage_return = _finite_or_none(ratio - 1.0)
+    if percentage_return is None:
+        return None
+    return max(
+        -_PERCENTAGE_RETURN_CAP,
+        min(percentage_return, _PERCENTAGE_RETURN_CAP),
+    )
 
 
 def _finite_or_none(value: float) -> float | None:
