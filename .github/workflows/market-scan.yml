@@ -1,0 +1,105 @@
+name: Full-market A-share scan
+
+on:
+  schedule:
+    - cron: "15 7 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      report_date:
+        description: "Trading date to scan (YYYY-MM-DD); blank means today"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stock-daily-report-market-scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      TZ: Asia/Shanghai
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Restore report history
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          ref: reports-history
+          path: .report-history
+          fetch-depth: 1
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install project
+        run: |
+          python -m pip install setuptools==80.9.0 wheel==0.45.1
+          python -m pip install --no-build-isolation -r requirements.lock
+          python -m pip install --no-build-isolation --no-deps .
+      - name: Select report date
+        id: report-date
+        env:
+          REQUESTED_DATE: ${{ inputs.report_date }}
+        run: |
+          if [ -n "$REQUESTED_DATE" ]; then
+            report_date="$REQUESTED_DATE"
+          else
+            report_date="$(date +%F)"
+          fi
+          canonical_date="$(python - "$report_date" <<'PY'
+          import sys
+          from datetime import date
+          print(date.fromisoformat(sys.argv[1]).isoformat())
+          PY
+          )"
+          echo "report_date=$canonical_date" >> "$GITHUB_OUTPUT"
+      - name: Merge previous market scan history
+        run: |
+          if [ -d .report-history/market-scans ]; then
+            cp -a .report-history/market-scans ./market-scans
+          fi
+      - name: Generate market scan
+        run: |
+          report_date="${{ steps.report-date.outputs.report_date }}"
+          if [ -f "market-scans/${{ steps.report-date.outputs.report_date }}/scan.json" ]; then
+            echo "Market scan already exists; reusing immutable artifact"
+          else
+            python -m stock_daily_report.cli market-scan \
+              --date "$report_date" \
+              --settings config/market_scan.yaml \
+              --output-root .
+          fi
+      - name: Persist market scan history
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ ! -d .report-history/.git ]; then
+            mkdir -p .report-history
+            git -C .report-history init
+            git -C .report-history remote add origin \
+              "https://github.com/${GITHUB_REPOSITORY}.git"
+          fi
+          rm -rf .report-history/market-scans
+          cp -a market-scans .report-history/market-scans
+          git -C .report-history config user.name "github-actions[bot]"
+          git -C .report-history config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C .report-history add market-scans
+          if ! git -C .report-history diff --cached --quiet; then
+            git -C .report-history commit -m "chore: publish market scan history"
+            git -C .report-history -c \
+              http.extraheader="AUTHORIZATION: bearer ${GITHUB_TOKEN}" \
+              push origin HEAD:refs/heads/reports-history
+          fi
+      - name: Upload market scan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: market-scan-${{ steps.report-date.outputs.report_date }}
+          path: market-scans/${{ steps.report-date.outputs.report_date }}/scan.json
+          retention-days: 30

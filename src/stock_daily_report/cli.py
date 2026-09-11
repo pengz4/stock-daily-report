@@ -14,18 +14,23 @@ from stock_daily_report.backtest.runner import run_backtest
 from stock_daily_report.config import (
     ConfigurationError,
     load_backtest_settings,
+    load_market_scan_settings,
     load_settings,
     load_watchlist,
 )
+from stock_daily_report.market_scan.report import MarketScanArtifactError
+from stock_daily_report.market_scan.runner import run_market_scan
 from stock_daily_report.notify import NotificationDeliveryError, NotificationService
 from stock_daily_report.pipeline import (
     PipelineError,
     PublicationRollbackError,
     run_daily_report,
 )
+from stock_daily_report.providers.akshare import AkShareMarketDataProvider
 from stock_daily_report.providers.base import ProviderError
 from stock_daily_report.providers.fixture import FixtureMarketDataProvider
 from stock_daily_report.providers.service import CacheRollbackError
+from stock_daily_report.providers.universe import AkShareUniverseProvider
 from stock_daily_report.report.models import ReportDocument
 from stock_daily_report.snapshots import SnapshotError
 
@@ -68,6 +73,16 @@ def main(argv: list[str] | None = None) -> int:
     backtest.add_argument("--fixture-directory", type=Path, required=True)
     backtest.add_argument("--output-root", type=Path, default=Path.cwd())
     backtest.add_argument("--date", type=date.fromisoformat)
+    market_scan = subparsers.add_parser(
+        "market-scan", help="run one full-market opportunity scan"
+    )
+    market_scan.add_argument("--date", required=True, type=date.fromisoformat)
+    market_scan.add_argument(
+        "--settings",
+        type=Path,
+        default=_project_root() / "config/market_scan.yaml",
+    )
+    market_scan.add_argument("--output-root", type=Path, default=Path.cwd())
     args = parser.parse_args(argv)
 
     if args.command == "daily":
@@ -147,6 +162,25 @@ def main(argv: list[str] | None = None) -> int:
             print(error, file=sys.stderr)
             return 1
         print(report_path)
+        return 0
+    if args.command == "market-scan":
+        try:
+            settings = load_market_scan_settings(args.settings)
+            artifact_path = run_market_scan(
+                settings,
+                AkShareUniverseProvider(),
+                AkShareMarketDataProvider(),
+                report_date=args.date,
+                output_root=args.output_root,
+            )
+        except (
+            ConfigurationError,
+            MarketScanArtifactError,
+            ProviderError,
+        ) as error:
+            print(error, file=sys.stderr)
+            return 1
+        print(artifact_path)
         return 0
     return 2
 
