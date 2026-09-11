@@ -192,7 +192,7 @@ def run_daily_report(
     active_service = service
     recovery_cache: RawResponseCache | None = None
     if active_service is None and provider is None:
-        active_service = _build_default_service(
+        active_service = build_market_data_service(
             active_settings,
             providers=providers,
             fixture_directory=fixture_directory,
@@ -2107,19 +2107,22 @@ def _report_metrics(metrics: TechnicalMetrics) -> ReportMetrics:
     )
 
 
-def _build_default_service(
+def build_market_data_service(
     settings: Settings,
     *,
-    providers: Mapping[str, MarketDataProvider] | None,
-    fixture_directory: str | Path | None,
-    now: Callable[[], datetime],
+    providers: Mapping[str, MarketDataProvider] | None = None,
+    fixture_directory: str | Path | None = None,
+    now: Callable[[], datetime] | None = None,
     output_root: Path,
 ) -> MarketDataService:
+    """Build the configured production provider, fallback, and cache chain."""
+
+    active_now = now or (lambda: datetime.now(UTC))
     active_providers = dict(providers or {})
     fixture_path = Path(fixture_directory or _project_root() / "fixtures" / "bars")
     active_providers.setdefault("fixture", FixtureMarketDataProvider(fixture_path))
-    active_providers.setdefault("akshare", AkShareMarketDataProvider(now=now))
-    active_providers.setdefault("sina", SinaMarketDataProvider(now=now))
+    active_providers.setdefault("akshare", AkShareMarketDataProvider(now=active_now))
+    active_providers.setdefault("sina", SinaMarketDataProvider(now=active_now))
     cache_directory = Path(settings.market_data.cache_directory)
     if not cache_directory.is_absolute():
         cache_directory = output_root / cache_directory
@@ -2131,7 +2134,7 @@ def _build_default_service(
         active_providers,
         active_settings,
         recover_pending=False,
-        now=now,
+        now=active_now,
     )
 
 

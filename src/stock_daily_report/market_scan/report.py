@@ -34,17 +34,22 @@ def write_scan_artifact(
         / artifact.report_date.isoformat()
         / "scan.json"
     )
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with _scan_write_lock(path.parent):
-        if path.exists():
-            existing = load_scan_artifact(path)
-            if _identity_payload(existing) == _identity_payload(artifact):
-                return path
-            raise MarketScanConflictError(
-                "Refusing to overwrite immutable market scan with different "
-                f"content: {path}"
-            )
-        _atomic_write(path, _canonical_json(artifact))
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with _scan_write_lock(path.parent):
+            if path.exists():
+                existing = load_scan_artifact(path)
+                if _identity_payload(existing) == _identity_payload(artifact):
+                    return path
+                raise MarketScanConflictError(
+                    "Refusing to overwrite immutable market scan with different "
+                    f"content: {path}"
+                )
+            _atomic_write(path, _canonical_json(artifact))
+    except OSError as error:
+        raise MarketScanArtifactError(
+            f"Could not persist market scan artifact: {path}"
+        ) from error
     return path
 
 

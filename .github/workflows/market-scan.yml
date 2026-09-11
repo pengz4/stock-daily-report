@@ -6,19 +6,18 @@ on:
   workflow_dispatch:
     inputs:
       report_date:
-        description: "Trading date to scan (YYYY-MM-DD); blank means today"
+        description: "Current Shanghai date; older dates require a valid artifact"
         required: false
         type: string
 
 permissions:
   contents: write
 
-concurrency:
-  group: stock-daily-report-market-scan
-  cancel-in-progress: false
-
 jobs:
   scan:
+    concurrency:
+      group: stock-daily-report-history
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
@@ -68,14 +67,11 @@ jobs:
       - name: Generate market scan
         run: |
           report_date="${{ steps.report-date.outputs.report_date }}"
-          if [ -f "market-scans/${{ steps.report-date.outputs.report_date }}/scan.json" ]; then
-            echo "Market scan already exists; reusing immutable artifact"
-          else
-            python -m stock_daily_report.cli market-scan \
-              --date "$report_date" \
-              --settings config/market_scan.yaml \
-              --output-root .
-          fi
+          python -m stock_daily_report.cli market-scan \
+            --date "$report_date" \
+            --settings config/market_scan.yaml \
+            --data-settings config/settings.yaml \
+            --output-root .
       - name: Persist market scan history
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -358,6 +358,22 @@ def test_source_timestamps_do_not_change_input_hash_or_artifact_identity(tmp_pat
     assert load_scan_artifact(path) == first
 
 
+def test_scanner_preserves_supplied_configuration_identity():
+    from stock_daily_report.market_scan.runner import scan_market
+
+    code = _codes(1)[0]
+    artifact = scan_market(
+        _settings(),
+        FakeUniverseProvider([_quote(code)]),
+        FakeHistoryProvider({code: _bars(code)}),
+        report_date=REPORT_DATE,
+        generated_at=GENERATED_AT,
+        configuration_hash="f" * 64,
+    )
+
+    assert artifact.config_hash == "f" * 64
+
+
 def test_rankings_are_limited_unique_and_consensus_is_exact_intersection():
     codes = _codes(35)
     provider = FakeHistoryProvider({code: _bars(code) for code in codes})

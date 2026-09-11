@@ -16,6 +16,22 @@ stock-daily-report daily --date 2026-09-04 --output-root .
 The default configuration uses the AkShare provider with a fixture fallback.
 Use `--fixture-directory` for an offline run with fixture CSV files.
 
+## Full-market scan
+
+```bash
+stock-daily-report market-scan \
+  --date "$(TZ=Asia/Shanghai date +%F)" \
+  --settings config/market_scan.yaml \
+  --data-settings config/settings.yaml \
+  --output-root .
+```
+
+Live universe quotes are current-only, so a new scan must use the current
+Asia/Shanghai date. A backdated request is rejected without writing an
+artifact rather than relabeling current quotes. The workflow may still reuse a
+same-date existing artifact after validating its schema, embedded date, rule
+version, and configuration hash.
+
 ## Notifications
 
 Enable one or both channels in `config/settings.yaml`:

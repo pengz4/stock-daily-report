@@ -32,7 +32,7 @@ from stock_daily_report.market_scan.scoring import (
     rank_scores,
     score_candidate,
 )
-from stock_daily_report.models import DailyBar, MarketScanSettings
+from stock_daily_report.models import DailyBar, MarketDataSettings, MarketScanSettings
 from stock_daily_report.providers.base import ProviderError
 from stock_daily_report.providers.service import (
     AllProvidersFailedError,
@@ -83,6 +83,7 @@ def scan_market(
     *,
     report_date: date,
     generated_at: datetime | None = None,
+    configuration_hash: str | None = None,
 ) -> MarketScanArtifact:
     """Scan, filter, and rank a universe without allowing one symbol to abort."""
 
@@ -194,7 +195,7 @@ def scan_market(
         rankings=rankings,
         consensus=consensus,
         statuses=normalized_statuses,
-        config_hash=_hash_json(settings.model_dump(mode="json")),
+        config_hash=configuration_hash or market_scan_config_hash(settings),
         input_hash=_input_hash(quotes, results, report_date),
         provider_names=tuple(sorted(name for name in provider_names if name)),
     )
@@ -208,6 +209,7 @@ def run_market_scan(
     report_date: date,
     output_root: str | Path,
     generated_at: datetime | None = None,
+    configuration_hash: str | None = None,
 ) -> Path:
     """Run one scan and persist its immutable date-partitioned artifact."""
 
@@ -217,6 +219,7 @@ def run_market_scan(
         history_provider,
         report_date=report_date,
         generated_at=generated_at,
+        configuration_hash=configuration_hash,
     )
     return write_scan_artifact(output_root, artifact)
 
@@ -521,6 +524,23 @@ def _hash_json(value: object) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def market_scan_config_hash(
+    settings: MarketScanSettings,
+    market_data_settings: MarketDataSettings | None = None,
+) -> str:
+    """Return the canonical identity hash for market-scan configuration."""
+
+    scan_configuration = settings.model_dump(mode="json")
+    if market_data_settings is None:
+        return _hash_json(scan_configuration)
+    return _hash_json(
+        {
+            "market_data": market_data_settings.model_dump(mode="json"),
+            "market_scan": scan_configuration,
+        }
+    )
+
+
 def _provider_name(provider: object) -> str:
     name = getattr(provider, "name", provider.__class__.__name__)
     return str(name).strip() or provider.__class__.__name__
@@ -548,6 +568,7 @@ def _normalize_timestamp(value: datetime) -> datetime:
 __all__ = [
     "HistoryProvider",
     "UniverseProvider",
+    "market_scan_config_hash",
     "run_market_scan",
     "scan_market",
 ]

@@ -5,8 +5,9 @@ from __future__ import annotations
 import argparse
 import os
 import sys
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from pydantic import ValidationError
 
@@ -18,21 +19,31 @@ from stock_daily_report.config import (
     load_settings,
     load_watchlist,
 )
-from stock_daily_report.market_scan.report import MarketScanArtifactError
-from stock_daily_report.market_scan.runner import run_market_scan
+from stock_daily_report.market_scan.report import (
+    MarketScanArtifactError,
+    load_scan_artifact,
+)
+from stock_daily_report.market_scan.runner import (
+    market_scan_config_hash,
+    run_market_scan,
+)
 from stock_daily_report.notify import NotificationDeliveryError, NotificationService
 from stock_daily_report.pipeline import (
     PipelineError,
     PublicationRollbackError,
+    build_market_data_service,
     run_daily_report,
 )
-from stock_daily_report.providers.akshare import AkShareMarketDataProvider
 from stock_daily_report.providers.base import ProviderError
 from stock_daily_report.providers.fixture import FixtureMarketDataProvider
 from stock_daily_report.providers.service import CacheRollbackError
 from stock_daily_report.providers.universe import AkShareUniverseProvider
 from stock_daily_report.report.models import ReportDocument
 from stock_daily_report.snapshots import SnapshotError
+
+
+class _MarketScanCliError(ValueError):
+    """Raised for safe market-scan command usage errors."""
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -76,11 +87,21 @@ def main(argv: list[str] | None = None) -> int:
     market_scan = subparsers.add_parser(
         "market-scan", help="run one full-market opportunity scan"
     )
-    market_scan.add_argument("--date", required=True, type=date.fromisoformat)
+    market_scan.add_argument(
+        "--date",
+        required=True,
+        type=date.fromisoformat,
+        help="current Asia/Shanghai date unless reusing a validated artifact",
+    )
     market_scan.add_argument(
         "--settings",
         type=Path,
         default=_project_root() / "config/market_scan.yaml",
+    )
+    market_scan.add_argument(
+        "--data-settings",
+        type=Path,
+        default=_project_root() / "config/settings.yaml",
     )
     market_scan.add_argument("--output-root", type=Path, default=Path.cwd())
     args = parser.parse_args(argv)
@@ -166,17 +187,47 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "market-scan":
         try:
             settings = load_market_scan_settings(args.settings)
-            artifact_path = run_market_scan(
-                settings,
-                AkShareUniverseProvider(),
-                AkShareMarketDataProvider(),
-                report_date=args.date,
-                output_root=args.output_root,
-            )
+            artifact_path = _scan_artifact_path(args.output_root, args.date)
+            if artifact_path.exists():
+                data_settings = load_settings(args.data_settings)
+                artifact_path = _existing_scan_artifact(
+                    artifact_path,
+                    report_date=args.date,
+                    expected_config_hash=market_scan_config_hash(
+                        settings,
+                        data_settings.market_data,
+                    ),
+                    expected_rule_version=settings.rule_version,
+                )
+            else:
+                current_date = _current_market_date()
+                if args.date != current_date:
+                    raise _MarketScanCliError(
+                        "Live market scans only support the current "
+                        f"Asia/Shanghai date {current_date.isoformat()}; "
+                        f"requested {args.date.isoformat()}."
+                    )
+                data_settings = load_settings(args.data_settings)
+                configuration_hash = market_scan_config_hash(
+                    settings,
+                    data_settings.market_data,
+                )
+                artifact_path = run_market_scan(
+                    settings,
+                    AkShareUniverseProvider(),
+                    build_market_data_service(
+                        data_settings,
+                        output_root=args.output_root,
+                    ),
+                    report_date=args.date,
+                    output_root=args.output_root,
+                    configuration_hash=configuration_hash,
+                )
         except (
             ConfigurationError,
             MarketScanArtifactError,
             ProviderError,
+            _MarketScanCliError,
         ) as error:
             print(error, file=sys.stderr)
             return 1
@@ -187,6 +238,37 @@ def main(argv: list[str] | None = None) -> int:
 
 def _project_root() -> Path:
     return Path(__file__).resolve().parents[2]
+
+
+def _current_market_date() -> date:
+    return datetime.now(ZoneInfo("Asia/Shanghai")).date()
+
+
+def _scan_artifact_path(output_root: Path, report_date: date) -> Path:
+    return output_root / "market-scans" / report_date.isoformat() / "scan.json"
+
+
+def _existing_scan_artifact(
+    path: Path,
+    *,
+    report_date: date,
+    expected_config_hash: str,
+    expected_rule_version: str,
+) -> Path:
+    artifact = load_scan_artifact(path)
+    if artifact.report_date != report_date:
+        raise MarketScanArtifactError(
+            "Existing market scan artifact report_date does not match "
+            f"requested date: {path}"
+        )
+    if (
+        artifact.rule_version != expected_rule_version
+        or artifact.config_hash != expected_config_hash
+    ):
+        raise MarketScanArtifactError(
+            f"Existing market scan artifact configuration does not match: {path}"
+        )
+    return path
 
 
 if __name__ == "__main__":

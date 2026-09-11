@@ -12,6 +12,7 @@ from stock_daily_report.market_scan.models import (
     ScanStatus,
 )
 from stock_daily_report.market_scan.report import (
+    MarketScanArtifactError,
     MarketScanConflictError,
     load_scan_artifact,
     write_scan_artifact,
@@ -151,6 +152,20 @@ def test_same_date_different_artifact_raises_explicit_conflict(tmp_path):
         match="Refusing to overwrite immutable market scan",
     ):
         write_scan_artifact(tmp_path, changed)
+
+
+def test_scan_artifact_wraps_invalid_output_root_oserror(tmp_path):
+    artifact = _artifact(generated_at=datetime(2026, 9, 11, 8, 0, tzinfo=UTC))
+    invalid_root = tmp_path / "not-a-directory"
+    invalid_root.write_text("occupied", encoding="utf-8")
+
+    with pytest.raises(
+        MarketScanArtifactError,
+        match="Could not persist market scan artifact",
+    ) as raised:
+        write_scan_artifact(invalid_root, artifact)
+
+    assert isinstance(raised.value.__cause__, OSError)
 
 
 @pytest.mark.parametrize(
