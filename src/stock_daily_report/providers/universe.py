@@ -407,7 +407,7 @@ def _normalize_name(value: object) -> str:
 def _market_for_code(code: str) -> Market:
     if code.startswith(("600", "601", "603", "605", "688")):
         return "SH"
-    if code.startswith(("000", "001", "002", "003", "300", "301")):
+    if code.startswith(("000", "001", "002", "003", "300", "301", "302")):
         return "SZ"
     if code.startswith("920"):
         return "BJ"

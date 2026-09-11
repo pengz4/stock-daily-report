@@ -39,6 +39,7 @@ def test_load_watchlist_returns_valid_a_share_codes(tmp_path):
         ("600519", "Shanghai main board"),
         ("000001", "Shenzhen main board"),
         ("300750", "ChiNext"),
+        ("302132", "ChiNext"),
         ("688981", "STAR Market"),
         ("920001", "Beijing Stock Exchange"),
     ],

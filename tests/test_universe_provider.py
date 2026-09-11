@@ -49,6 +49,7 @@ def test_akshare_universe_provider_normalizes_supported_a_share_classes():
                 _row("600519", "贵州茅台", 1500.0, 2_000, 3_000_000.0),
                 _row("000001", "平安银行"),
                 _row("300750", "宁德时代"),
+                _row("302132", "中航成飞"),
                 _row("688981", "中芯国际"),
                 _row("920002", "万达轴承"),
             ]
@@ -58,7 +59,7 @@ def test_akshare_universe_provider_normalizes_supported_a_share_classes():
         fetcher=fetcher,
         clock=lambda: date(2026, 9, 11),
         expected_codes_fetcher=lambda: _expected_codes(
-            "600519", "000001", "300750", "688981", "920002"
+            "600519", "000001", "300750", "302132", "688981", "920002"
         ),
     ).get_quotes()
 
@@ -67,6 +68,7 @@ def test_akshare_universe_provider_normalizes_supported_a_share_classes():
         ("600519", "SH"),
         ("000001", "SZ"),
         ("300750", "SZ"),
+        ("302132", "SZ"),
         ("688981", "SH"),
         ("920002", "BJ"),
     ]
@@ -154,6 +156,45 @@ def test_universe_request_availability_failure_uses_injected_fallback():
 
     assert [quote.code for quote in quotes] == ["600519"]
     assert calls == ["primary", "fallback"]
+
+
+def test_sina_fallback_normalizes_302_code_and_validates_expected_codes():
+    def unavailable():
+        raise OSError("eastmoney disconnected")
+
+    quotes = AkShareUniverseProvider(
+        fetcher=unavailable,
+        fallback_fetcher=lambda: [
+            _row("sz302132", "中航成飞"),
+            _row("sh600519", "贵州茅台"),
+        ],
+        expected_codes_fetcher=lambda: _expected_codes("302132", "600519"),
+    ).get_quotes()
+
+    assert [(quote.code, quote.market) for quote in quotes] == [
+        ("302132", "SZ"),
+        ("600519", "SH"),
+    ]
+
+
+def test_sina_fallback_still_rejects_missing_independently_expected_code():
+    def unavailable():
+        raise OSError("eastmoney disconnected")
+
+    provider = AkShareUniverseProvider(
+        fetcher=unavailable,
+        fallback_fetcher=lambda: [_row("sz302132", "中航成飞")],
+        expected_codes_fetcher=lambda: _expected_codes("302132", "000001"),
+    )
+
+    with pytest.raises(
+        ProviderDataError,
+        match=(
+            r"akshare\[provider_snapshot_incomplete\].*"
+            r"received 1 supported codes; expected 2; missing 1: 000001"
+        ),
+    ):
+        provider.get_quotes()
 
 
 def test_universe_request_reports_both_unavailable_attempts():
@@ -494,7 +535,9 @@ def test_duplicate_universe_codes_are_rejected():
         provider.get_quotes()
 
 
-@pytest.mark.parametrize("code", ["510300", "430047", "AAPL", "600519.SH"])
+@pytest.mark.parametrize(
+    "code", ["303132", "510300", "430047", "AAPL", "600519.SH"]
+)
 def test_unsupported_instruments_and_codes_are_rejected(code):
     provider = AkShareUniverseProvider(
         fetcher=lambda: [_row(code, "unsupported")],

@@ -127,7 +127,7 @@ def _is_supported_security(quote: UniverseQuote) -> bool:
 def _expected_market(code: str) -> Market:
     if code.startswith(("600", "601", "603", "605", "688")):
         return "SH"
-    if code.startswith(("000", "001", "002", "003", "300", "301")):
+    if code.startswith(("000", "001", "002", "003", "300", "301", "302")):
         return "SZ"
     return "BJ"
 

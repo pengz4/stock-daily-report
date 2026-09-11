@@ -16,7 +16,7 @@ from pydantic import (
 
 NonEmptyString = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 A_SHARE_CODE_PATTERN = re.compile(
-    r"^(?:00[0-3]\d{3}|30[01]\d{3}|60[0135]\d{3}|688\d{3}|920\d{3})$"
+    r"^(?:00[0-3]\d{3}|30[012]\d{3}|60[0135]\d{3}|688\d{3}|920\d{3})$"
 )
 
 
@@ -24,7 +24,7 @@ class WatchlistStock(BaseModel):
     """A tracked mainland A-share security.
 
     Supported code classes are Shenzhen main-board (000/001/002/003), ChiNext
-    (300/301), Shanghai main-board (600/601/603/605), STAR Market (688), and
+    (300/301/302), Shanghai main-board (600/601/603/605), STAR Market (688), and
     Beijing Stock Exchange (920). Legacy BSE aliases are not accepted because
     this current-date-only report supports post-2025 BSE codes only.
     """
@@ -44,7 +44,7 @@ class WatchlistStock(BaseModel):
         if not A_SHARE_CODE_PATTERN.fullmatch(value):
             raise ValueError(
                 "stock code must use a supported mainland A-share code prefix "
-                "(SZ 000/001/002/003, ChiNext 300/301, SH 600/601/603/605, "
+                "(SZ 000/001/002/003, ChiNext 300/301/302, SH 600/601/603/605, "
                 "STAR 688, BSE 920; legacy BSE aliases are not accepted)"
             )
         return value

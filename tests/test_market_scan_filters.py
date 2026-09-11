@@ -77,6 +77,16 @@ def test_valid_universe_quote_passes_with_immutable_empty_result():
         EligibilityResult(eligible=False, reason_codes=["mutable"])
 
 
+def test_universe_filter_accepts_302_chinext_quote():
+    result = filter_universe_quote(
+        _quote(code="302132", name="中航成飞", market="SZ"),
+        report_date=date(2026, 9, 11),
+        settings=_settings(),
+    )
+
+    assert result == EligibilityResult(eligible=True, reason_codes=())
+
+
 @pytest.mark.parametrize(
     ("name", "reason_codes"),
     [
