@@ -1,8 +1,8 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "report_date": "2026-09-11",
-    "generated_at": "2026-09-11T08:26:43.664926Z",
+    "generated_at": "2026-09-11T12:30:56.298671Z",
     "latest_source_timestamp": "2026-09-11T08:26:43.664926Z",
     "snapshot_path": "snapshots/2026-09-11/input.json",
     "snapshot_hash": "1badb1b0aff8fae0aebd954bd21bf2b8fb22ac3d5215a956cf84041756e7dfd5",
@@ -19,6 +19,59 @@
   "market_summary": {
     "status": "validated_watchlist",
     "text": "Broad-market data unavailable; validated watchlist only: count=1, average_latest_return=-0.45%, up=0, down=1, unchanged=0, latest_source=2026-09-11T08:26:43.664926+00:00."
+  },
+  "market_rankings": {
+    "status": "unavailable",
+    "unavailable_reason": "scan_incomplete",
+    "scan_date": "2026-09-11",
+    "generated_at": "2026-09-11T12:14:41.810074Z",
+    "rule_version": "market-scan-v1",
+    "config_hash": "339411c28627ae1c710b761873f3c6c59507933ba9a4207901dadb83e071d598",
+    "input_hash": "ab85472f523a3fbc63ceb650bde7755d1f3d769d5ef1ec326f404db1b8d25fda",
+    "provider_names": [
+      "MarketDataService",
+      "akshare",
+      "sina"
+    ],
+    "universe_count": 5561,
+    "eligible_count": 4035,
+    "valid_count": 1194,
+    "coverage": 0.295910780669145,
+    "exclusion_counts": [
+      {
+        "code": "data_quality_rejected",
+        "count": 6
+      },
+      {
+        "code": "insufficient_history",
+        "count": 6
+      },
+      {
+        "code": "insufficient_latest_amount",
+        "count": 1458
+      },
+      {
+        "code": "invalid_latest_quote",
+        "count": 12
+      },
+      {
+        "code": "special_treatment_name",
+        "count": 204
+      },
+      {
+        "code": "suspended_quote",
+        "count": 12
+      }
+    ],
+    "failure_counts": [
+      {
+        "code": "candidate_limit_exceeded",
+        "count": 2835
+      }
+    ],
+    "trend": [],
+    "balanced": [],
+    "consensus": []
   },
   "stocks": [
     {

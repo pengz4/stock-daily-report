@@ -1,6 +1,6 @@
 # A-share daily report — 2026\-09\-11
 
-- Generated: 2026\-09\-11T08:26:43\.664926\+00:00
+- Generated: 2026\-09\-11T12:30:56\.298671\+00:00
 - Latest source timestamp: 2026\-09\-11T08:26:43\.664926\+00:00
 - Quality: passed
 - Stock count: 1
@@ -13,6 +13,19 @@
 ## Market summary
 
 Broad\-market data unavailable; validated watchlist only: count=1, average\_latest\_return=\-0\.45%, up=0, down=1, unchanged=0, latest\_source=2026\-09\-11T08:26:43\.664926\+00:00\.
+
+## Full-market rankings
+
+Full-market rankings unavailable.
+
+- Reason: `scan_incomplete`
+- Scan date: 2026\-09\-11
+- Generated: 2026\-09\-11T12:14:41\.810074\+00:00
+- Rule: market\-scan\-v1
+- Providers: MarketDataService, akshare, sina
+- Coverage: 29.59% (1194/4035 valid; 5561 universe)
+- Exclusions: data\_quality\_rejected=6, insufficient\_history=6, insufficient\_latest\_amount=1458, invalid\_latest\_quote=12, special\_treatment\_name=204, suspended\_quote=12
+- Failures: candidate\_limit\_exceeded=2835
 
 ## Watchlist
 
