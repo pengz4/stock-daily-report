@@ -254,6 +254,160 @@ def test_market_scan_unavailable_state_is_explicit_in_markdown_and_html():
         assert "high confidence" not in rendered.lower()
 
 
+@pytest.mark.parametrize(
+    "partial_metadata",
+    [
+        {"scan_date": date(2026, 9, 4)},
+        {"generated_at": datetime(2026, 9, 4, 8, 30, tzinfo=UTC)},
+        {"provider_names": ("fixture",)},
+    ],
+)
+def test_market_scan_unavailable_state_rejects_partial_metadata(partial_metadata):
+    with pytest.raises(
+        ValueError,
+        match="unavailable market rankings metadata must be absent or complete",
+    ):
+        report_models.MarketRankings(
+            status="unavailable",
+            unavailable_reason="scan_artifact_missing",
+            **partial_metadata,
+        )
+
+
+def test_market_scan_renderers_safely_handle_partial_unavailable_metadata():
+    unavailable = report_models.MarketRankings.model_construct(
+        status="unavailable",
+        unavailable_reason="scan_artifact_missing",
+        scan_date=date(2026, 9, 4),
+    )
+    document = _document(name="visible").model_copy(
+        update={"market_rankings": unavailable}
+    )
+
+    markdown = render_markdown(document)
+    html = render_html(document)
+
+    for rendered in (markdown, html):
+        assert "Full-market rankings unavailable" in rendered
+        assert "—" in rendered
+    assert r"2026\-09\-04" in markdown
+    assert "2026-09-04" in html
+
+
+@pytest.mark.parametrize("profile", ["trend", "balanced"])
+def test_market_scan_rankings_reject_duplicate_profile_codes(profile):
+    document = _market_rankings().model_dump()
+    duplicate = dict(document[profile][-1])
+    duplicate["rank"] = len(document[profile]) + 1
+    document[profile] = (*document[profile], duplicate)
+    if profile == "trend":
+        document["consensus"][0]["trend_rank"] = duplicate["rank"]
+    else:
+        document["consensus"][0]["balanced_rank"] = duplicate["rank"]
+
+    with pytest.raises(
+        ValueError,
+        match=rf"{profile} ranking codes must be unique",
+    ):
+        report_models.MarketRankings.model_validate(document)
+
+
+def test_market_scan_rankings_reject_duplicate_consensus_codes():
+    document = _market_rankings().model_dump()
+    document["consensus"] = (
+        *document["consensus"],
+        dict(document["consensus"][0]),
+    )
+
+    with pytest.raises(ValueError, match="consensus ranking codes must be unique"):
+        report_models.MarketRankings.model_validate(document)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("name", "Wrong Name", "consensus metadata must match rankings"),
+        ("provider_name", "wrong-provider", "consensus metadata must match rankings"),
+        (
+            "latest_trade_date",
+            date(2026, 9, 3),
+            "consensus metadata must match rankings",
+        ),
+        ("trend_rank", 2, "consensus ranks and scores must match rankings"),
+        ("trend_score", 81.0, "consensus ranks and scores must match rankings"),
+        ("balanced_rank", 1, "consensus ranks and scores must match rankings"),
+        ("balanced_score", 74.0, "consensus ranks and scores must match rankings"),
+        (
+            "trend_components",
+            {
+                "trend": 89.0,
+                "momentum": 80.0,
+                "volume": 70.0,
+                "structure": 60.0,
+                "risk": 50.0,
+            },
+            "consensus components must match rankings",
+        ),
+        (
+            "balanced_components",
+            {
+                "trend": 90.0,
+                "momentum": 79.0,
+                "volume": 70.0,
+                "structure": 60.0,
+                "risk": 50.0,
+            },
+            "consensus components must match rankings",
+        ),
+    ],
+)
+def test_market_scan_rankings_reject_wrong_consensus_metadata(
+    field,
+    value,
+    message,
+):
+    document = _market_rankings().model_dump()
+    document["consensus"][0][field] = value
+
+    with pytest.raises(ValueError, match=message):
+        report_models.MarketRankings.model_validate(document)
+
+
+@pytest.mark.parametrize(
+    ("field", "trend_codes", "balanced_codes", "wrong_union"),
+    [
+        (
+            "evidence_codes",
+            ("trend_only", "shared"),
+            ("balanced_only", "shared"),
+            ("shared",),
+        ),
+        (
+            "risk_codes",
+            ("trend_risk", "shared_risk"),
+            ("balanced_risk", "shared_risk"),
+            ("shared_risk",),
+        ),
+    ],
+)
+def test_market_scan_rankings_reject_wrong_consensus_code_union(
+    field,
+    trend_codes,
+    balanced_codes,
+    wrong_union,
+):
+    document = _market_rankings().model_dump()
+    document["trend"][0][field] = trend_codes
+    document["balanced"][1][field] = balanced_codes
+    document["consensus"][0][field] = wrong_union
+
+    with pytest.raises(
+        ValueError,
+        match="consensus evidence and risk codes must equal ranking unions",
+    ):
+        report_models.MarketRankings.model_validate(document)
+
+
 def test_market_scan_schema_accepts_legacy_report_without_rankings():
     legacy = _document(name="visible").model_dump(mode="json")
     legacy["schema_version"] = 1

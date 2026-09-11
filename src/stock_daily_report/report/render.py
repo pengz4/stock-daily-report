@@ -103,7 +103,7 @@ def _render_market_rankings_markdown(rankings: MarketRankings) -> list[str]:
                 f"- Reason: `{rankings.unavailable_reason}`",
             ]
         )
-        if rankings.scan_date is not None:
+        if _has_market_ranking_metadata(rankings):
             lines.extend(_market_ranking_metadata_markdown(rankings))
         lines.append("")
         return lines
@@ -136,15 +136,25 @@ def _render_market_rankings_markdown(rankings: MarketRankings) -> list[str]:
 
 
 def _market_ranking_metadata_markdown(rankings: MarketRankings) -> list[str]:
+    generated_at = (
+        rankings.generated_at.isoformat()
+        if rankings.generated_at is not None
+        else "—"
+    )
+    coverage = f"{rankings.coverage:.2%}" if rankings.coverage is not None else "—"
     return [
-        f"- Scan date: {_md(rankings.scan_date)}",
-        f"- Generated: {_md(rankings.generated_at.isoformat())}",
-        f"- Rule: {_md(rankings.rule_version)}",
-        f"- Providers: {_md(', '.join(rankings.provider_names))}",
+        f"- Scan date: {_md(_optional_market_metadata(rankings.scan_date))}",
+        f"- Generated: {_md(generated_at)}",
+        f"- Rule: {_md(_optional_market_metadata(rankings.rule_version))}",
         (
-            f"- Coverage: {rankings.coverage:.2%} "
-            f"({rankings.valid_count}/{rankings.eligible_count} valid; "
-            f"{rankings.universe_count} universe)"
+            "- Providers: "
+            f"{_md(', '.join(rankings.provider_names) or '—')}"
+        ),
+        (
+            f"- Coverage: {coverage} "
+            f"({_optional_market_metadata(rankings.valid_count)}/"
+            f"{_optional_market_metadata(rankings.eligible_count)} valid; "
+            f"{_optional_market_metadata(rankings.universe_count)} universe)"
         ),
         f"- Exclusions: {_md(_format_reason_counts(rankings.exclusion_counts))}",
         f"- Failures: {_md(_format_reason_counts(rankings.failure_counts))}",
@@ -222,7 +232,7 @@ def _render_market_rankings_html(rankings: MarketRankings) -> str:
     if rankings.status == "unavailable":
         metadata = (
             _market_ranking_metadata_html(rankings)
-            if rankings.scan_date is not None
+            if _has_market_ranking_metadata(rankings)
             else ""
         )
         return f"""<section class="market-rankings unavailable">
@@ -270,14 +280,21 @@ def _render_market_rankings_html(rankings: MarketRankings) -> str:
 
 
 def _market_ranking_metadata_html(rankings: MarketRankings) -> str:
+    generated_at = (
+        rankings.generated_at.isoformat()
+        if rankings.generated_at is not None
+        else "—"
+    )
+    coverage = f"{rankings.coverage:.2%}" if rankings.coverage is not None else "—"
     return f"""<dl class="metadata">
-        <dt>Scan date</dt><dd>{_html(rankings.scan_date)}</dd>
-        <dt>Generated</dt><dd>{_html(rankings.generated_at.isoformat())}</dd>
-        <dt>Rule</dt><dd>{_html(rankings.rule_version)}</dd>
-        <dt>Providers</dt><dd>{_html(", ".join(rankings.provider_names))}</dd>
-        <dt>Coverage</dt><dd>{rankings.coverage:.2%}
-        ({rankings.valid_count}/{rankings.eligible_count} valid;
-        {rankings.universe_count} universe)</dd>
+        <dt>Scan date</dt><dd>{_html(_optional_market_metadata(rankings.scan_date))}</dd>
+        <dt>Generated</dt><dd>{_html(generated_at)}</dd>
+        <dt>Rule</dt><dd>{_html(_optional_market_metadata(rankings.rule_version))}</dd>
+        <dt>Providers</dt><dd>{_html(", ".join(rankings.provider_names) or "—")}</dd>
+        <dt>Coverage</dt><dd>{coverage}
+        ({_optional_market_metadata(rankings.valid_count)}/
+        {_optional_market_metadata(rankings.eligible_count)} valid;
+        {_optional_market_metadata(rankings.universe_count)} universe)</dd>
         <dt>Exclusions</dt><dd>{_html(_format_reason_counts(rankings.exclusion_counts))}</dd>
         <dt>Failures</dt><dd>{_html(_format_reason_counts(rankings.failure_counts))}</dd>
       </dl>"""
@@ -351,6 +368,31 @@ def _format_reason_counts(counts: Sequence[object]) -> str:
     if not counts:
         return "None"
     return ", ".join(f"{item.code}={item.count}" for item in counts)
+
+
+def _has_market_ranking_metadata(rankings: MarketRankings) -> bool:
+    return any(
+        value is not None
+        for value in (
+            rankings.scan_date,
+            rankings.generated_at,
+            rankings.rule_version,
+            rankings.config_hash,
+            rankings.input_hash,
+            rankings.universe_count,
+            rankings.eligible_count,
+            rankings.valid_count,
+            rankings.coverage,
+        )
+    ) or bool(
+        rankings.provider_names
+        or rankings.exclusion_counts
+        or rankings.failure_counts
+    )
+
+
+def _optional_market_metadata(value: object | None) -> object:
+    return "—" if value is None else value
 
 
 def render_site_index(report_dates: Sequence[str]) -> str:

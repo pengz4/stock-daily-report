@@ -138,12 +138,6 @@ class MarketRankings(BaseModel):
 
     @model_validator(mode="after")
     def validate_state(self) -> MarketRankings:
-        if self.status == "unavailable":
-            if self.unavailable_reason is None:
-                raise ValueError("unavailable market rankings require a reason")
-            return self
-        if self.unavailable_reason is not None:
-            raise ValueError("available market rankings cannot have unavailable reason")
         required_metadata = (
             self.scan_date,
             self.generated_at,
@@ -155,6 +149,24 @@ class MarketRankings(BaseModel):
             self.valid_count,
             self.coverage,
         )
+        if self.status == "unavailable":
+            if self.unavailable_reason is None:
+                raise ValueError("unavailable market rankings require a reason")
+            metadata_absent = all(value is None for value in required_metadata) and not (
+                self.provider_names
+                or self.exclusion_counts
+                or self.failure_counts
+            )
+            metadata_complete = all(
+                value is not None for value in required_metadata
+            )
+            if not metadata_absent and not metadata_complete:
+                raise ValueError(
+                    "unavailable market rankings metadata must be absent or complete"
+                )
+            return self
+        if self.unavailable_reason is not None:
+            raise ValueError("available market rankings cannot have unavailable reason")
         if any(value is None for value in required_metadata):
             raise ValueError("available market rankings require complete metadata")
         if not self.trend or not self.balanced:
@@ -165,15 +177,19 @@ class MarketRankings(BaseModel):
         ):
             if any(record.profile != profile for record in records):
                 raise ValueError(f"{profile} rankings contain another profile")
+            codes = tuple(record.code for record in records)
+            if len(codes) != len(set(codes)):
+                raise ValueError(f"{profile} ranking codes must be unique")
             if tuple(record.rank for record in records) != tuple(
                 range(1, len(records) + 1)
             ):
                 raise ValueError(f"{profile} ranks must be consecutive from one")
         trend = {record.code: record for record in self.trend}
         balanced = {record.code: record for record in self.balanced}
-        if {record.code for record in self.consensus} != set(trend).intersection(
-            balanced
-        ):
+        consensus_codes = tuple(record.code for record in self.consensus)
+        if len(consensus_codes) != len(set(consensus_codes)):
+            raise ValueError("consensus ranking codes must be unique")
+        if set(consensus_codes) != set(trend).intersection(balanced):
             raise ValueError("consensus must exactly match ranking intersection")
         for record in self.consensus:
             trend_record = trend[record.code]
@@ -185,6 +201,41 @@ class MarketRankings(BaseModel):
                 or record.balanced_score != balanced_record.score
             ):
                 raise ValueError("consensus ranks and scores must match rankings")
+            if (
+                record.name != trend_record.name
+                or record.name != balanced_record.name
+                or record.provider_name != trend_record.provider_name
+                or record.provider_name != balanced_record.provider_name
+                or record.latest_trade_date != trend_record.latest_trade_date
+                or record.latest_trade_date != balanced_record.latest_trade_date
+            ):
+                raise ValueError("consensus metadata must match rankings")
+            if (
+                record.trend_components != trend_record.components
+                or record.balanced_components != balanced_record.components
+            ):
+                raise ValueError("consensus components must match rankings")
+            expected_evidence = tuple(
+                sorted(
+                    set(trend_record.evidence_codes).union(
+                        balanced_record.evidence_codes
+                    )
+                )
+            )
+            expected_risks = tuple(
+                sorted(
+                    set(trend_record.risk_codes).union(
+                        balanced_record.risk_codes
+                    )
+                )
+            )
+            if (
+                record.evidence_codes != expected_evidence
+                or record.risk_codes != expected_risks
+            ):
+                raise ValueError(
+                    "consensus evidence and risk codes must equal ranking unions"
+                )
         for counts in (self.exclusion_counts, self.failure_counts):
             codes = tuple(item.code for item in counts)
             if codes != tuple(sorted(set(codes))):
