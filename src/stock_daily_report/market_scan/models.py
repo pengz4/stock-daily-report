@@ -169,6 +169,7 @@ class ScanStatus(BaseModel):
     status: ScanStatusValue
     reason_codes: tuple[str, ...]
     provider_name: str | None = None
+    provider_names: tuple[str, ...] = ()
 
     @model_validator(mode="after")
     def validate_reasons(self) -> ScanStatus:
@@ -180,6 +181,10 @@ class ScanStatus(BaseModel):
             raise ValueError("valid status must not include failure reasons")
         if self.status != "valid" and not self.reason_codes:
             raise ValueError("non-valid status must include at least one reason")
+        if any(not name.strip() for name in self.provider_names):
+            raise ValueError("status provider names must not be blank")
+        if self.provider_names != tuple(sorted(set(self.provider_names))):
+            raise ValueError("status provider names must be sorted and unique")
         return self
 
 
@@ -363,8 +368,13 @@ class MarketScanArtifact(BaseModel):
         referenced_providers = {
             status.provider_name
             for status in self.statuses
-            if status.status == "valid" and status.provider_name is not None
+            if status.provider_name is not None
         }
+        referenced_providers.update(
+            provider_name
+            for status in self.statuses
+            for provider_name in status.provider_names
+        )
         referenced_providers.update(
             record.provider_name
             for records in (self.rankings.trend, self.rankings.balanced)

@@ -34,7 +34,10 @@ from stock_daily_report.market_scan.scoring import (
 )
 from stock_daily_report.models import DailyBar, MarketScanSettings
 from stock_daily_report.providers.base import ProviderError
-from stock_daily_report.providers.service import DataQualityError
+from stock_daily_report.providers.service import (
+    AllProvidersFailedError,
+    DataQualityError,
+)
 from stock_daily_report.providers.universe import UniverseQuote
 
 
@@ -238,6 +241,21 @@ def _process_candidate(
             reasons=reasons,
             provider_name=error.provider,
         )
+    except AllProvidersFailedError as error:
+        return _failed_result(
+            quote,
+            reason=error.code,
+            provider_name=error.provider,
+            provider_names=tuple(
+                sorted(
+                    {
+                        failure.provider
+                        for failure in error.failures
+                        if failure.provider
+                    }
+                )
+            ),
+        )
     except ProviderError as error:
         return _failed_result(
             quote,
@@ -344,7 +362,11 @@ def _failed_result(
     *,
     reason: str,
     provider_name: str,
+    provider_names: tuple[str, ...] = (),
 ) -> _CandidateResult:
+    providers = tuple(
+        sorted({name for name in (*provider_names, provider_name) if name})
+    )
     return _CandidateResult(
         quote=quote,
         status=ScanStatus(
@@ -353,12 +375,13 @@ def _failed_result(
             status="history_failed",
             reason_codes=(reason,),
             provider_name=provider_name,
+            provider_names=provider_names,
         ),
         scores=None,
         latest_trade_date=None,
         provider_name=provider_name,
         history_hash=None,
-        provider_names=(provider_name,) if provider_name else (),
+        provider_names=providers,
     )
 
 

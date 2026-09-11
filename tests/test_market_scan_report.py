@@ -337,6 +337,44 @@ def test_scan_artifact_rejects_empty_or_incomplete_provider_names(provider_names
         MarketScanArtifact.model_validate(document)
 
 
+@pytest.mark.parametrize(
+    ("status", "count_field"),
+    [
+        ("history_failed", "failure_counts"),
+        ("history_excluded", "exclusion_counts"),
+    ],
+)
+def test_scan_artifact_rejects_missing_failed_or_excluded_status_provider(
+    status,
+    count_field,
+):
+    artifact = _artifact(generated_at=datetime(2026, 9, 11, 8, 0, tzinfo=UTC))
+    document = artifact.model_dump()
+    document.update(
+        valid_count=0,
+        coverage=0.0,
+        rankings=ProfileRankings(),
+        consensus=(),
+        statuses=(
+            ScanStatus(
+                code="600519",
+                name="贵州茅台",
+                status=status,
+                reason_codes=("provider_problem",),
+                provider_name="fixture",
+            ),
+        ),
+        provider_names=("fake-universe",),
+    )
+    document[count_field] = {"provider_problem": 1}
+
+    with pytest.raises(
+        ValueError,
+        match="provider_names must include all referenced providers",
+    ):
+        MarketScanArtifact.model_validate(document)
+
+
 def test_candidate_limit_exceeded_cannot_be_an_exclusion_reason():
     artifact = _artifact(generated_at=datetime(2026, 9, 11, 8, 0, tzinfo=UTC))
     document = artifact.model_dump()

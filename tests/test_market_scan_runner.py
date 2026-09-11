@@ -4,7 +4,10 @@ from datetime import UTC, date, datetime, timedelta
 
 from stock_daily_report.models import DailyBar, MarketScanSettings
 from stock_daily_report.providers.base import ProviderAvailabilityError
-from stock_daily_report.providers.service import DataQualityError
+from stock_daily_report.providers.service import (
+    AllProvidersFailedError,
+    DataQualityError,
+)
 from stock_daily_report.providers.universe import UniverseQuote
 from stock_daily_report.quality.checks import DataQualityIssue, DataQualityResult
 
@@ -149,6 +152,26 @@ class QualityRejectingHistoryProvider:
         )
 
 
+class FailingMultiProviderService:
+    name = "selection"
+
+    def fetch(
+        self,
+        code: str,
+        *,
+        start: date | None = None,
+        end: date | None = None,
+        as_of: date,
+    ):
+        del code, start, end, as_of
+        raise AllProvidersFailedError(
+            (
+                ProviderAvailabilityError("akshare", "network_error", "offline"),
+                ProviderAvailabilityError("sina", "http_error", "unavailable"),
+            )
+        )
+
+
 def _scan(
     codes: list[str],
     provider: object,
@@ -245,6 +268,28 @@ def test_data_quality_errors_are_history_exclusions_with_specific_reasons():
         "data_quality_rejected",
     )
     assert status.provider_name == "quality-rejecting-history"
+
+
+def test_all_provider_failures_retain_each_attempted_provider():
+    code = _codes(1)[0]
+
+    artifact = _scan(
+        [code],
+        FailingMultiProviderService(),
+        minimum_coverage_ratio=0.1,
+    )
+
+    status = artifact.statuses[0]
+    assert status.status == "history_failed"
+    assert status.reason_codes == ("all_providers_failed",)
+    assert status.provider_name == "selection"
+    assert status.provider_names == ("akshare", "sina")
+    assert artifact.provider_names == (
+        "akshare",
+        "fake-universe",
+        "selection",
+        "sina",
+    )
 
 
 def test_coverage_below_minimum_suppresses_both_rankings():
