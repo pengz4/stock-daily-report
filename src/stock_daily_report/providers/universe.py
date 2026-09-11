@@ -19,6 +19,7 @@ _SHANGHAI_TIME = ZoneInfo("Asia/Shanghai")
 _REQUIRED_FIELDS = frozenset({"代码", "名称", "最新价", "成交量", "成交额"})
 _MISSING_QUOTE_VALUES = frozenset({"", "-", "--"})
 _PROVIDER_SCHEMA_ERRORS = (KeyError, TypeError, ValueError, ZeroDivisionError)
+_DEFAULT_MINIMUM_UNIVERSE_SIZE = 4_000
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,9 +51,17 @@ class AkShareUniverseProvider:
         *,
         fetcher: Callable[[], object] | None = None,
         clock: Callable[[], date | datetime] | None = None,
+        minimum_universe_size: int = _DEFAULT_MINIMUM_UNIVERSE_SIZE,
     ) -> None:
+        if (
+            isinstance(minimum_universe_size, bool)
+            or not isinstance(minimum_universe_size, int)
+            or minimum_universe_size < 1
+        ):
+            raise ValueError("minimum_universe_size must be a positive integer")
         self._fetcher = fetcher
         self._clock = clock or (lambda: datetime.now(_SHANGHAI_TIME))
+        self._minimum_universe_size = minimum_universe_size
 
     def get_quotes(self) -> list[UniverseQuote]:
         """Fetch and normalize one bulk quote snapshot."""
@@ -72,6 +81,13 @@ class AkShareUniverseProvider:
 
         try:
             records = _records_from_response(response)
+            if len(records) < self._minimum_universe_size:
+                raise ProviderDataError(
+                    self.name,
+                    "provider_snapshot_incomplete",
+                    f"AkShare universe response received {len(records)} records; "
+                    f"expected at least {self._minimum_universe_size}",
+                )
             quote_date = _date_from_clock(self._clock())
         except ProviderError:
             raise

@@ -51,6 +51,7 @@ def test_akshare_universe_provider_normalizes_supported_a_share_classes():
     quotes = AkShareUniverseProvider(
         fetcher=fetcher,
         clock=lambda: date(2026, 9, 11),
+        minimum_universe_size=5,
     ).get_quotes()
 
     assert calls == 1
@@ -77,6 +78,7 @@ def test_universe_quotes_are_immutable():
     quote = AkShareUniverseProvider(
         fetcher=lambda: [_row("000001", "平安银行")],
         clock=lambda: date(2026, 9, 11),
+        minimum_universe_size=1,
     ).get_quotes()[0]
 
     with pytest.raises(FrozenInstanceError):
@@ -95,6 +97,7 @@ def test_malformed_universe_rows_raise_data_error_with_context(row, context):
     provider = AkShareUniverseProvider(
         fetcher=lambda: [row],
         clock=lambda: date(2026, 9, 11),
+        minimum_universe_size=1,
     )
 
     with pytest.raises(
@@ -148,7 +151,10 @@ def test_fetch_time_parsing_failures_raise_provider_data_error(error):
 
 @pytest.mark.parametrize("response", [[], FakeFrame([])])
 def test_empty_universe_snapshots_raise_provider_data_error(response):
-    provider = AkShareUniverseProvider(fetcher=lambda: response)
+    provider = AkShareUniverseProvider(
+        fetcher=lambda: response,
+        minimum_universe_size=1,
+    )
 
     with pytest.raises(
         ProviderDataError,
@@ -160,6 +166,54 @@ def test_empty_universe_snapshots_raise_provider_data_error(response):
     assert raised.value.code == "provider_schema_invalid"
 
 
+def test_non_empty_truncated_universe_snapshot_is_rejected():
+    provider = AkShareUniverseProvider(
+        fetcher=lambda: [
+            _row("600519", "贵州茅台"),
+            _row("000001", "平安银行"),
+        ],
+        minimum_universe_size=3,
+    )
+
+    with pytest.raises(
+        ProviderDataError,
+        match=(
+            r"akshare\[provider_snapshot_incomplete\].*"
+            r"received 2 records; expected at least 3"
+        ),
+    ) as raised:
+        provider.get_quotes()
+
+    assert raised.value.provider == "akshare"
+    assert raised.value.code == "provider_snapshot_incomplete"
+
+
+def test_injected_fetcher_keeps_production_minimum_by_default():
+    provider = AkShareUniverseProvider(
+        fetcher=lambda: [_row("600519", "贵州茅台")],
+    )
+
+    with pytest.raises(
+        ProviderDataError,
+        match=(
+            r"akshare\[provider_snapshot_incomplete\].*"
+            r"received 1 records; expected at least 4000"
+        ),
+    ):
+        provider.get_quotes()
+
+
+@pytest.mark.parametrize("minimum_universe_size", [0, -1, True])
+def test_minimum_universe_size_must_be_a_positive_integer(
+    minimum_universe_size
+):
+    with pytest.raises(ValueError, match="minimum_universe_size"):
+        AkShareUniverseProvider(
+            fetcher=lambda: [_row("600519", "贵州茅台")],
+            minimum_universe_size=minimum_universe_size,
+        )
+
+
 def test_duplicate_universe_codes_are_rejected():
     provider = AkShareUniverseProvider(
         fetcher=lambda: [
@@ -167,6 +221,7 @@ def test_duplicate_universe_codes_are_rejected():
             _row("600519", "贵州茅台"),
         ],
         clock=lambda: date(2026, 9, 11),
+        minimum_universe_size=2,
     )
 
     with pytest.raises(
@@ -181,6 +236,7 @@ def test_unsupported_instruments_and_codes_are_rejected(code):
     provider = AkShareUniverseProvider(
         fetcher=lambda: [_row(code, "unsupported")],
         clock=lambda: date(2026, 9, 11),
+        minimum_universe_size=1,
     )
 
     with pytest.raises(
