@@ -4,6 +4,7 @@ from datetime import UTC, date, datetime
 import pytest
 
 from stock_daily_report.market_scan.models import (
+    SCAN_SCHEMA_VERSION,
     ConsensusRecord,
     MarketScanArtifact,
     ProfileRankings,
@@ -46,7 +47,7 @@ def _artifact(
     trend = _ranking("trend", 82.0)
     balanced = _ranking("balanced", 75.0)
     return MarketScanArtifact(
-        schema_version=1,
+        schema_version=SCAN_SCHEMA_VERSION,
         rule_version="market-scan-v1",
         report_date=date(2026, 9, 11),
         generated_at=generated_at,
@@ -84,6 +85,32 @@ def _artifact(
     )
 
 
+def _capped_document() -> dict[str, object]:
+    artifact = _artifact(generated_at=datetime(2026, 9, 11, 8, 0, tzinfo=UTC))
+    document = artifact.model_dump()
+    document.update(
+        universe_count=2,
+        eligible_count=2,
+        valid_count=1,
+        coverage=0.5,
+        failure_counts={"candidate_limit_exceeded": 1},
+        statuses=(
+            artifact.statuses[0],
+            ScanStatus(
+                code="600520",
+                name="Skipped",
+                status="not_processed",
+                reason_codes=("candidate_limit_exceeded",),
+            ),
+        ),
+    )
+    return document
+
+
+def test_scan_artifact_schema_version_is_2():
+    assert SCAN_SCHEMA_VERSION == 2
+
+
 def test_scan_artifact_uses_versioned_date_path_and_round_trips(tmp_path):
     artifact = _artifact(generated_at=datetime(2026, 9, 11, 8, 0, tzinfo=UTC))
 
@@ -93,7 +120,7 @@ def test_scan_artifact_uses_versioned_date_path_and_round_trips(tmp_path):
 
     assert path == tmp_path / "market-scans" / "2026-09-11" / "scan.json"
     assert loaded == artifact
-    assert document["schema_version"] == 1
+    assert document["schema_version"] == 2
     assert document["universe_count"] == 1
     assert document["rankings"]["trend"][0]["code"] == "600519"
 
@@ -271,3 +298,67 @@ def test_reason_count_mappings_cannot_be_mutated(field):
         getattr(artifact, field)["new_reason"] = 1
 
     assert artifact.model_dump_json() == canonical_before
+
+
+def test_scan_artifact_rejects_rankings_when_candidate_cap_skips_symbol():
+    document = _capped_document()
+
+    with pytest.raises(
+        ValueError,
+        match="rankings and consensus must be empty when any symbol is not_processed",
+    ):
+        MarketScanArtifact.model_validate(document)
+
+
+def test_scan_artifact_rejects_legacy_schema_v1_capped_rankings():
+    document = _capped_document()
+    document["schema_version"] = 1
+
+    with pytest.raises(ValueError, match="schema_version"):
+        MarketScanArtifact.model_validate(document)
+
+
+@pytest.mark.parametrize(
+    "provider_names",
+    [
+        (),
+        ("fake-universe",),
+    ],
+)
+def test_scan_artifact_rejects_empty_or_incomplete_provider_names(provider_names):
+    artifact = _artifact(generated_at=datetime(2026, 9, 11, 8, 0, tzinfo=UTC))
+    document = artifact.model_dump()
+    document["provider_names"] = provider_names
+
+    with pytest.raises(
+        ValueError,
+        match="provider_names must include all referenced providers",
+    ):
+        MarketScanArtifact.model_validate(document)
+
+
+def test_candidate_limit_exceeded_cannot_be_an_exclusion_reason():
+    artifact = _artifact(generated_at=datetime(2026, 9, 11, 8, 0, tzinfo=UTC))
+    document = artifact.model_dump()
+    document.update(
+        eligible_count=0,
+        valid_count=0,
+        coverage=0.0,
+        exclusion_counts={"candidate_limit_exceeded": 1},
+        rankings=ProfileRankings(),
+        consensus=(),
+        statuses=(
+            ScanStatus(
+                code="600519",
+                name="贵州茅台",
+                status="universe_excluded",
+                reason_codes=("candidate_limit_exceeded",),
+            ),
+        ),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="candidate_limit_exceeded must use not_processed status",
+    ):
+        MarketScanArtifact.model_validate(document)

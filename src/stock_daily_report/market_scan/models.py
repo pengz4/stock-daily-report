@@ -18,7 +18,7 @@ from pydantic import (
     model_validator,
 )
 
-SCAN_SCHEMA_VERSION = 1
+SCAN_SCHEMA_VERSION = 2
 Profile = Literal["trend", "balanced"]
 ScanStatusValue = Literal[
     "universe_excluded",
@@ -188,7 +188,7 @@ class MarketScanArtifact(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal[1] = SCAN_SCHEMA_VERSION
+    schema_version: Literal[2] = SCAN_SCHEMA_VERSION
     rule_version: Literal["market-scan-v1"]
     report_date: date
     generated_at: datetime
@@ -237,6 +237,10 @@ class MarketScanArtifact(BaseModel):
     @field_validator("provider_names")
     @classmethod
     def validate_provider_names(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        if not value:
+            raise ValueError(
+                "provider_names must include all referenced providers"
+            )
         if any(not name.strip() for name in value):
             raise ValueError("provider names must not be blank")
         if value != tuple(sorted(set(value))):
@@ -286,6 +290,20 @@ class MarketScanArtifact(BaseModel):
         if self.failure_counts != dict(sorted(expected_failure_counts.items())):
             raise ValueError(
                 "failure_counts must match failed or unprocessed status reasons"
+            )
+        if any(
+            status.status != "not_processed"
+            and "candidate_limit_exceeded" in status.reason_codes
+            for status in self.statuses
+        ):
+            raise ValueError(
+                "candidate_limit_exceeded must use not_processed status"
+            )
+        if any(status.status == "not_processed" for status in self.statuses) and (
+            self.rankings.trend or self.rankings.balanced or self.consensus
+        ):
+            raise ValueError(
+                "rankings and consensus must be empty when any symbol is not_processed"
             )
 
         statuses = {status.code: status for status in self.statuses}
@@ -342,6 +360,23 @@ class MarketScanArtifact(BaseModel):
                 or record.latest_trade_date != trend_record.latest_trade_date
             ):
                 raise ValueError("consensus metadata must match rankings")
+        referenced_providers = {
+            status.provider_name
+            for status in self.statuses
+            if status.status == "valid" and status.provider_name is not None
+        }
+        referenced_providers.update(
+            record.provider_name
+            for records in (self.rankings.trend, self.rankings.balanced)
+            for record in records
+        )
+        referenced_providers.update(
+            record.provider_name for record in self.consensus
+        )
+        if not referenced_providers.issubset(self.provider_names):
+            raise ValueError(
+                "provider_names must include all referenced providers"
+            )
         return self
 
 
