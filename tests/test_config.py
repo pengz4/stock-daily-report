@@ -435,6 +435,35 @@ def test_load_market_scan_settings_requires_positive_limits(
         load_market_scan_settings(path)
 
 
+@pytest.mark.parametrize(
+    "field",
+    [
+        "trend_limit",
+        "balanced_limit",
+        "minimum_history_bars",
+        "max_workers",
+        "max_candidates",
+    ],
+)
+def test_load_market_scan_settings_rejects_boolean_integer_settings(
+    tmp_path, field
+):
+    path = tmp_path / "market_scan.yaml"
+    current_value = dict(
+        line.split(": ", 1) for line in VALID_MARKET_SCAN_YAML.splitlines()
+    )[field]
+    path.write_text(
+        VALID_MARKET_SCAN_YAML.replace(
+            f"{field}: {current_value}",
+            f"{field}: true",
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ConfigurationError, match=field):
+        load_market_scan_settings(path)
+
+
 @pytest.mark.parametrize("valid_ratio", [0.01, 0.8, 1.0])
 def test_load_market_scan_settings_accepts_coverage_ratio_in_range(
     tmp_path, valid_ratio

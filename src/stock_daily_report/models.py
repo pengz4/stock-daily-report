@@ -256,13 +256,13 @@ class MarketScanSettings(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     rule_version: Literal["market-scan-v1"]
-    trend_limit: int = Field(gt=0)
-    balanced_limit: int = Field(gt=0)
-    minimum_history_bars: int = Field(gt=0)
+    trend_limit: int = Field(gt=0, strict=True)
+    balanced_limit: int = Field(gt=0, strict=True)
+    minimum_history_bars: int = Field(gt=0, strict=True)
     minimum_latest_amount: float = Field(gt=0.0)
     minimum_coverage_ratio: float = Field(gt=0.0, le=1.0)
-    max_workers: int = Field(gt=0)
-    max_candidates: int = Field(gt=0)
+    max_workers: int = Field(gt=0, strict=True)
+    max_candidates: int = Field(gt=0, strict=True)
 
     @field_validator(
         "minimum_latest_amount",
