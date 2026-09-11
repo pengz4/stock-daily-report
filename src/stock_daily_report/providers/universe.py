@@ -23,6 +23,8 @@ _DEFAULT_MINIMUM_UNIVERSE_SIZE = 4_000
 _MISSING_CODE_DETAIL_LIMIT = 10
 _PRIMARY_ENDPOINT = "stock_zh_a_spot_em"
 _FALLBACK_ENDPOINT = "stock_zh_a_spot"
+_EXPECTED_CODES_PRIMARY_ENDPOINT = "stock_info_a_code_name"
+_EXPECTED_CODES_FALLBACK_ENDPOINT = "stock_zh_a_spot_tx"
 
 
 @dataclass(frozen=True, slots=True)
@@ -231,16 +233,49 @@ class AkShareUniverseProvider:
         return akshare.stock_zh_a_spot
 
     def _get_expected_codes(self) -> set[str]:
+        response, endpoint, primary_error = (
+            self._fetch_expected_codes_response()
+        )
         try:
-            response = self._resolve_expected_codes_fetcher()()
+            return _expected_codes_from_response(
+                response,
+                allow_exchange_prefix=(
+                    endpoint == _EXPECTED_CODES_FALLBACK_ENDPOINT
+                ),
+            )
+        except ProviderError:
+            raise
+        except _PROVIDER_SCHEMA_ERRORS as error:
+            data_error = ProviderDataError(
+                self.name,
+                "provider_schema_invalid",
+                f"expected-code universe response is invalid: {error}",
+            )
+            if primary_error is None:
+                raise data_error from error
+            raise _expected_codes_fallback_data_error(
+                primary_error, data_error
+            ) from error
+
+    def _fetch_expected_codes_response(
+        self,
+    ) -> tuple[object, str, ProviderAvailabilityError | None]:
+        try:
+            return (
+                self._resolve_expected_codes_fetcher()(),
+                _EXPECTED_CODES_PRIMARY_ENDPOINT,
+                None,
+            )
+        except ProviderAvailabilityError as error:
+            primary_error = error
         except ProviderError:
             raise
         except OSError as error:
-            raise ProviderAvailabilityError(
+            primary_error = ProviderAvailabilityError(
                 self.name,
                 "network_error",
                 f"expected-code universe request failed: {error}",
-            ) from error
+            )
         except _PROVIDER_SCHEMA_ERRORS as error:
             raise ProviderDataError(
                 self.name,
@@ -248,16 +283,53 @@ class AkShareUniverseProvider:
                 f"expected-code universe fetch failed: {error}",
             ) from error
 
+        if (
+            self._expected_codes_fetcher is not None
+            or primary_error.code == "dependency_unavailable"
+        ):
+            raise primary_error
+
         try:
-            return _expected_codes_from_response(response)
+            return (
+                self._resolve_expected_codes_fallback_fetcher()(),
+                _EXPECTED_CODES_FALLBACK_ENDPOINT,
+                primary_error,
+            )
+        except ProviderAvailabilityError as error:
+            fallback_error = error
+        except ProviderDataError as error:
+            raise _expected_codes_fallback_data_error(
+                primary_error, error
+            ) from error
         except ProviderError:
             raise
+        except OSError as error:
+            fallback_error = ProviderAvailabilityError(
+                self.name,
+                "network_error",
+                f"expected-code universe request failed: {error}",
+            )
         except _PROVIDER_SCHEMA_ERRORS as error:
-            raise ProviderDataError(
+            data_error = ProviderDataError(
                 self.name,
                 "provider_schema_invalid",
-                f"expected-code universe response is invalid: {error}",
+                f"expected-code universe fetch failed: {error}",
+            )
+            raise _expected_codes_fallback_data_error(
+                primary_error, data_error
             ) from error
+
+        detail = (
+            f"{_EXPECTED_CODES_PRIMARY_ENDPOINT} attempt failed: "
+            f"{primary_error}; "
+            f"{_EXPECTED_CODES_FALLBACK_ENDPOINT} attempt failed: "
+            f"{fallback_error}"
+        )
+        raise ProviderAvailabilityError(
+            self.name,
+            "all_expected_code_endpoints_unavailable",
+            detail,
+        ) from fallback_error
 
     def _resolve_expected_codes_fetcher(self) -> Callable[[], object]:
         if self._expected_codes_fetcher is not None:
@@ -273,6 +345,19 @@ class AkShareUniverseProvider:
         # AkShare defines this as the combined Shanghai, Shenzhen, STAR, and
         # Beijing Stock Exchange A-share code list.
         return akshare.stock_info_a_code_name
+
+    def _resolve_expected_codes_fallback_fetcher(
+        self,
+    ) -> Callable[[], object]:
+        try:
+            import akshare  # type: ignore[import-not-found]
+        except ImportError as error:
+            raise ProviderAvailabilityError(
+                self.name,
+                "dependency_unavailable",
+                "Install stock-daily-report[akshare] to enable this provider",
+            ) from error
+        return akshare.stock_zh_a_spot_tx
 
     def _map_record(
         self,
@@ -350,7 +435,25 @@ def _fallback_data_error(
     )
 
 
-def _expected_codes_from_response(response: object) -> set[str]:
+def _expected_codes_fallback_data_error(
+    primary_error: ProviderAvailabilityError,
+    fallback_error: ProviderDataError,
+) -> ProviderDataError:
+    return ProviderDataError(
+        fallback_error.provider,
+        fallback_error.code,
+        f"{_EXPECTED_CODES_PRIMARY_ENDPOINT} attempt failed: "
+        f"{primary_error}; "
+        f"{_EXPECTED_CODES_FALLBACK_ENDPOINT} fallback data error: "
+        f"{fallback_error.detail}",
+    )
+
+
+def _expected_codes_from_response(
+    response: object,
+    *,
+    allow_exchange_prefix: bool = False,
+) -> set[str]:
     records = _records_from_response(response)
     expected_codes: set[str] = set()
     for index, record in enumerate(records):
@@ -365,6 +468,19 @@ def _expected_codes_from_response(response: object) -> set[str]:
         if not isinstance(value, str):
             raise TypeError(f"expected-code row {index} code must be a string")
         code = value.strip()
+        if allow_exchange_prefix and len(code) == 8:
+            exchange_prefix = code[:2].lower()
+            normalized_code = code[2:]
+            if (
+                exchange_prefix in {"sh", "sz", "bj"}
+                and A_SHARE_CODE_PATTERN.fullmatch(normalized_code)
+            ):
+                if exchange_prefix.upper() != _market_for_code(normalized_code):
+                    raise ValueError(
+                        f"expected-code row {index} has mismatched "
+                        f"exchange prefix: {code}"
+                    )
+                code = normalized_code
         if A_SHARE_CODE_PATTERN.fullmatch(code):
             expected_codes.add(code)
     if not expected_codes:

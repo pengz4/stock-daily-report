@@ -417,6 +417,154 @@ def test_default_expected_codes_fetcher_uses_full_a_share_code_list(monkeypatch)
     assert calls == ["quotes", "expected"]
 
 
+def test_default_expected_codes_availability_failure_uses_tencent_fallback(
+    monkeypatch,
+):
+    calls = []
+    akshare = ModuleType("akshare")
+
+    def fetch_quotes():
+        calls.append("quotes")
+        return [
+            _row("600519", "贵州茅台"),
+            _row("000001", "平安银行"),
+        ]
+
+    def fetch_expected_codes():
+        calls.append("expected")
+        raise ConnectionResetError(104, "connection reset by peer")
+
+    def fetch_tencent_codes():
+        calls.append("tencent")
+        return FakeFrame(
+            [
+                {"code": "sh600519"},
+                {"code": "000001"},
+            ]
+        )
+
+    akshare.stock_zh_a_spot_em = fetch_quotes
+    akshare.stock_info_a_code_name = fetch_expected_codes
+    akshare.stock_zh_a_spot_tx = fetch_tencent_codes
+    monkeypatch.setitem(sys.modules, "akshare", akshare)
+
+    quotes = AkShareUniverseProvider().get_quotes()
+
+    assert [quote.code for quote in quotes] == ["600519", "000001"]
+    assert calls == ["quotes", "expected", "tencent"]
+
+
+def test_default_expected_code_sources_report_both_unavailable_attempts(
+    monkeypatch,
+):
+    calls = []
+    akshare = ModuleType("akshare")
+
+    def fetch_quotes():
+        calls.append("quotes")
+        return [_row("600519", "贵州茅台")]
+
+    def fetch_expected_codes():
+        calls.append("expected")
+        raise OSError("code list disconnected")
+
+    def fetch_tencent_codes():
+        calls.append("tencent")
+        raise OSError("Tencent disconnected")
+
+    akshare.stock_zh_a_spot_em = fetch_quotes
+    akshare.stock_info_a_code_name = fetch_expected_codes
+    akshare.stock_zh_a_spot_tx = fetch_tencent_codes
+    monkeypatch.setitem(sys.modules, "akshare", akshare)
+
+    with pytest.raises(ProviderAvailabilityError) as raised:
+        AkShareUniverseProvider().get_quotes()
+
+    assert raised.value.code == "all_expected_code_endpoints_unavailable"
+    assert "stock_info_a_code_name" in raised.value.detail
+    assert "code list disconnected" in raised.value.detail
+    assert "stock_zh_a_spot_tx" in raised.value.detail
+    assert "Tencent disconnected" in raised.value.detail
+    assert calls == ["quotes", "expected", "tencent"]
+
+
+def test_default_expected_code_schema_failure_does_not_use_tencent_fallback(
+    monkeypatch,
+):
+    calls = []
+    akshare = ModuleType("akshare")
+
+    def fetch_quotes():
+        calls.append("quotes")
+        return [_row("600519", "贵州茅台")]
+
+    def fetch_expected_codes():
+        calls.append("expected")
+        return FakeFrame([{"name": "贵州茅台"}])
+
+    def fetch_tencent_codes():
+        calls.append("tencent")
+        return FakeFrame([{"code": "sh600519"}])
+
+    akshare.stock_zh_a_spot_em = fetch_quotes
+    akshare.stock_info_a_code_name = fetch_expected_codes
+    akshare.stock_zh_a_spot_tx = fetch_tencent_codes
+    monkeypatch.setitem(sys.modules, "akshare", akshare)
+
+    with pytest.raises(
+        ProviderDataError,
+        match=r"akshare\[provider_schema_invalid\].*expected-code",
+    ):
+        AkShareUniverseProvider().get_quotes()
+
+    assert calls == ["quotes", "expected"]
+
+
+def test_tencent_expected_codes_remain_independent_from_quote_snapshot(
+    monkeypatch,
+):
+    calls = []
+    akshare = ModuleType("akshare")
+
+    def fetch_quotes():
+        calls.append("quotes")
+        raise OSError("Eastmoney disconnected")
+
+    def fetch_sina_quotes():
+        calls.append("sina")
+        return [_row("sh600519", "贵州茅台")]
+
+    def fetch_expected_codes():
+        calls.append("expected")
+        raise OSError("code list disconnected")
+
+    def fetch_tencent_codes():
+        calls.append("tencent")
+        return FakeFrame(
+            [
+                {"code": "sh600519"},
+                {"code": "sz000001"},
+            ]
+        )
+
+    akshare.stock_zh_a_spot_em = fetch_quotes
+    akshare.stock_zh_a_spot = fetch_sina_quotes
+    akshare.stock_info_a_code_name = fetch_expected_codes
+    akshare.stock_zh_a_spot_tx = fetch_tencent_codes
+    monkeypatch.setitem(sys.modules, "akshare", akshare)
+
+    with pytest.raises(
+        ProviderDataError,
+        match=(
+            r"akshare\[provider_snapshot_incomplete\].*"
+            r"received 1 supported codes; expected 2; missing 1: 000001"
+        ),
+    ):
+        AkShareUniverseProvider().get_quotes()
+
+    assert calls == ["quotes", "sina", "expected", "tencent"]
+
+
 def test_default_universe_fallback_resolves_sina_only_after_primary_failure(
     monkeypatch,
 ):
