@@ -488,6 +488,49 @@ def test_default_expected_code_sources_report_both_unavailable_attempts(
     assert calls == ["quotes", "expected", "tencent"]
 
 
+@pytest.mark.parametrize(
+    "fallback_endpoint",
+    [
+        pytest.param(None, id="missing"),
+        pytest.param("not-callable", id="non-callable"),
+    ],
+)
+def test_unavailable_tencent_expected_code_endpoint_preserves_classification(
+    monkeypatch,
+    fallback_endpoint,
+):
+    calls = []
+    akshare = ModuleType("akshare")
+
+    def fetch_quotes():
+        calls.append("quotes")
+        return [_row("600519", "贵州茅台")]
+
+    def fetch_expected_codes():
+        calls.append("expected")
+        raise OSError("code list disconnected")
+
+    akshare.stock_zh_a_spot_em = fetch_quotes
+    akshare.stock_info_a_code_name = fetch_expected_codes
+    if fallback_endpoint is not None:
+        akshare.stock_zh_a_spot_tx = fallback_endpoint
+    monkeypatch.setitem(sys.modules, "akshare", akshare)
+
+    with pytest.raises(ProviderAvailabilityError) as raised:
+        AkShareUniverseProvider().get_quotes()
+
+    assert raised.value.provider == "akshare"
+    assert raised.value.code == "all_expected_code_endpoints_unavailable"
+    assert "stock_info_a_code_name" in raised.value.detail
+    assert "code list disconnected" in raised.value.detail
+    assert "stock_zh_a_spot_tx" in raised.value.detail
+    assert "endpoint_unavailable" in raised.value.detail
+    assert isinstance(raised.value.__cause__, ProviderAvailabilityError)
+    assert raised.value.__cause__.provider == "akshare"
+    assert raised.value.__cause__.code == "endpoint_unavailable"
+    assert calls == ["quotes", "expected"]
+
+
 def test_default_expected_code_schema_failure_does_not_use_tencent_fallback(
     monkeypatch,
 ):

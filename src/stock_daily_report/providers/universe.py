@@ -357,7 +357,16 @@ class AkShareUniverseProvider:
                 "dependency_unavailable",
                 "Install stock-daily-report[akshare] to enable this provider",
             ) from error
-        return akshare.stock_zh_a_spot_tx
+        fetcher = getattr(akshare, _EXPECTED_CODES_FALLBACK_ENDPOINT, None)
+        if not callable(fetcher):
+            raise ProviderAvailabilityError(
+                self.name,
+                "endpoint_unavailable",
+                f"Required AkShare endpoint "
+                f"{_EXPECTED_CODES_FALLBACK_ENDPOINT} is missing or non-callable; "
+                "install akshare>=1.18.73",
+            )
+        return fetcher
 
     def _map_record(
         self,

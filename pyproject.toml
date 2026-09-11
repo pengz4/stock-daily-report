@@ -17,7 +17,7 @@ stock-daily-report = "stock_daily_report.cli:main"
 
 [project.optional-dependencies]
 akshare = [
-    "akshare>=1.13",
+    "akshare>=1.18.73",
 ]
 dev = [
     "pytest>=8",
