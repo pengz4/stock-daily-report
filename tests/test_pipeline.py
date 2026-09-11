@@ -13,6 +13,14 @@ import pytest
 
 import stock_daily_report.cli as cli_module
 import stock_daily_report.pipeline as pipeline_module
+from stock_daily_report.market_scan.models import (
+    ConsensusRecord,
+    MarketScanArtifact,
+    ProfileRankings,
+    RankingRecord,
+    ScanStatus,
+)
+from stock_daily_report.market_scan.report import write_scan_artifact
 from stock_daily_report.models import DailyBar, Settings, Watchlist
 from stock_daily_report.notify.base import (
     NotificationDeliveryError,
@@ -67,6 +75,136 @@ def make_bars(code: str, count: int = 80) -> list[DailyBar]:
     ]
 
 
+def _market_scan_artifact(
+    report_date: date = date(2026, 9, 4),
+    *,
+    incomplete: bool = False,
+    rankings_unavailable: bool = False,
+) -> MarketScanArtifact:
+    components = {
+        "trend": 90.0,
+        "momentum": 80.0,
+        "volume": 70.0,
+        "structure": 60.0,
+        "risk": 50.0,
+    }
+    if incomplete:
+        return MarketScanArtifact(
+            rule_version="market-scan-v1",
+            report_date=report_date,
+            generated_at=datetime(2026, 9, 4, 8, 30, tzinfo=UTC),
+            universe_count=1,
+            eligible_count=1,
+            valid_count=0,
+            coverage=0.0,
+            exclusion_counts={},
+            failure_counts={"candidate_limit_exceeded": 1},
+            rankings=ProfileRankings(),
+            consensus=(),
+            statuses=(
+                ScanStatus(
+                    code="600519",
+                    name="贵州茅台",
+                    status="not_processed",
+                    reason_codes=("candidate_limit_exceeded",),
+                ),
+            ),
+            config_hash="c" * 64,
+            input_hash="d" * 64,
+            provider_names=("fake-universe", "fixture"),
+        )
+    trend = RankingRecord(
+        code="600519",
+        name="贵州茅台",
+        profile="trend",
+        rank=1,
+        score=82.0,
+        components=components,
+        evidence_codes=("close_above_ma20",),
+        risk_codes=("elevated_volatility",),
+        latest_trade_date=report_date,
+        provider_name="fixture",
+    )
+    balanced = trend.model_copy(
+        update={"profile": "balanced", "rank": 1, "score": 75.0}
+    )
+    if rankings_unavailable:
+        return MarketScanArtifact(
+            rule_version="market-scan-v1",
+            report_date=report_date,
+            generated_at=datetime(2026, 9, 4, 8, 30, tzinfo=UTC),
+            universe_count=2,
+            eligible_count=2,
+            valid_count=1,
+            coverage=0.5,
+            exclusion_counts={},
+            failure_counts={"network_error": 1},
+            rankings=ProfileRankings(),
+            consensus=(),
+            statuses=(
+                ScanStatus(
+                    code="000001",
+                    name="Failed",
+                    status="history_failed",
+                    reason_codes=("network_error",),
+                    provider_name="fixture",
+                ),
+                ScanStatus(
+                    code="600519",
+                    name="贵州茅台",
+                    status="valid",
+                    reason_codes=(),
+                    provider_name="fixture",
+                ),
+            ),
+            config_hash="c" * 64,
+            input_hash="d" * 64,
+            provider_names=("fake-universe", "fixture"),
+        )
+    return MarketScanArtifact(
+        rule_version="market-scan-v1",
+        report_date=report_date,
+        generated_at=datetime(2026, 9, 4, 8, 30, tzinfo=UTC),
+        universe_count=2,
+        eligible_count=1,
+        valid_count=1,
+        coverage=1.0,
+        exclusion_counts={"st": 1},
+        failure_counts={},
+        rankings=ProfileRankings(trend=(trend,), balanced=(balanced,)),
+        consensus=(
+            ConsensusRecord(
+                code="600519",
+                name="贵州茅台",
+                trend_rank=1,
+                balanced_rank=1,
+                trend_score=82.0,
+                balanced_score=75.0,
+                latest_trade_date=report_date,
+                provider_name="fixture",
+            ),
+        ),
+        statuses=(
+            ScanStatus(
+                code="000001",
+                name="Excluded",
+                status="universe_excluded",
+                reason_codes=("st",),
+            ),
+            ScanStatus(
+                code="600519",
+                name="贵州茅台",
+                status="valid",
+                reason_codes=(),
+                provider_name="fixture",
+            ),
+        ),
+        config_hash="c" * 64,
+        input_hash="d" * 64,
+        provider_names=("fake-universe", "fixture"),
+    )
+
+
 @pytest.fixture
 def fixture_settings() -> Settings:
     return Settings(
@@ -108,6 +246,113 @@ def test_daily_pipeline_writes_json_markdown_and_html(tmp_path, fixture_settings
     assert outputs.markdown_path == tmp_path / "reports/2026-09-04/report.md"
     assert outputs.html_path == tmp_path / "reports/2026-09-04/index.html"
     assert outputs.snapshot_path == tmp_path / "snapshots/2026-09-04/input.json"
+
+
+def test_market_scan_is_published_in_json_markdown_and_html(
+    tmp_path, fixture_settings
+):
+    write_scan_artifact(tmp_path, _market_scan_artifact())
+
+    outputs = run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=Watchlist(stocks=[{"code": "600519", "name": "贵州茅台"}]),
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        report_date=date(2026, 9, 4),
+        now=lambda: datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
+    )
+
+    document = json.loads(outputs.json_path.read_text(encoding="utf-8"))
+    markdown = outputs.markdown_path.read_text(encoding="utf-8")
+    html = outputs.html_path.read_text(encoding="utf-8")
+
+    assert document["schema_version"] == 2
+    rankings = document["market_rankings"]
+    assert rankings["status"] == "available"
+    assert rankings["scan_date"] == "2026-09-04"
+    assert rankings["coverage"] == 1.0
+    assert rankings["universe_count"] == 2
+    assert rankings["eligible_count"] == 1
+    assert rankings["valid_count"] == 1
+    assert rankings["provider_names"] == ["fake-universe", "fixture"]
+    assert rankings["trend"][0]["components"]["trend"] == 90.0
+    assert rankings["trend"][0]["evidence_codes"] == ["close_above_ma20"]
+    assert rankings["trend"][0]["risk_codes"] == ["elevated_volatility"]
+    assert rankings["consensus"][0]["trend_rank"] == 1
+    assert rankings["consensus"][0]["balanced_rank"] == 1
+    for rendered in (markdown, html):
+        assert "Trend Top 30" in rendered
+        assert "Balanced Top 30" in rendered
+        assert "多策略共识" in rendered
+        assert "high confidence" not in rendered.lower()
+    assert r"close\_above\_ma20" in markdown
+    assert r"elevated\_volatility" in markdown
+    assert "close_above_ma20" in html
+    assert "elevated_volatility" in html
+    assert 'class="consensus-row"' in html
+
+
+@pytest.mark.parametrize(
+    ("artifact_kind", "expected_reason"),
+    [
+        ("missing", "scan_artifact_missing"),
+        ("malformed", "scan_artifact_invalid"),
+        ("schema_v1", "scan_artifact_invalid"),
+        ("other_date", "scan_date_mismatch"),
+        ("incomplete", "scan_incomplete"),
+        ("below_coverage", "scan_rankings_unavailable"),
+    ],
+)
+def test_market_scan_invalid_or_missing_is_explicit_and_does_not_block_report(
+    tmp_path,
+    fixture_settings,
+    artifact_kind,
+    expected_reason,
+):
+    scan_path = tmp_path / "market-scans/2026-09-04/scan.json"
+    if artifact_kind == "malformed":
+        scan_path.parent.mkdir(parents=True)
+        scan_path.write_text("{", encoding="utf-8")
+    elif artifact_kind == "schema_v1":
+        scan_path.parent.mkdir(parents=True)
+        document = _market_scan_artifact().model_dump(mode="json")
+        document["schema_version"] = 1
+        scan_path.write_text(json.dumps(document), encoding="utf-8")
+    elif artifact_kind == "other_date":
+        scan_path.parent.mkdir(parents=True)
+        scan_path.write_text(
+            _market_scan_artifact(date(2026, 9, 3)).model_dump_json(),
+            encoding="utf-8",
+        )
+    elif artifact_kind == "incomplete":
+        write_scan_artifact(tmp_path, _market_scan_artifact(incomplete=True))
+    elif artifact_kind == "below_coverage":
+        write_scan_artifact(
+            tmp_path,
+            _market_scan_artifact(rankings_unavailable=True),
+        )
+
+    outputs = run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=Watchlist(stocks=[{"code": "600519", "name": "贵州茅台"}]),
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        report_date=date(2026, 9, 4),
+    )
+
+    assert outputs.report.market_rankings.status == "unavailable"
+    assert outputs.report.market_rankings.unavailable_reason == expected_reason
+    assert outputs.json_path.exists()
+    markdown = outputs.markdown_path.read_text(encoding="utf-8")
+    html = outputs.html_path.read_text(encoding="utf-8")
+    assert "Full-market rankings unavailable" in markdown
+    assert "Full-market rankings unavailable" in html
+    if artifact_kind in {"incomplete", "below_coverage"}:
+        rankings = outputs.report.market_rankings
+        assert rankings.scan_date == date(2026, 9, 4)
+        assert rankings.coverage == (0.0 if artifact_kind == "incomplete" else 0.5)
+        assert "Coverage:" in markdown
+        assert "Coverage" in html
 
 
 def test_successful_publication_commits_cache_after_all_outputs_exist(
@@ -3158,7 +3403,7 @@ def test_report_json_is_deterministic_and_contains_auditing_metadata(
 
     assert first == second
     assert hashlib.sha256(first).hexdigest() == hashlib.sha256(second).hexdigest()
-    assert document["schema_version"] == 1
+    assert document["schema_version"] == 2
     assert document["metadata"]["snapshot_path"] == "snapshots/2026-09-04/input.json"
     assert document["metadata"]["config_hash"] == first_outputs.report.metadata.config_hash
     assert document["metadata"]["analyzer_versions"]["structural"] == "simplified-v1"

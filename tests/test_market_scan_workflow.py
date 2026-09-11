@@ -66,3 +66,14 @@ def test_market_scan_workflow_reuses_and_persists_independent_artifacts():
     assert "reports-history" in persist
     assert "reports " not in persist
     assert "snapshots" not in persist
+
+
+def test_daily_workflow_restores_same_date_market_scan_history_when_available():
+    workflow = _daily_workflow()
+    steps = workflow["jobs"]["generate"]["steps"]
+    merge = next(
+        step["run"] for step in steps if step["name"] == "Merge previous report history"
+    )
+
+    assert "if [ -d .report-history/market-scans ]; then" in merge
+    assert "cp -a .report-history/market-scans ./market-scans" in merge

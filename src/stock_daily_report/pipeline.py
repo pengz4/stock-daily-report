@@ -26,6 +26,15 @@ from stock_daily_report.indicators.technical import (
     calculate_technical_metrics,
 )
 from stock_daily_report.indicators.trend import classify_trend
+from stock_daily_report.market_scan.models import (
+    ConsensusRecord,
+    MarketScanArtifact,
+    RankingRecord,
+)
+from stock_daily_report.market_scan.report import (
+    MarketScanArtifactError,
+    load_scan_artifact,
+)
 from stock_daily_report.models import DailyBar, Settings, Watchlist
 from stock_daily_report.providers.akshare import AkShareMarketDataProvider
 from stock_daily_report.providers.base import MarketDataProvider, ProviderError
@@ -44,6 +53,12 @@ from stock_daily_report.quality.checks import (
 )
 from stock_daily_report.report.models import (
     AnalyzerMetadata,
+    MarketConsensusRanking,
+    MarketRanking,
+    MarketRankingComponents,
+    MarketRankings,
+    MarketRankingsUnavailableReason,
+    MarketScanReasonCount,
     MarketSummary,
     ReportDocument,
     ReportMetadata,
@@ -1263,6 +1278,7 @@ def _publish_report_transaction(
         snapshot = _resolve_snapshot_for_publication(
             snapshot_target, staged_snapshot
         )
+        market_rankings = _load_market_rankings(root, report_date)
         report = _build_report(
             settings,
             watchlist,
@@ -1271,6 +1287,7 @@ def _publish_report_transaction(
             snapshot_hash=snapshot.content_hash,
             report_date=report_date,
             generated_at=generated_at,
+            market_rankings=market_rankings,
         )
 
         staged_report_dir = transaction_root / "reports" / report_date.isoformat()
@@ -1980,6 +1997,7 @@ def _build_report(
     snapshot_hash: str,
     report_date: date,
     generated_at: datetime,
+    market_rankings: MarketRankings,
 ) -> ReportDocument:
     rule_hash = configuration_hash(resolve_risk_rules(settings))
     stocks: list[StockReport] = []
@@ -2059,7 +2077,139 @@ def _build_report(
             stock_count=len(stocks),
         ),
         market_summary=_build_market_summary(fetched),
+        market_rankings=market_rankings,
         stocks=tuple(stocks),
+    )
+
+
+def _load_market_rankings(root: Path, report_date: date) -> MarketRankings:
+    scan_path = root / "market-scans" / report_date.isoformat() / "scan.json"
+    if not scan_path.exists():
+        return _unavailable_market_rankings("scan_artifact_missing")
+    try:
+        artifact = load_scan_artifact(scan_path)
+    except MarketScanArtifactError:
+        return _unavailable_market_rankings("scan_artifact_invalid")
+    if artifact.report_date != report_date:
+        return _unavailable_market_rankings("scan_date_mismatch")
+    if any(status.status == "not_processed" for status in artifact.statuses):
+        return _unavailable_market_rankings("scan_incomplete", artifact)
+    if not artifact.rankings.trend or not artifact.rankings.balanced:
+        return _unavailable_market_rankings(
+            "scan_rankings_unavailable",
+            artifact,
+        )
+    return _market_rankings_from_artifact(artifact)
+
+
+def _unavailable_market_rankings(
+    reason: MarketRankingsUnavailableReason,
+    artifact: MarketScanArtifact | None = None,
+) -> MarketRankings:
+    if artifact is None:
+        return MarketRankings(status="unavailable", unavailable_reason=reason)
+    return MarketRankings(
+        status="unavailable",
+        unavailable_reason=reason,
+        scan_date=artifact.report_date,
+        generated_at=artifact.generated_at,
+        rule_version=artifact.rule_version,
+        config_hash=artifact.config_hash,
+        input_hash=artifact.input_hash,
+        provider_names=artifact.provider_names,
+        universe_count=artifact.universe_count,
+        eligible_count=artifact.eligible_count,
+        valid_count=artifact.valid_count,
+        coverage=artifact.coverage,
+        exclusion_counts=_market_reason_counts(artifact.exclusion_counts),
+        failure_counts=_market_reason_counts(artifact.failure_counts),
+    )
+
+
+def _market_rankings_from_artifact(
+    artifact: MarketScanArtifact,
+) -> MarketRankings:
+    trend = tuple(_market_ranking(record) for record in artifact.rankings.trend)
+    balanced = tuple(
+        _market_ranking(record) for record in artifact.rankings.balanced
+    )
+    trend_by_code = {record.code: record for record in trend}
+    balanced_by_code = {record.code: record for record in balanced}
+    consensus = tuple(
+        _market_consensus_ranking(
+            record,
+            trend_by_code[record.code],
+            balanced_by_code[record.code],
+        )
+        for record in artifact.consensus
+    )
+    return MarketRankings(
+        status="available",
+        unavailable_reason=None,
+        scan_date=artifact.report_date,
+        generated_at=artifact.generated_at,
+        rule_version=artifact.rule_version,
+        config_hash=artifact.config_hash,
+        input_hash=artifact.input_hash,
+        provider_names=artifact.provider_names,
+        universe_count=artifact.universe_count,
+        eligible_count=artifact.eligible_count,
+        valid_count=artifact.valid_count,
+        coverage=artifact.coverage,
+        exclusion_counts=_market_reason_counts(artifact.exclusion_counts),
+        failure_counts=_market_reason_counts(artifact.failure_counts),
+        trend=trend,
+        balanced=balanced,
+        consensus=consensus,
+    )
+
+
+def _market_ranking(record: RankingRecord) -> MarketRanking:
+    return MarketRanking(
+        code=record.code,
+        name=record.name,
+        profile=record.profile,
+        rank=record.rank,
+        score=record.score,
+        components=MarketRankingComponents.model_validate(
+            record.components.model_dump()
+        ),
+        evidence_codes=record.evidence_codes,
+        risk_codes=record.risk_codes,
+        latest_trade_date=record.latest_trade_date,
+        provider_name=record.provider_name,
+    )
+
+
+def _market_consensus_ranking(
+    record: ConsensusRecord,
+    trend: MarketRanking,
+    balanced: MarketRanking,
+) -> MarketConsensusRanking:
+    return MarketConsensusRanking(
+        code=record.code,
+        name=record.name,
+        trend_rank=record.trend_rank,
+        trend_score=record.trend_score,
+        balanced_rank=record.balanced_rank,
+        balanced_score=record.balanced_score,
+        trend_components=trend.components,
+        balanced_components=balanced.components,
+        evidence_codes=tuple(
+            sorted(set(trend.evidence_codes).union(balanced.evidence_codes))
+        ),
+        risk_codes=tuple(
+            sorted(set(trend.risk_codes).union(balanced.risk_codes))
+        ),
+        latest_trade_date=record.latest_trade_date,
+        provider_name=record.provider_name,
+    )
+
+
+def _market_reason_counts(counts: Mapping[str, int]) -> tuple[MarketScanReasonCount, ...]:
+    return tuple(
+        MarketScanReasonCount(code=code, count=count)
+        for code, count in sorted(counts.items())
     )
 
 

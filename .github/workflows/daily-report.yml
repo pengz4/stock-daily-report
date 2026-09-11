@@ -76,6 +76,9 @@ jobs:
           if [ -d .report-history/snapshots ]; then
             cp -a .report-history/snapshots ./snapshots
           fi
+          if [ -d .report-history/market-scans ]; then
+            cp -a .report-history/market-scans ./market-scans
+          fi
       - name: Generate report artifacts
         env:
           WECOM_WEBHOOK_URL: ${{ secrets.WECOM_WEBHOOK_URL }}

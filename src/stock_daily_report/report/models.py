@@ -5,11 +5,11 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from stock_daily_report.decision import DecisionLabel
 
-REPORT_SCHEMA_VERSION = 1
+REPORT_SCHEMA_VERSION = 2
 
 
 class AnalyzerMetadata(BaseModel):
@@ -44,6 +44,159 @@ class MarketSummary(BaseModel):
 
     status: Literal["unavailable", "validated_watchlist"]
     text: str = Field(min_length=1)
+
+
+class MarketRankingComponents(BaseModel):
+    """Explainable bounded components copied from a validated market scan."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    trend: float = Field(ge=0.0, le=100.0)
+    momentum: float = Field(ge=0.0, le=100.0)
+    volume: float = Field(ge=0.0, le=100.0)
+    structure: float = Field(ge=0.0, le=100.0)
+    risk: float = Field(ge=0.0, le=100.0)
+
+
+class MarketScanReasonCount(BaseModel):
+    """One deterministic coverage exclusion or failure count."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    code: str = Field(min_length=1)
+    count: int = Field(ge=1)
+
+
+class MarketRanking(BaseModel):
+    """One row in a trend or balanced full-market ranking."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    code: str = Field(pattern=r"^\d{6}$")
+    name: str = Field(min_length=1)
+    profile: Literal["trend", "balanced"]
+    rank: int = Field(ge=1, le=30)
+    score: float = Field(ge=0.0, le=100.0)
+    components: MarketRankingComponents
+    evidence_codes: tuple[str, ...]
+    risk_codes: tuple[str, ...]
+    latest_trade_date: date
+    provider_name: str = Field(min_length=1)
+
+
+class MarketConsensusRanking(BaseModel):
+    """One exact cross-profile intersection with both ranks and scores."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    code: str = Field(pattern=r"^\d{6}$")
+    name: str = Field(min_length=1)
+    trend_rank: int = Field(ge=1, le=30)
+    trend_score: float = Field(ge=0.0, le=100.0)
+    balanced_rank: int = Field(ge=1, le=30)
+    balanced_score: float = Field(ge=0.0, le=100.0)
+    trend_components: MarketRankingComponents
+    balanced_components: MarketRankingComponents
+    evidence_codes: tuple[str, ...]
+    risk_codes: tuple[str, ...]
+    latest_trade_date: date
+    provider_name: str = Field(min_length=1)
+
+
+MarketRankingsUnavailableReason = Literal[
+    "scan_artifact_missing",
+    "scan_artifact_invalid",
+    "scan_date_mismatch",
+    "scan_incomplete",
+    "scan_rankings_unavailable",
+    "not_provided",
+]
+
+
+class MarketRankings(BaseModel):
+    """Full-market dual rankings or an explicit structured unavailable state."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    status: Literal["available", "unavailable"]
+    unavailable_reason: MarketRankingsUnavailableReason | None
+    scan_date: date | None = None
+    generated_at: datetime | None = None
+    rule_version: str | None = None
+    config_hash: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    input_hash: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    provider_names: tuple[str, ...] = ()
+    universe_count: int | None = Field(default=None, ge=0)
+    eligible_count: int | None = Field(default=None, ge=0)
+    valid_count: int | None = Field(default=None, ge=0)
+    coverage: float | None = Field(default=None, ge=0.0, le=1.0)
+    exclusion_counts: tuple[MarketScanReasonCount, ...] = ()
+    failure_counts: tuple[MarketScanReasonCount, ...] = ()
+    trend: tuple[MarketRanking, ...] = ()
+    balanced: tuple[MarketRanking, ...] = ()
+    consensus: tuple[MarketConsensusRanking, ...] = ()
+
+    @model_validator(mode="after")
+    def validate_state(self) -> MarketRankings:
+        if self.status == "unavailable":
+            if self.unavailable_reason is None:
+                raise ValueError("unavailable market rankings require a reason")
+            return self
+        if self.unavailable_reason is not None:
+            raise ValueError("available market rankings cannot have unavailable reason")
+        required_metadata = (
+            self.scan_date,
+            self.generated_at,
+            self.rule_version,
+            self.config_hash,
+            self.input_hash,
+            self.universe_count,
+            self.eligible_count,
+            self.valid_count,
+            self.coverage,
+        )
+        if any(value is None for value in required_metadata):
+            raise ValueError("available market rankings require complete metadata")
+        if not self.trend or not self.balanced:
+            raise ValueError("available market rankings require both profiles")
+        for profile, records in (
+            ("trend", self.trend),
+            ("balanced", self.balanced),
+        ):
+            if any(record.profile != profile for record in records):
+                raise ValueError(f"{profile} rankings contain another profile")
+            if tuple(record.rank for record in records) != tuple(
+                range(1, len(records) + 1)
+            ):
+                raise ValueError(f"{profile} ranks must be consecutive from one")
+        trend = {record.code: record for record in self.trend}
+        balanced = {record.code: record for record in self.balanced}
+        if {record.code for record in self.consensus} != set(trend).intersection(
+            balanced
+        ):
+            raise ValueError("consensus must exactly match ranking intersection")
+        for record in self.consensus:
+            trend_record = trend[record.code]
+            balanced_record = balanced[record.code]
+            if (
+                record.trend_rank != trend_record.rank
+                or record.trend_score != trend_record.score
+                or record.balanced_rank != balanced_record.rank
+                or record.balanced_score != balanced_record.score
+            ):
+                raise ValueError("consensus ranks and scores must match rankings")
+        for counts in (self.exclusion_counts, self.failure_counts):
+            codes = tuple(item.code for item in counts)
+            if codes != tuple(sorted(set(codes))):
+                raise ValueError("market scan reason counts must be sorted and unique")
+        return self
+
+
+def _default_market_rankings() -> MarketRankings:
+    return MarketRankings(
+        status="unavailable",
+        unavailable_reason="not_provided",
+    )
 
 
 class ReportMetrics(BaseModel):
@@ -113,15 +266,31 @@ class ReportDocument(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal[REPORT_SCHEMA_VERSION] = REPORT_SCHEMA_VERSION
+    @model_validator(mode="before")
+    @classmethod
+    def supply_legacy_rankings_state(cls, value: object) -> object:
+        if not isinstance(value, dict) or "market_rankings" in value:
+            return value
+        if value.get("schema_version") not in (None, 1):
+            return value
+        return {**value, "market_rankings": _default_market_rankings()}
+
+    schema_version: Literal[1, REPORT_SCHEMA_VERSION] = REPORT_SCHEMA_VERSION
     metadata: ReportMetadata
     market_summary: MarketSummary
+    market_rankings: MarketRankings
     stocks: tuple[StockReport, ...]
 
 
 __all__ = [
     "REPORT_SCHEMA_VERSION",
     "AnalyzerMetadata",
+    "MarketConsensusRanking",
+    "MarketRanking",
+    "MarketRankingComponents",
+    "MarketRankings",
+    "MarketRankingsUnavailableReason",
+    "MarketScanReasonCount",
     "MarketSummary",
     "ReportDocument",
     "ReportMetadata",
