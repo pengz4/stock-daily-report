@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from collections import Counter
 from datetime import UTC, date, datetime
 from typing import Literal
 
@@ -236,6 +237,34 @@ class MarketScanArtifact(BaseModel):
             raise ValueError("statuses must contain one row per universe symbol")
         if status_codes != tuple(sorted(set(status_codes))):
             raise ValueError("statuses must be sorted by unique code")
+        expected_valid_count = sum(
+            status.status == "valid" for status in self.statuses
+        )
+        if self.valid_count != expected_valid_count:
+            raise ValueError("valid_count must equal number of valid statuses")
+        expected_eligible_count = sum(
+            status.status != "universe_excluded" for status in self.statuses
+        )
+        if self.eligible_count != expected_eligible_count:
+            raise ValueError(
+                "eligible_count must equal number of history-processed statuses"
+            )
+        expected_exclusion_counts = Counter(
+            reason
+            for status in self.statuses
+            if status.status in {"universe_excluded", "history_excluded"}
+            for reason in status.reason_codes
+        )
+        if self.exclusion_counts != dict(sorted(expected_exclusion_counts.items())):
+            raise ValueError("exclusion_counts must match exclusion status reasons")
+        expected_failure_counts = Counter(
+            reason
+            for status in self.statuses
+            if status.status == "history_failed"
+            for reason in status.reason_codes
+        )
+        if self.failure_counts != dict(sorted(expected_failure_counts.items())):
+            raise ValueError("failure_counts must match history_failed status reasons")
 
         trend = {record.code: record for record in self.rankings.trend}
         balanced = {record.code: record for record in self.rankings.balanced}

@@ -34,6 +34,7 @@ from stock_daily_report.market_scan.scoring import (
 )
 from stock_daily_report.models import DailyBar, MarketScanSettings
 from stock_daily_report.providers.base import ProviderError
+from stock_daily_report.providers.service import DataQualityError
 from stock_daily_report.providers.universe import UniverseQuote
 
 
@@ -229,6 +230,13 @@ def _process_candidate(
             report_date,
         )
         bars = tuple(_normalize_bar(bar) for bar in raw_bars)
+    except DataQualityError as error:
+        reasons = tuple(dict.fromkeys((*error.quality.issue_codes, error.code)))
+        return _excluded_result(
+            quote,
+            reasons=reasons,
+            provider_name=error.provider,
+        )
     except ProviderError as error:
         return _failed_result(
             quote,
@@ -343,6 +351,29 @@ def _failed_result(
             name=quote.name,
             status="history_failed",
             reason_codes=(reason,),
+            provider_name=provider_name,
+        ),
+        scores=None,
+        latest_trade_date=None,
+        provider_name=provider_name,
+        history_hash=None,
+        provider_names=(provider_name,) if provider_name else (),
+    )
+
+
+def _excluded_result(
+    quote: UniverseQuote,
+    *,
+    reasons: tuple[str, ...],
+    provider_name: str,
+) -> _CandidateResult:
+    return _CandidateResult(
+        quote=quote,
+        status=ScanStatus(
+            code=quote.code,
+            name=quote.name,
+            status="history_excluded",
+            reason_codes=reasons,
             provider_name=provider_name,
         ),
         scores=None,

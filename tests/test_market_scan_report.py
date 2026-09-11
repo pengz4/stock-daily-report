@@ -124,3 +124,49 @@ def test_same_date_different_artifact_raises_explicit_conflict(tmp_path):
         match="Refusing to overwrite immutable market scan",
     ):
         write_scan_artifact(tmp_path, changed)
+
+
+@pytest.mark.parametrize(
+    ("updates", "message"),
+    [
+        (
+            {"valid_count": 0, "coverage": 0.0},
+            "valid_count must equal number of valid statuses",
+        ),
+        (
+            {
+                "eligible_count": 0,
+                "valid_count": 0,
+                "coverage": 0.0,
+                "rankings": ProfileRankings(),
+                "consensus": (),
+                "failure_counts": {"network_error": 1},
+                "statuses": (
+                    ScanStatus(
+                        code="600519",
+                        name="贵州茅台",
+                        status="history_failed",
+                        reason_codes=("network_error",),
+                        provider_name="fixture",
+                    ),
+                ),
+            },
+            "eligible_count must equal number of history-processed statuses",
+        ),
+        (
+            {"exclusion_counts": {"insufficient_history": 1}},
+            "exclusion_counts must match exclusion status reasons",
+        ),
+        (
+            {"failure_counts": {"network_error": 1}},
+            "failure_counts must match history_failed status reasons",
+        ),
+    ],
+)
+def test_scan_artifact_rejects_counts_inconsistent_with_statuses(updates, message):
+    artifact = _artifact(generated_at=datetime(2026, 9, 11, 8, 0, tzinfo=UTC))
+    document = artifact.model_dump()
+    document.update(updates)
+
+    with pytest.raises(ValueError, match=message):
+        MarketScanArtifact.model_validate(document)

@@ -4,7 +4,9 @@ from datetime import UTC, date, datetime, timedelta
 
 from stock_daily_report.models import DailyBar, MarketScanSettings
 from stock_daily_report.providers.base import ProviderAvailabilityError
+from stock_daily_report.providers.service import DataQualityError
 from stock_daily_report.providers.universe import UniverseQuote
+from stock_daily_report.quality.checks import DataQualityIssue, DataQualityResult
 
 REPORT_DATE = date(2026, 9, 11)
 GENERATED_AT = datetime(2026, 9, 11, 8, 0, tzinfo=UTC)
@@ -114,9 +116,42 @@ class FakeHistoryProvider:
                 self.active -= 1
 
 
+class QualityRejectingHistoryProvider:
+    name = "quality-rejecting-history"
+
+    def fetch(
+        self,
+        code: str,
+        *,
+        start: date | None = None,
+        end: date | None = None,
+        as_of: date,
+    ):
+        del start, end
+        raise DataQualityError(
+            self.name,
+            DataQualityResult(
+                code=code,
+                as_of=as_of,
+                issues=(
+                    DataQualityIssue(
+                        "insufficient_history",
+                        "history has fewer bars than the configured minimum",
+                    ),
+                    DataQualityIssue(
+                        "stale_last_trade_date",
+                        "last trade date is stale",
+                    ),
+                ),
+                bar_count=10,
+                analysis_allowed=False,
+            ),
+        )
+
+
 def _scan(
     codes: list[str],
-    provider: FakeHistoryProvider,
+    provider: object,
     **setting_changes: object,
 ):
     from stock_daily_report.market_scan.runner import scan_market
@@ -183,6 +218,33 @@ def test_individual_history_failures_are_counted_without_aborting_scan():
     assert failed.status == "history_failed"
     assert failed.reason_codes == ("network_error",)
     assert {row.code for row in artifact.rankings.trend} == set(codes) - {failed_code}
+
+
+def test_data_quality_errors_are_history_exclusions_with_specific_reasons():
+    code = _codes(1)[0]
+
+    artifact = _scan(
+        [code],
+        QualityRejectingHistoryProvider(),
+        minimum_coverage_ratio=0.1,
+    )
+
+    assert artifact.valid_count == 0
+    assert artifact.exclusion_counts == {
+        "data_quality_rejected": 1,
+        "insufficient_history": 1,
+        "stale_last_trade_date": 1,
+    }
+    assert artifact.failure_counts == {}
+    assert len(artifact.statuses) == 1
+    status = artifact.statuses[0]
+    assert status.status == "history_excluded"
+    assert status.reason_codes == (
+        "insufficient_history",
+        "stale_last_trade_date",
+        "data_quality_rejected",
+    )
+    assert status.provider_name == "quality-rejecting-history"
 
 
 def test_coverage_below_minimum_suppresses_both_rankings():
