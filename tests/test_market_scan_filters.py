@@ -1,6 +1,6 @@
 import math
 from dataclasses import FrozenInstanceError
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 
 import pytest
 
@@ -204,6 +204,35 @@ def test_valid_history_passes_with_empty_reasons():
     assert result == EligibilityResult(True, ())
 
 
+@pytest.mark.parametrize(
+    ("latest_trade_date", "report_date"),
+    [
+        (date(2026, 9, 10), date(2026, 9, 11)),
+        (date(2026, 9, 11), date(2026, 9, 14)),
+    ],
+)
+def test_history_filter_requires_latest_completed_trading_day(
+    latest_trade_date, report_date
+):
+    bars = [
+        _bar(latest_trade_date - timedelta(days=2)),
+        _bar(latest_trade_date - timedelta(days=1)),
+        _bar(latest_trade_date),
+    ]
+
+    result = filter_history(
+        "600519",
+        bars,
+        report_date=report_date,
+        settings=_settings(),
+    )
+
+    assert result == EligibilityResult(
+        False,
+        ("stale_last_trade_date", "data_quality_rejected"),
+    )
+
+
 def test_history_filter_collects_quality_and_suspension_reasons():
     suspended = _bar(date(2026, 9, 8), volume=0.0, amount=0.0)
     bars = [
@@ -253,7 +282,8 @@ def test_history_filter_surfaces_other_data_quality_rejections():
     )
 
 
-def test_history_filter_accepts_friday_latest_bar_for_weekend_report():
+@pytest.mark.parametrize("report_date", [date(2026, 9, 12), date(2026, 9, 13)])
+def test_history_filter_accepts_friday_latest_bar_for_weekend_report(report_date):
     bars = [
         _bar(date(2026, 9, 9)),
         _bar(date(2026, 9, 10)),
@@ -263,7 +293,7 @@ def test_history_filter_accepts_friday_latest_bar_for_weekend_report():
     result = filter_history(
         "600519",
         bars,
-        report_date=date(2026, 9, 12),
+        report_date=report_date,
         settings=_settings(),
     )
 

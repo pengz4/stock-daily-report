@@ -92,7 +92,8 @@ def filter_history(
         bars,
         as_of=report_date,
         settings=DataQualitySettings(
-            minimum_history_bars=settings.minimum_history_bars
+            minimum_history_bars=settings.minimum_history_bars,
+            max_completed_trading_day_lag=0,
         ),
     )
     reasons = list(quality.issue_codes)
