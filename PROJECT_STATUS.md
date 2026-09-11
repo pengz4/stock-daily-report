@@ -5,8 +5,9 @@
 - Branch: `feature/a-share-daily-report`
 - Repository: `git@github.com:pengz4/stock-daily-report.git`
 - Scope: A-share close research reports with simplified/strict Chan-style
-  structure analysis, WeCom/Feishu notifications, GitHub Pages publication,
-  and an execution-aware backtest CLI.
+  structure analysis, full-market trend/balanced scanning, WeCom/Feishu
+  notifications, GitHub Pages publication, and an execution-aware backtest CLI.
+- Latest implementation commit: `088f1e8` (`fix: refresh reports from immutable snapshots`)
 - Latest implementation commit: run `git log -1 --oneline` after pulling.
 
 ## Completed
@@ -25,12 +26,20 @@
   suspensions, holding horizons, overlap suppression, and evidence status.
 - Independent `.github/workflows/structural-backtest.yml` and
   `stock-daily-report backtest` command.
+- Versioned full-market scanner with strict universe completeness checks,
+  provider fallbacks, eligibility filtering, explainable trend/balanced scores,
+  coverage gates, failure isolation, and immutable `market-scans/YYYY-MM-DD/scan.json`
+  artifacts.
+- Independent `.github/workflows/market-scan.yml` with `market-scan` CLI.
+- Daily report integration for scan metadata, rankings, consensus, and explicit
+  unavailable states; an existing report is refreshed when a new same-date scan
+  arrives without replacing its immutable input snapshot.
 
 ## Verification
 
 The latest local verification completed with:
 
-- `pytest -q`: 317 tests passed.
+- `pytest -q`: 532 tests passed.
 - `ruff check .`: passed.
 - `git diff --check`: passed.
 - Fixture CLI smoke report: `reports/backtests/2026-09-04/report.json`.
@@ -42,8 +51,14 @@ must not be interpreted as performance evidence.
 ## Daily publication status
 
 - The 2026-09-10 daily workflow completed successfully.
-- Report artifacts are persisted on `reports-history` under
-  `reports/2026-09-10/`.
+- The 2026-09-11 daily workflow completed successfully after scan-aware
+  regeneration; report artifacts and the scan artifact are persisted on
+  `reports-history` under `reports/2026-09-11/` and
+  `market-scans/2026-09-11/`.
+- The 2026-09-11 scan discovered 5,561 universe entries and 4,035 eligible
+  entries, but only 1,194 histories completed successfully (29.59% coverage).
+  The coverage gate therefore marks rankings unavailable and records
+  `candidate_limit_exceeded=2835`; no incomplete Top 30 is published.
 - GitHub Pages is enabled with GitHub Actions as its build source.
 - Production market data uses AkShare/Eastmoney first and the independent
   AkShare/Sina endpoint as fallback; the short fixture is no longer the
@@ -56,6 +71,10 @@ must not be interpreted as performance evidence.
   statistically meaningful watchlist portfolio comparison require those data.
 - The current backtest report evaluates each watchlist symbol independently;
   equal-weight portfolio aggregation is not yet a production result.
+- Full-market ranking output remains gated until the history scan reaches the
+  configured 80% coverage threshold; the current runner processes at most
+  1,200 candidates and suppresses rankings when the cap leaves candidates
+  unprocessed.
 - The simplified execution rule is explicitly versioned as
   `simplified-breakout-v1`; simplified structural observations remain
   descriptive outside that adapter.
