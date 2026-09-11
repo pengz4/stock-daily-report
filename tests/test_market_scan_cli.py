@@ -21,6 +21,7 @@ from stock_daily_report.market_scan.report import write_scan_artifact
 from stock_daily_report.models import DailyBar
 from stock_daily_report.providers.base import ProviderAvailabilityError
 from stock_daily_report.providers.service import MarketDataService
+from stock_daily_report.providers.universe import AkShareUniverseProvider
 
 REPORT_DATE = date(2026, 9, 11)
 
@@ -558,4 +559,68 @@ def test_market_scan_cli_reports_expected_failures_without_traceback(
     captured = capsys.readouterr()
     assert result == 1
     assert message in captured.err
+    assert "Traceback" not in captured.err
+
+
+def test_market_scan_cli_reports_sina_decode_failure_without_traceback(
+    monkeypatch, tmp_path, capsys
+):
+    json_decode_error = pytest.importorskip(
+        "akshare.utils.demjson"
+    ).JSONDecodeError("rate-limit HTML")
+    settings = object()
+    data_settings = SimpleNamespace(market_data=object())
+    provider = AkShareUniverseProvider(
+        fetcher=lambda: (_ for _ in ()).throw(OSError("eastmoney offline")),
+        fallback_fetcher=lambda: (_ for _ in ()).throw(json_decode_error),
+    )
+
+    monkeypatch.setattr(cli_module, "_current_market_date", lambda: REPORT_DATE)
+    monkeypatch.setattr(
+        cli_module, "load_market_scan_settings", lambda _path: settings
+    )
+    monkeypatch.setattr(cli_module, "load_settings", lambda _path: data_settings)
+    monkeypatch.setattr(cli_module, "AkShareUniverseProvider", lambda: provider)
+    monkeypatch.setattr(
+        cli_module,
+        "build_market_data_service",
+        lambda configured, *, output_root: (
+            object()
+            if configured is data_settings and output_root == tmp_path
+            else pytest.fail("unexpected service configuration")
+        ),
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "market_scan_config_hash",
+        lambda configured_scan, configured_data: (
+            "a" * 64
+            if configured_scan is settings
+            and configured_data is data_settings.market_data
+            else pytest.fail("unexpected configuration hash inputs")
+        ),
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "run_market_scan",
+        lambda _settings, universe, _history, **_kwargs: universe.get_quotes(),
+    )
+
+    result = cli_module.main(
+        [
+            "market-scan",
+            "--date",
+            REPORT_DATE.isoformat(),
+            "--output-root",
+            str(tmp_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert result == 1
+    assert "all_endpoints_unavailable" in captured.err
+    assert "stock_zh_a_spot_em" in captured.err
+    assert "eastmoney offline" in captured.err
+    assert "stock_zh_a_spot" in captured.err
+    assert "invalid_remote_response" in captured.err
     assert "Traceback" not in captured.err

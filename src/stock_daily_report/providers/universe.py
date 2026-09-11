@@ -80,8 +80,17 @@ class AkShareUniverseProvider:
     def get_quotes(self) -> list[UniverseQuote]:
         """Fetch and normalize one bulk quote snapshot."""
 
-        response, endpoint = self._fetch_quote_response()
+        response, endpoint, primary_error = self._fetch_quote_response()
+        try:
+            return self._quotes_from_response(response, endpoint)
+        except ProviderDataError as error:
+            if primary_error is None:
+                raise
+            raise _fallback_data_error(primary_error, error) from error
 
+    def _quotes_from_response(
+        self, response: object, endpoint: str
+    ) -> list[UniverseQuote]:
         try:
             records = _records_from_response(response)
             if (
@@ -133,9 +142,11 @@ class AkShareUniverseProvider:
                 )
         return quotes
 
-    def _fetch_quote_response(self) -> tuple[object, str]:
+    def _fetch_quote_response(
+        self,
+    ) -> tuple[object, str, ProviderAvailabilityError | None]:
         try:
-            return self._resolve_fetcher()(), _PRIMARY_ENDPOINT
+            return self._resolve_fetcher()(), _PRIMARY_ENDPOINT, None
         except ProviderAvailabilityError as error:
             primary_error = error
         except ProviderError:
@@ -156,19 +167,32 @@ class AkShareUniverseProvider:
             raise primary_error
 
         try:
-            return self._resolve_fallback_fetcher()(), _FALLBACK_ENDPOINT
+            return (
+                self._resolve_fallback_fetcher()(),
+                _FALLBACK_ENDPOINT,
+                primary_error,
+            )
         except ProviderAvailabilityError as error:
             fallback_error = error
+        except ProviderDataError as error:
+            raise _fallback_data_error(primary_error, error) from error
         except ProviderError:
             raise
         except OSError as error:
             fallback_error = ProviderAvailabilityError(
                 self.name, "network_error", str(error)
             )
+        except _sina_invalid_response_errors() as error:
+            fallback_error = ProviderAvailabilityError(
+                self.name,
+                "invalid_remote_response",
+                f"{_FALLBACK_ENDPOINT} returned an invalid remote response: {error}",
+            )
         except _PROVIDER_SCHEMA_ERRORS as error:
-            raise ProviderDataError(
+            data_error = ProviderDataError(
                 self.name, "provider_schema_invalid", str(error)
-            ) from error
+            )
+            raise _fallback_data_error(primary_error, data_error) from error
 
         detail = (
             f"{_PRIMARY_ENDPOINT} attempt failed: {primary_error}; "
@@ -302,6 +326,28 @@ def _records_from_response(response: object) -> Sequence[Mapping[str, object]]:
     if not all(isinstance(item, Mapping) for item in response):
         raise ValueError("AkShare universe response contains a non-mapping record")
     return response  # type: ignore[return-value]
+
+
+def _sina_invalid_response_errors() -> tuple[type[BaseException], ...]:
+    try:
+        from akshare.utils.demjson import (  # type: ignore[import-not-found]
+            JSONDecodeError,
+        )
+    except ImportError:
+        return (IndexError,)
+    return (JSONDecodeError, IndexError)
+
+
+def _fallback_data_error(
+    primary_error: ProviderAvailabilityError,
+    fallback_error: ProviderDataError,
+) -> ProviderDataError:
+    return ProviderDataError(
+        fallback_error.provider,
+        fallback_error.code,
+        f"{_PRIMARY_ENDPOINT} attempt failed: {primary_error}; "
+        f"{_FALLBACK_ENDPOINT} fallback data error: {fallback_error.detail}",
+    )
 
 
 def _expected_codes_from_response(response: object) -> set[str]:

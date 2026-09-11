@@ -184,6 +184,62 @@ def test_universe_request_reports_both_unavailable_attempts():
     assert calls == ["primary", "fallback"]
 
 
+@pytest.mark.parametrize(
+    "fallback_error",
+    [
+        pytest.param(
+            pytest.importorskip("akshare.utils.demjson").JSONDecodeError(
+                "rate-limit HTML"
+            ),
+            id="demjson-decode-error",
+        ),
+        pytest.param(IndexError("empty Sina count response"), id="index-error"),
+    ],
+)
+def test_sina_invalid_remote_responses_report_both_unavailable_attempts(
+    fallback_error,
+):
+    def unavailable_primary():
+        raise OSError("eastmoney disconnected")
+
+    def unavailable_fallback():
+        raise fallback_error
+
+    provider = AkShareUniverseProvider(
+        fetcher=unavailable_primary,
+        fallback_fetcher=unavailable_fallback,
+    )
+
+    with pytest.raises(ProviderAvailabilityError) as raised:
+        provider.get_quotes()
+
+    assert raised.value.code == "all_endpoints_unavailable"
+    assert "stock_zh_a_spot_em" in raised.value.detail
+    assert "eastmoney disconnected" in raised.value.detail
+    assert "stock_zh_a_spot" in raised.value.detail
+    assert "invalid_remote_response" in raised.value.detail
+    assert str(fallback_error) in raised.value.detail
+
+
+def test_fallback_data_error_preserves_primary_failure_and_both_sources():
+    def unavailable_primary():
+        raise OSError("eastmoney disconnected")
+
+    provider = AkShareUniverseProvider(
+        fetcher=unavailable_primary,
+        fallback_fetcher=lambda: [{"代码": "sh600519"}],
+    )
+
+    with pytest.raises(ProviderDataError) as raised:
+        provider.get_quotes()
+
+    assert raised.value.code == "provider_schema_invalid"
+    assert "stock_zh_a_spot_em" in raised.value.detail
+    assert "eastmoney disconnected" in raised.value.detail
+    assert "stock_zh_a_spot" in raised.value.detail
+    assert "missing fields" in raised.value.detail
+
+
 def test_universe_request_data_error_does_not_use_fallback():
     calls = []
     primary_error = ProviderDataError(
