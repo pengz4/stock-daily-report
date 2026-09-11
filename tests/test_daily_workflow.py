@@ -3,11 +3,30 @@ from pathlib import Path
 import yaml
 
 
-def test_daily_workflow_passes_repository_configuration_paths():
+def _workflow():
     workflow_path = (
         Path(__file__).parents[1] / ".github" / "workflows" / "daily-report.yml"
     )
-    workflow = yaml.safe_load(workflow_path.read_text(encoding="utf-8"))
+    return yaml.safe_load(workflow_path.read_text(encoding="utf-8"))
+
+
+def test_daily_workflow_serializes_the_full_deployment_lifecycle():
+    workflow = _workflow()
+
+    assert workflow["concurrency"] == {
+        "group": "stock-daily-report-pages",
+        "cancel-in-progress": False,
+    }
+    assert workflow["jobs"]["generate"]["concurrency"] == {
+        "group": "stock-daily-report-history",
+        "cancel-in-progress": False,
+    }
+    assert workflow["jobs"]["deploy"]["needs"] == "generate"
+    assert workflow["jobs"]["notify"]["needs"] == ["generate", "deploy"]
+
+
+def test_daily_workflow_passes_repository_configuration_paths():
+    workflow = _workflow()
     steps = workflow["jobs"]["generate"]["steps"]
     command = next(
         step["run"]
@@ -20,10 +39,7 @@ def test_daily_workflow_passes_repository_configuration_paths():
 
 
 def test_daily_workflow_reuses_an_existing_immutable_report():
-    workflow_path = (
-        Path(__file__).parents[1] / ".github" / "workflows" / "daily-report.yml"
-    )
-    workflow = yaml.safe_load(workflow_path.read_text(encoding="utf-8"))
+    workflow = _workflow()
     steps = workflow["jobs"]["generate"]["steps"]
     command = next(
         step["run"]

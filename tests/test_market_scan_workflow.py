@@ -38,7 +38,7 @@ def test_market_scan_workflow_is_bounded_and_uses_locked_python():
         "cancel-in-progress": False,
     }
     daily = _daily_workflow()
-    assert "concurrency" not in daily
+    assert daily["concurrency"]["group"] != job["concurrency"]["group"]
     assert daily["jobs"]["generate"]["concurrency"] == job["concurrency"]
     assert "needs" not in job
     assert job["timeout-minutes"] > 0
