@@ -36,3 +36,43 @@ a {
   margin-top: 1.5rem;
   padding-top: 1rem;
 }
+
+.market-rankings {
+  border-top: 1px solid #d9e2ec;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+}
+
+.market-rankings.unavailable {
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  padding: 1rem;
+}
+
+.ranking-table-wrap {
+  overflow-x: auto;
+}
+
+.ranking-table {
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+  width: 100%;
+}
+
+.ranking-table th,
+.ranking-table td {
+  border: 1px solid #d9e2ec;
+  padding: 0.5rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.ranking-table th {
+  background: #f0f4f8;
+}
+
+.ranking-table .consensus-row {
+  background: #ecfdf5;
+  box-shadow: inset 0.25rem 0 #059669;
+}
