@@ -78,12 +78,18 @@ jobs:
           WECOM_WEBHOOK_URL: ${{ secrets.WECOM_WEBHOOK_URL }}
           FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
         run: |
-          python -m stock_daily_report.cli daily \
-            --date "${{ steps.report-date.outputs.report_date }}" \
-            --settings config/settings.yaml \
-            --watchlist config/watchlist.yaml \
-            --output-root . \
-            --skip-notifications
+          report_date="${{ steps.report-date.outputs.report_date }}"
+          if [ -f "reports/${{ steps.report-date.outputs.report_date }}/report.json" ] && \
+             [ -f "snapshots/${{ steps.report-date.outputs.report_date }}/input.json" ]; then
+            echo "Report already exists; reusing immutable artifacts"
+          else
+            python -m stock_daily_report.cli daily \
+              --date "$report_date" \
+              --settings config/settings.yaml \
+              --watchlist config/watchlist.yaml \
+              --output-root . \
+              --skip-notifications
+          fi
       - name: Persist report history
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
