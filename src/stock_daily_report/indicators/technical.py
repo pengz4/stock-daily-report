@@ -7,7 +7,9 @@ Realized volatility is the annualized (252 sessions), population standard
 deviation of the last 20 close-to-close percentage returns. ``drawdown60`` is
 the largest peak-to-trough percentage drawdown in the trailing 60 closes.
 ``recent_high20`` and ``recent_low20`` are the highest high and lowest low in
-the trailing 20 bars.
+the trailing 20 bars. ``ma20_slope5`` and ``ma60_slope5`` are the percentage
+changes between the latest trailing moving average and the same trailing
+moving average five bars earlier.
 
 MACD uses recursive EMAs (``adjust=False``) with spans 12, 26, and 9. The
 line is emitted after 26 closes and the signal/histogram after 34 closes.
@@ -35,6 +37,7 @@ VOLATILITY_WINDOW = 20
 DRAWDOWN_WINDOW = 60
 VOLUME_RATIO_WINDOW = 20
 EXTREMA_WINDOW = 20
+MA_SLOPE_LOOKBACK = 5
 MACD_FAST_PERIOD = 12
 MACD_SLOW_PERIOD = 26
 MACD_SIGNAL_PERIOD = 9
@@ -66,6 +69,8 @@ class TechnicalMetrics:
     volume_ratio20: float | None
     recent_high20: float | None
     recent_low20: float | None
+    ma20_slope5: float | None = None
+    ma60_slope5: float | None = None
 
 
 def calculate_technical_metrics(bars: Sequence[DailyBar]) -> TechnicalMetrics:
@@ -92,6 +97,8 @@ def calculate_technical_metrics(bars: Sequence[DailyBar]) -> TechnicalMetrics:
         ma20=_simple_moving_average(closes, 20),
         ma60=_simple_moving_average(closes, 60),
         ma120=_simple_moving_average(closes, 120),
+        ma20_slope5=_moving_average_slope(closes, 20, MA_SLOPE_LOOKBACK),
+        ma60_slope5=_moving_average_slope(closes, 60, MA_SLOPE_LOOKBACK),
         macd_line=macd_line,
         macd_signal=macd_signal,
         macd_histogram=macd_histogram,
@@ -128,6 +135,18 @@ def _simple_moving_average(values: Sequence[float], window: int) -> float | None
     if len(values) < window:
         return None
     return _mean(values[-window:])
+
+
+def _moving_average_slope(
+    values: Sequence[float], window: int, lookback: int
+) -> float | None:
+    if len(values) < window + lookback:
+        return None
+    current = _mean(values[-window:])
+    previous = _mean(values[-window - lookback : -lookback])
+    if current is None or previous is None:
+        return None
+    return _percentage_return(current, previous)
 
 
 def _close_return(values: Sequence[float], window: int) -> float | None:

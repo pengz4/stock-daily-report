@@ -49,6 +49,23 @@ def test_technical_metrics_calculates_exact_moving_averages_and_returns():
     assert metrics.return120 == pytest.approx(120.0)
 
 
+def test_technical_metrics_calculates_trailing_ma_slopes_without_future_bars():
+    from stock_daily_report.indicators.technical import calculate_technical_metrics
+
+    prefix = make_bars([float(value) for value in range(1, 131)])
+    extended = make_bars(
+        [float(value) for value in range(1, 131)] + [1_000.0, 2.0]
+    )
+
+    prefix_metrics = calculate_technical_metrics(prefix)
+    extended_at_prefix = calculate_technical_metrics(extended[: len(prefix)])
+
+    assert prefix_metrics.ma20_slope5 == pytest.approx(120.5 / 115.5 - 1.0)
+    assert prefix_metrics.ma60_slope5 == pytest.approx(100.5 / 95.5 - 1.0)
+    assert extended_at_prefix.ma20_slope5 == pytest.approx(prefix_metrics.ma20_slope5)
+    assert extended_at_prefix.ma60_slope5 == pytest.approx(prefix_metrics.ma60_slope5)
+
+
 def test_technical_metrics_calculates_exact_macd_and_rsi_after_warmup():
     from stock_daily_report.indicators.technical import calculate_technical_metrics
 
