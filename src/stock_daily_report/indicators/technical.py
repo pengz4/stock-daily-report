@@ -261,13 +261,23 @@ def _trailing_extreme(
 
 
 def _mean(values: Sequence[float]) -> float | None:
-    try:
-        return _finite_or_none(math.fsum(value / len(values) for value in values))
-    except OverflowError:
+    if not values:
         return None
+    try:
+        mean = statistics.fmean(values)
+    except OverflowError:
+        scale = max(abs(value) for value in values)
+        if scale == 0.0:
+            return 0.0
+        mean = (
+            math.fsum(value / scale for value in values) / len(values) * scale
+        )
+    return _finite_or_none(mean)
 
 
 def _percentage_return(current: float, previous: float) -> float | None:
+    if previous == 0.0:
+        return 0.0 if current == 0.0 else None
     try:
         return _finite_or_none(current / previous - 1.0)
     except OverflowError:

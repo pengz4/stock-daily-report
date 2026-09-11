@@ -1,4 +1,5 @@
 import math
+import sys
 from dataclasses import FrozenInstanceError
 from datetime import UTC, date, datetime, timedelta
 
@@ -64,6 +65,72 @@ def test_technical_metrics_calculates_trailing_ma_slopes_without_future_bars():
     assert prefix_metrics.ma60_slope5 == pytest.approx(100.5 / 95.5 - 1.0)
     assert extended_at_prefix.ma20_slope5 == pytest.approx(prefix_metrics.ma20_slope5)
     assert extended_at_prefix.ma60_slope5 == pytest.approx(prefix_metrics.ma60_slope5)
+
+
+def test_technical_metrics_keeps_subnormal_moving_average_slopes_finite():
+    from stock_daily_report.indicators.technical import calculate_technical_metrics
+
+    smallest_positive = math.ulp(0.0)
+    bars = [
+        DailyBar(
+            trade_date=date(2026, 1, 1) + timedelta(days=index),
+            open=smallest_positive,
+            high=smallest_positive,
+            low=smallest_positive,
+            close=smallest_positive,
+            volume=smallest_positive,
+            amount=smallest_positive,
+            turnover_rate=smallest_positive,
+            adjustment_mode="qfq",
+            provider_name="test",
+            source_timestamp=datetime(2026, 1, 1, tzinfo=UTC)
+            + timedelta(days=index),
+        )
+        for index in range(65)
+    ]
+
+    metrics = calculate_technical_metrics(bars)
+
+    assert metrics.ma20_slope5 == pytest.approx(0.0)
+    assert metrics.ma60_slope5 == pytest.approx(0.0)
+    assert math.isfinite(metrics.ma20_slope5)
+    assert math.isfinite(metrics.ma60_slope5)
+
+
+def test_technical_metrics_averages_maximum_finite_prices_without_overflow():
+    from stock_daily_report.indicators.technical import calculate_technical_metrics
+
+    maximum = sys.float_info.max
+    bars = [
+        DailyBar(
+            trade_date=date(2026, 1, 1) + timedelta(days=index),
+            open=maximum,
+            high=maximum,
+            low=maximum,
+            close=maximum,
+            volume=0.0,
+            amount=0.0,
+            turnover_rate=0.0,
+            adjustment_mode="qfq",
+            provider_name="test",
+            source_timestamp=datetime(2026, 1, 1, tzinfo=UTC)
+            + timedelta(days=index),
+        )
+        for index in range(125)
+    ]
+
+    metrics = calculate_technical_metrics(bars)
+
+    assert metrics.ma120 == maximum
+    assert metrics.ma20_slope5 == pytest.approx(0.0)
+    assert metrics.ma60_slope5 == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize(("current", "expected"), [(0.0, 0.0), (1.0, None)])
+def test_percentage_return_defines_zero_denominator(current, expected):
+    from stock_daily_report.indicators.technical import _percentage_return
+
+    assert _percentage_return(current, 0.0) == expected
 
 
 def test_technical_metrics_calculates_exact_macd_and_rsi_after_warmup():

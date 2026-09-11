@@ -326,6 +326,10 @@ def _ordered(left: float | None, right: float | None) -> bool:
 def _scaled(value: float | None, lower: float, upper: float) -> float | None:
     if value is None or not math.isfinite(value):
         return None
+    if value <= lower:
+        return 0.0
+    if value >= upper:
+        return 100.0
     return _bounded((value - lower) / (upper - lower) * 100.0)
 
 

@@ -1,4 +1,5 @@
 import math
+import sys
 from datetime import UTC, date, datetime, timedelta
 
 import pytest
@@ -135,6 +136,16 @@ def test_score_components_and_totals_are_finite_bounded_and_weighted():
             + balanced.components.structure * 0.20
             + balanced.components.risk * 0.15
         )
+
+
+@pytest.mark.parametrize(
+    "value",
+    [0.15, math.nextafter(sys.float_info.max, 0.0), sys.float_info.max],
+)
+def test_scaled_saturates_finite_values_at_or_above_upper_threshold(value):
+    from stock_daily_report.market_scan.scoring import _scaled
+
+    assert _scaled(value, -0.05, 0.15) == 100.0
 
 
 def test_trend_profile_favors_clean_momentum_over_overheated_spike():
