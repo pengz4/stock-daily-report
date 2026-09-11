@@ -89,6 +89,7 @@ jobs:
           snapshot_path="snapshots/${report_date}/input.json"
           scan_path="market-scans/${report_date}/scan.json"
           reuse_report=false
+          reuse_snapshot=false
           if [ -f "$report_path" ] && [ -f "$snapshot_path" ]; then
             reuse_report=true
             if [ -f "$scan_path" ]; then
@@ -123,6 +124,7 @@ jobs:
                 echo "Report already exists with current scan; reusing immutable artifacts"
               else
                 reuse_report=false
+                reuse_snapshot=true
                 echo "Existing report does not include the current scan; regenerating"
               fi
             else
@@ -130,12 +132,17 @@ jobs:
             fi
           fi
           if [ "$reuse_report" != true ]; then
+            refresh_args=()
+            if [ "$reuse_snapshot" = true ]; then
+              refresh_args+=(--reuse-existing-snapshot)
+            fi
             python -m stock_daily_report.cli daily \
               --date "$report_date" \
               --settings config/settings.yaml \
               --watchlist config/watchlist.yaml \
               --output-root . \
-              --skip-notifications
+              --skip-notifications \
+              "${refresh_args[@]}"
           fi
       - name: Persist report history
         env:

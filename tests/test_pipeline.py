@@ -292,6 +292,39 @@ def test_market_scan_is_published_in_json_markdown_and_html(
     assert 'class="consensus-row"' in html
 
 
+def test_daily_pipeline_can_reuse_existing_snapshot_when_refreshing_scan(
+    tmp_path, fixture_settings
+):
+    watchlist = Watchlist(stocks=[{"code": "600519", "name": "贵州茅台"}])
+    initial_provider = RecordingProvider({"600519": make_bars("600519")})
+    run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=initial_provider,
+        report_date=date(2026, 9, 4),
+        now=lambda: datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
+    )
+    write_scan_artifact(tmp_path, _market_scan_artifact())
+
+    class UnexpectedProviderCall(RecordingProvider):
+        def get_daily_bars(self, code, *, start=None, end=None):
+            raise AssertionError(f"unexpected provider call for {code}")
+
+    outputs = run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=UnexpectedProviderCall({"600519": make_bars("600519")}),
+        report_date=date(2026, 9, 4),
+        now=lambda: datetime(2026, 9, 4, 10, 0, tzinfo=UTC),
+        reuse_existing_snapshot=True,
+    )
+
+    assert outputs.report.market_rankings.status == "available"
+    assert outputs.report.market_rankings.input_hash == "d" * 64
+
+
 @pytest.mark.parametrize(
     ("artifact_kind", "expected_reason"),
     [

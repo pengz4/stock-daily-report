@@ -61,6 +61,11 @@ def main(argv: list[str] | None = None) -> int:
         help="defer notifications until after static-site deployment",
     )
     daily.add_argument(
+        "--reuse-existing-snapshot",
+        action="store_true",
+        help="refresh report rendering without refetching an immutable snapshot",
+    )
+    daily.add_argument(
         "--report-url",
         help="Final absolute published report URL; otherwise REPORT_BASE_URL is used",
     )
@@ -121,6 +126,7 @@ def main(argv: list[str] | None = None) -> int:
                 watchlist=watchlist,
                 provider=provider,
                 report_date=args.date,
+                reuse_existing_snapshot=args.reuse_existing_snapshot,
             )
             if settings.notifications.enabled_channels and not args.skip_notifications:
                 if args.report_url:

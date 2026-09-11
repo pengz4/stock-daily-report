@@ -66,4 +66,5 @@ def test_daily_workflow_regenerates_when_a_new_scan_is_available():
 
     assert 'scan_path="market-scans/${report_date}/scan.json"' in command
     assert "market_rankings" in command
+    assert "--reuse-existing-snapshot" in command
     assert "Report already exists with current scan; reusing immutable artifacts" in command

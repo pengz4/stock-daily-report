@@ -179,6 +179,7 @@ def run_daily_report(
     fixture_directory: str | Path | None = None,
     report_date: date | None = None,
     now: Callable[[], datetime] | None = None,
+    reuse_existing_snapshot: bool = False,
 ) -> ReportOutputs:
     """Fetch, validate, snapshot, analyze, and publish one daily report.
 
@@ -203,10 +204,20 @@ def run_daily_report(
     root.mkdir(parents=True, exist_ok=True)
     failures: list[PipelineFailure] = []
     fetched: dict[str, FetchedBars] = {}
+    snapshot_for_reuse: InputSnapshot | None = None
+    if reuse_existing_snapshot:
+        snapshot_for_reuse = load_snapshot(
+            root / "snapshots" / active_report_date.isoformat() / "input.json"
+        )
+        if snapshot_for_reuse.report_date != active_report_date:
+            raise SnapshotError(
+                "Existing snapshot report_date does not match requested date: "
+                f"{active_report_date.isoformat()}"
+            )
 
     active_service = service
     recovery_cache: RawResponseCache | None = None
-    if active_service is None and provider is None:
+    if active_service is None and provider is None and snapshot_for_reuse is None:
         active_service = build_market_data_service(
             active_settings,
             providers=providers,
@@ -214,7 +225,7 @@ def run_daily_report(
             now=lambda: generated_at,
             output_root=root,
         )
-    elif active_service is None:
+    elif active_service is None and snapshot_for_reuse is None:
         recovery_cache = _build_recovery_cache(active_settings, root)
 
     transaction_root: Path | None = None
@@ -242,25 +253,72 @@ def run_daily_report(
         def fetch_all() -> None:
             for stock in sorted(active_watchlist.stocks, key=lambda item: item.code):
                 try:
-                    result = (
-                        active_service.fetch(
+                    if snapshot_for_reuse is not None:
+                        bars = snapshot_for_reuse.bars_by_code.get(stock.code)
+                        if bars is None:
+                            raise SnapshotError(
+                                f"Existing snapshot is missing watchlist code: "
+                                f"{stock.code}"
+                            )
+                        bar_providers = tuple(
+                            sorted({bar.provider_name for bar in bars})
+                        )
+                        snapshot_providers = snapshot_for_reuse.provider_metadata.get(
+                            "providers", ()
+                        )
+                        if not bar_providers or not set(bar_providers).issubset(
+                            snapshot_providers
+                        ):
+                            raise SnapshotError(
+                                "Existing snapshot is missing provider metadata: "
+                                f"{stock.code}"
+                            )
+                        quality = validate_bars(
                             stock.code,
-                            end=active_report_date,
+                            bars,
                             as_of=active_report_date,
-                            defer_cache=True,
+                            settings=DataQualitySettings(
+                                minimum_history_bars=(
+                                    active_settings.market_data.minimum_history_bars
+                                ),
+                                max_completed_trading_day_lag=(
+                                    active_settings.market_data.max_completed_trading_day_lag
+                                ),
+                            ),
                         )
-                        if active_service is not None
-                        else _fetch_direct(
-                            provider,
-                            stock.code,
-                            report_date=active_report_date,
-                            settings=active_settings,
+                        if not quality.analysis_allowed:
+                            raise ValueError(
+                                "Existing snapshot failed quality validation: "
+                                f"{stock.code}: {quality.issue_codes}"
+                            )
+                        result = FetchedBars(
+                            code=stock.code,
+                            provider_name=bar_providers[0],
+                            bars=bars,
+                            quality=quality,
+                            from_cache=True,
                         )
-                    )
+                    else:
+                        result = (
+                            active_service.fetch(
+                                stock.code,
+                                end=active_report_date,
+                                as_of=active_report_date,
+                                defer_cache=True,
+                            )
+                            if active_service is not None
+                            else _fetch_direct(
+                                provider,
+                                stock.code,
+                                report_date=active_report_date,
+                                settings=active_settings,
+                            )
+                        )
                     fetched[stock.code] = result
                 except (
                     ProviderError,
                     ValidationError,
+                    SnapshotError,
                     TypeError,
                     ValueError,
                 ) as error:
