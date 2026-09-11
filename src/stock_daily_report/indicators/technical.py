@@ -189,12 +189,13 @@ def _rsi(values: Sequence[float]) -> float | None:
     average_loss = _mean(losses[:RSI_PERIOD])
     if average_gain is None or average_loss is None:
         return None
+    retention_factor = (RSI_PERIOD - 1) / RSI_PERIOD
     for gain, loss in zip(gains[RSI_PERIOD:], losses[RSI_PERIOD:]):
         average_gain = _finite_or_none(
-            average_gain * (RSI_PERIOD - 1) / RSI_PERIOD + gain / RSI_PERIOD
+            average_gain * retention_factor + gain / RSI_PERIOD
         )
         average_loss = _finite_or_none(
-            average_loss * (RSI_PERIOD - 1) / RSI_PERIOD + loss / RSI_PERIOD
+            average_loss * retention_factor + loss / RSI_PERIOD
         )
         if average_gain is None or average_loss is None:
             return None

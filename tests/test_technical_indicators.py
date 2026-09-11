@@ -144,6 +144,44 @@ def test_technical_metrics_calculates_exact_macd_and_rsi_after_warmup():
     assert metrics.rsi14 == pytest.approx(100.0)
 
 
+def test_technical_metrics_keeps_extreme_price_rsi_finite():
+    from stock_daily_report.indicators.technical import calculate_technical_metrics
+
+    smallest_positive = math.ulp(0.0)
+    maximum = sys.float_info.max
+    closes = [
+        smallest_positive if index % 2 == 0 else maximum for index in range(126)
+    ]
+    bars = [
+        DailyBar(
+            trade_date=date(2026, 1, 1) + timedelta(days=index),
+            open=close,
+            high=close,
+            low=close,
+            close=close,
+            volume=0.0,
+            amount=0.0,
+            turnover_rate=0.0,
+            adjustment_mode="qfq",
+            provider_name="test",
+            source_timestamp=datetime(2026, 1, 1, tzinfo=UTC)
+            + timedelta(days=index),
+        )
+        for index, close in enumerate(closes)
+    ]
+
+    metrics = calculate_technical_metrics(bars)
+
+    assert metrics.rsi14 is not None
+    assert math.isfinite(metrics.rsi14)
+    assert 0.0 <= metrics.rsi14 <= 100.0
+    assert metrics.rsi14 == pytest.approx(
+        51.85234742342434,
+        rel=0.0,
+        abs=1e-12,
+    )
+
+
 def test_technical_metrics_calculates_drawdown_volume_ratio_and_extrema():
     from stock_daily_report.indicators.technical import calculate_technical_metrics
 
