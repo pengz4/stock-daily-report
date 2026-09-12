@@ -61,20 +61,29 @@ The HTML report will be organized into five layers:
    - Render Trend Top 10 and Balanced Top 10 as compact single-column rows.
    - Each default row contains rank, code/name, score, consensus marker, and a
      short risk indication.
-   - Render all available records up to rank 10. If a profile has no records,
-     show an explicit unavailable/empty state. If it has records beyond rank
-     10, place ranks 11-30 in an explicit “view full ranking” expandable
-     region; hide that control when no additional records exist.
+   - Valid available `MarketRankings` currently requires both profiles to
+     contain rankings, so an empty profile is not expected in a validated
+     available document. The renderer should still handle an empty sequence
+     defensively by showing an explicit empty state rather than raising or
+     rendering a misleading blank section.
+   - Render all available records up to rank 10. If a profile has records
+     beyond rank 10, place ranks 11-30 in an explicit “view full ranking”
+     expandable region; hide that control when no additional records exist.
    - A row detail card exposes the exact fields available for that record:
      rank, code, name, score, Trend/Balanced consensus ranks and scores when
      present, all five numeric components, evidence codes, risk codes, latest
      trade date, and provider name.
 
 5. **Watchlist**
-   - Preserve all watchlist content and semantics.
-   - Present each stock as a readable card with decision, structure, evidence,
-     risks, key levels, next conditions, source timestamp, provider, and bar
-     count.
+   - Preserve all watchlist content and semantics. Each stock card keeps code,
+     name, group, provider, latest trade date, latest source timestamp,
+     `bar_count`, quality status, quality issues, decision label, metrics,
+     structure state/status/rule version/levels/observations, evidence, risks,
+     key levels, and next conditions.
+   - Put decision, structure state, source date/provider, and primary metrics in
+     the visible card summary. Keep quality issues, full metrics, structure
+     levels/observations, evidence, risks, key levels, and next conditions
+     accessible in grouped detail sections.
    - Empty collections render an explicit `None` state.
 
 ## Component and code boundaries
@@ -134,17 +143,23 @@ No changes are made to:
 
 The existing unavailable state is preserved. If rankings are unavailable, the
 page shows the reason and any valid audit metadata, but does not render empty
-or misleading ranking cards. If the consensus intersection is empty, the page
-shows an explicit no-intersection state.
+or misleading ranking cards. A validated low-coverage scan is represented by
+the existing unavailable ranking state and its reason; the renderer does not
+read configuration or recompute a threshold. If an available artifact contains
+nonempty `failure_counts`, retain its rankings but add a visible warning
+indicator and expose the failure counts in the audit details. If the consensus
+intersection is empty, the page shows an explicit no-intersection state.
 
 ## Error and empty-state behavior
 
 - **Unavailable scan:** warning panel with the existing unavailable reason and
   available metadata.
-- **Insufficient coverage:** when `coverage` is below the existing configured
-  `minimum_coverage_ratio` represented by the validated ranking artifact,
-  apply warning styling and do not render ranking claims. The renderer uses
-  the artifact's validated state and does not recompute the threshold.
+- **Insufficient coverage:** the pipeline's validated unavailable state and
+  reason trigger warning styling and suppress ranking claims; the renderer
+  does not read configuration or recompute the threshold.
+- **Available scan with failures:** keep the available ranking claims, but
+  show a warning indicator and expose the nonempty `failure_counts` in audit
+  details.
 - **No consensus:** explicit “No exact intersection for this scan” state.
 - **Empty evidence or risks:** display `None`; do not silently remove the
   section.
