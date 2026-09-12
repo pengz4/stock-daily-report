@@ -59,6 +59,13 @@ working AkShare Tencent implementation:
 - each page is requested once with a 15-second timeout; retrying the scan job
   remains the workflow's responsibility.
 
+Every successful response must be an HTTP 2xx JSON object whose `data` value is
+an object, whose `total` is a non-boolean integer, and whose `rank_list` is a
+list of objects. Every page must repeat the same `total`. A non-final page
+must contain exactly 200 rows; the final page must contain 1 through 200 rows.
+Offsets are exactly `0, 200, 400, ...`; the adapter must not follow a
+server-provided next link or issue an offset beyond the calculated page count.
+
 The adapter will:
 
 - request the `aStock` board with a page size of 200;
@@ -68,9 +75,11 @@ The adapter will:
 - deduplicate codes and reject malformed or incomplete responses;
 - expose failures using the existing availability/data error distinction.
 
-Unit conversion must preserve the canonical universe semantics:
+The existing `UniverseQuote` convention is preserved: `volume` is the
+exchange-reported lot count and `amount` is CNY. Unit conversion must preserve
+that convention:
 
-- Tencent `volume` is quoted in lots and is converted to shares;
+- Tencent `volume` is quoted in lots and is retained as lots;
 - Tencent `turnover` is quoted in ten-thousand CNY and is converted to CNY;
 - Tencent `hsl` is not persisted because `UniverseQuote` has no turnover-rate
   field and the market-scan checkpoint schema must remain unchanged. Its
@@ -85,36 +94,48 @@ Blank numeric values normalize to `None` using the existing universe
 normalization rules and are subsequently rejected or marked ineligible by the
 existing filters. Numeric strings are accepted; booleans, non-numeric values,
 and negative required measures are data errors. Non-finite values normalize to
-`None` and cannot pass eligibility.
+`None` and cannot pass eligibility. Tencent-specific parsing must reject
+negative values before calling the existing optional-number helper; zero
+latest price is treated as missing/ineligible rather than as a valid quote.
+Names must be non-empty strings.
 
 The reported `total` must be an integer in the range 1 through 10,000. The
 adapter must issue at most 50 page requests and must reject a response if the
 reported total changes during pagination, a non-final page is short, a page
 repeats progress, or the final unique-record count differs from the reported
-total.
+total. A page repeats progress when it contains no code not already seen; all
+duplicate normalized codes are data errors.
 
 ### Provider selection
 
-Use an ordered full-market quote selector with Tencent between the AkShare
-Eastmoney attempt and the existing Sina attempt:
+Refactor the current `AkShareUniverseProvider` into a compatibility facade
+over an ordered full-market quote selector. The selector owns three concrete
+source adapters and uses Tencent between the AkShare Eastmoney attempt and the
+existing Sina attempt:
 
 ```text
 AkShare Eastmoney -> Tencent -> Sina
 ```
 
 The selector may extend `AkShareUniverseProvider` or introduce a small
-ordered selector, but it must preserve the current provider error semantics,
-retain the provider name `akshare` for the existing path, and avoid changing
-historical provider configuration. A provider that returns a data error stops
-selection; an availability error permits the next provider. The final error
-must retain the ordered provider failures without raw response bodies.
+ordered selector, but the public `AkShareUniverseProvider.get_quotes()` API
+must remain compatible with the CLI and resumable scanner. The source names
+are `akshare`, `tencent`, and `sina`; the historical provider registry and
+configuration are unchanged. A source that returns a data error stops
+selection; an availability error permits the next source. If all sources are
+unavailable, raise one `ProviderAvailabilityError` with provider
+`universe`, code `all_sources_unavailable`, and ordered detail strings
+containing each source name and error code, but never raw response bodies.
 
 The expected-code completeness check must continue to operate. The selected
 quote snapshot itself provides the expected code set when it is the Tencent
 snapshot: after normalization, it must contain exactly the reported total,
-at least the existing minimum universe size, no duplicate codes, and only
-supported A-share codes. AkShare and Sina keep their existing independent
-expected-code check because their current snapshot path already relies on it.
+at least 4,000 records (the existing
+`_DEFAULT_MINIMUM_UNIVERSE_SIZE`), no duplicate codes, and only supported
+A-share codes. AkShare and Sina keep their existing independent expected-code
+check because their current snapshot path already relies on it. A Tencent
+snapshot with fewer than 4,000 records is a data error and does not fall
+through to Sina.
 
 ## Data flow
 
@@ -151,7 +172,7 @@ must be surfaced rather than silently recovered:
 - a response that changes its total during pagination;
 - a short non-final page, repeated page progress, or a final count that does
   not equal the reported total;
-- a snapshot that has fewer than the configured minimum universe size.
+- a snapshot that has fewer than 4,000 records.
 
 Pagination must have a bounded page count derived from the reported total and
 must reject repeated page progress or unexpected page growth. A malformed JSON
@@ -164,6 +185,13 @@ trade-date field, `quote_date` is derived with the existing
 therefore use the most recent weekday, matching the existing provider
 behavior; exchange holidays are not inferred by this adapter.
 
+The selected source name is runtime metadata only. It is not added to
+`UniverseQuote`, `manifest_hash_for()`, or checkpoint JSON. Resuming a saved
+checkpoint reuses the already normalized quote snapshot; a new scan hashes
+the selected snapshot contents as it does today. This intentionally preserves
+checkpoint schema version 1 and means a source switch on a later fresh run is
+handled as a new manifest rather than a migration.
+
 ## Testing and validation
 
 Add unit tests using captured, sanitized response fixtures for:
@@ -175,6 +203,8 @@ Add unit tests using captured, sanitized response fixtures for:
 - empty, malformed, truncated, changing-total, repeated-progress, and
   inconsistent pagination responses;
 - availability-error fallback ordering;
+- exact request parameters and offsets, source names, and aggregated error
+  codes;
 - preservation of the existing minimum latest amount eligibility threshold.
 
 Run an integration probe outside the unit suite using:
