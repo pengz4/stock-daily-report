@@ -59,6 +59,16 @@ working AkShare Tencent implementation:
 - each page is requested once with a 15-second timeout; retrying the scan job
   remains the workflow's responsibility.
 
+For deterministic unit tests, the adapter accepts an injected requester with
+this contract:
+
+```text
+request(params: Mapping[str, str], timeout_seconds: float) -> (status: int, body: bytes)
+```
+
+Transport and timeout exceptions are raised by the requester. The production
+requester performs the HTTP request and leaves JSON decoding to the adapter.
+
 Every successful response must be an HTTP 2xx JSON object whose `data` value is
 an object, whose `total` is a non-boolean integer, and whose `rank_list` is a
 list of objects. Every page must repeat the same `total`. A non-final page
@@ -90,15 +100,21 @@ The adapter must not silently treat missing numeric values as zero when that
 would make a quote eligible for scanning.
 
 Required source fields are `code`, `name`, `zxj`, `volume`, and `turnover`.
-Blank numeric values normalize to `None` using the existing universe
-normalization rules and produce a quote that the existing filters mark
-ineligible. Numeric strings are accepted. Booleans, non-numeric values, and
-negative required measures reject the entire Tencent snapshot as a data error.
-Non-finite values normalize to `None` and produce an ineligible quote.
-Zero latest price remains numeric but is ineligible under the existing
-positive-price filter. Names must be non-empty strings; a blank or malformed
-name rejects the entire snapshot. Tencent-specific parsing performs the
-negative-value check before calling the existing optional-number helper.
+Tencent codes must be exactly eight characters after trimming, with a
+case-insensitive `sh`, `sz`, or `bj` prefix followed by six digits. No
+separators are accepted, and the prefix must match the supported market
+derived from the six-digit code. Names must be non-empty strings; a blank or
+malformed name rejects the entire snapshot.
+
+For each required numeric field, a missing key, JSON `null`, empty string, or
+whitespace-only string becomes `None` and produces a quote that the existing
+filters mark ineligible. Numeric strings and JSON numbers are accepted.
+`"NaN"`, `"inf"`, and `"-inf"` become `None` and are ineligible. Booleans,
+other non-numeric strings, and negative values reject the entire Tencent
+snapshot as a data error. Zero latest price, volume, or amount remains
+numeric but is ineligible under the existing positive-measure filters.
+Tencent-specific parsing performs the negative-value check before calling the
+existing optional-number helper.
 
 The reported `total` must be an integer in the range 1 through 10,000. The
 adapter must issue at most 50 page requests and must reject a response if the
@@ -125,14 +141,21 @@ are runtime-only: they appear in structured errors and diagnostic logging,
 not in `UniverseQuote`, the return value, or checkpoint JSON. The historical
 provider registry and configuration are unchanged.
 
-Each source adapter performs one quote request plus its own expected-code
-completeness check. For AkShare, this retains the existing independent
-expected-code endpoint behavior; Tencent uses its reported total; Sina uses
-the existing expected-code fallback. A source expected-code availability
-failure is an availability error for that source; a source data/schema
-failure is a data error. A source data error stops selection; an availability
-error permits the next source. If all sources are unavailable, raise one
-`ProviderAvailabilityError` with provider `universe`, code
+The source ownership and completeness rules are:
+
+| Source | Quote request | Expected-code request | Failure identity |
+|---|---|---|---|
+| `akshare` | `stock_zh_a_spot_em` | `stock_info_a_code_name`, then the existing `stock_zh_a_spot_tx` code-list fallback | `akshare` |
+| `tencent` | `getBoardRankList` pages | The reported `data.total` and unique normalized codes | `tencent` |
+| `sina` | `stock_zh_a_spot` | `stock_info_a_code_name`, then the existing `stock_zh_a_spot_tx` code-list fallback | `sina` |
+
+The `stock_zh_a_spot_tx` call in the table is only an expected-code fallback;
+it is not a second quote attempt and does not transfer ownership of the
+selected source. An expected-code availability failure is an availability
+error for the selected source; an expected-code data/schema failure is a data
+error for the selected source. A source data error stops selection; an
+availability error permits the next source. If all sources are unavailable,
+raise one `ProviderAvailabilityError` with provider `universe`, code
 `all_sources_unavailable`, and ordered detail strings containing each source
 name and error code, but never raw response bodies. Each adapter and
 normalizer must construct errors with its own source name rather than the
@@ -143,10 +166,9 @@ quote snapshot itself provides the expected code set when it is the Tencent
 snapshot: after normalization, it must contain exactly the reported total,
 at least 4,000 records (the existing
 `_DEFAULT_MINIMUM_UNIVERSE_SIZE`), no duplicate codes, and only supported
-A-share codes. AkShare and Sina keep their existing independent expected-code
-check because their current snapshot path already relies on it. A Tencent
-snapshot with fewer than 4,000 records is a data error and does not fall
-through to Sina.
+A-share codes. AkShare and Sina use the expected-code requests in the table.
+A Tencent snapshot with fewer than 4,000 records is a data error and does not
+fall through to Sina.
 
 ## Data flow
 
