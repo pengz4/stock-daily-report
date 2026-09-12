@@ -66,7 +66,9 @@ this contract:
 request(params: Mapping[str, str], timeout_seconds: float) -> (status: int, body: bytes)
 ```
 
-Transport and timeout exceptions are raised by the requester. The production
+The requester raises `OSError` for transport failures, including
+`TimeoutError`. Other exceptions indicate requester/programming errors and
+must not be converted into provider availability errors. The production
 requester performs the HTTP request and leaves JSON decoding to the adapter.
 
 Every successful response must be an HTTP 2xx JSON object whose `data` value is
@@ -110,8 +112,8 @@ For each required numeric field, a missing key, JSON `null`, empty string, or
 whitespace-only string becomes `None` and produces a quote that the existing
 filters mark ineligible. Numeric strings and JSON numbers are accepted.
 `"NaN"`, `"inf"`, and `"-inf"` become `None` and are ineligible. Booleans,
-other non-numeric strings, and negative values reject the entire Tencent
-snapshot as a data error. Zero latest price, volume, or amount remains
+other non-numeric strings, and finite negative values reject the entire
+Tencent snapshot as a data error. Zero latest price, volume, or amount remains
 numeric but is ineligible under the existing positive-measure filters.
 Tencent-specific parsing performs the negative-value check before calling the
 existing optional-number helper.
