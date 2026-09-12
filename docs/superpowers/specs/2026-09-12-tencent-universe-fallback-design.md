@@ -91,41 +91,52 @@ would make a quote eligible for scanning.
 
 Required source fields are `code`, `name`, `zxj`, `volume`, and `turnover`.
 Blank numeric values normalize to `None` using the existing universe
-normalization rules and are subsequently rejected or marked ineligible by the
-existing filters. Numeric strings are accepted; booleans, non-numeric values,
-and negative required measures are data errors. Non-finite values normalize to
-`None` and cannot pass eligibility. Tencent-specific parsing must reject
-negative values before calling the existing optional-number helper; zero
-latest price is treated as missing/ineligible rather than as a valid quote.
-Names must be non-empty strings.
+normalization rules and produce a quote that the existing filters mark
+ineligible. Numeric strings are accepted. Booleans, non-numeric values, and
+negative required measures reject the entire Tencent snapshot as a data error.
+Non-finite values normalize to `None` and produce an ineligible quote.
+Zero latest price remains numeric but is ineligible under the existing
+positive-price filter. Names must be non-empty strings; a blank or malformed
+name rejects the entire snapshot. Tencent-specific parsing performs the
+negative-value check before calling the existing optional-number helper.
 
 The reported `total` must be an integer in the range 1 through 10,000. The
 adapter must issue at most 50 page requests and must reject a response if the
 reported total changes during pagination, a non-final page is short, a page
-repeats progress, or the final unique-record count differs from the reported
-total. A page repeats progress when it contains no code not already seen; all
-duplicate normalized codes are data errors.
+contains no previously unseen code, or the final unique-record count differs
+from the reported total. All duplicate normalized codes are data errors.
 
 ### Provider selection
 
 Refactor the current `AkShareUniverseProvider` into a compatibility facade
 over an ordered full-market quote selector. The selector owns three concrete
-source adapters and uses Tencent between the AkShare Eastmoney attempt and the
-existing Sina attempt:
+single-source adapters and uses Tencent between the AkShare Eastmoney attempt
+and the existing Sina attempt:
 
 ```text
 AkShare Eastmoney -> Tencent -> Sina
 ```
 
-The selector may extend `AkShareUniverseProvider` or introduce a small
-ordered selector, but the public `AkShareUniverseProvider.get_quotes()` API
-must remain compatible with the CLI and resumable scanner. The source names
-are `akshare`, `tencent`, and `sina`; the historical provider registry and
-configuration are unchanged. A source that returns a data error stops
-selection; an availability error permits the next source. If all sources are
-unavailable, raise one `ProviderAvailabilityError` with provider
-`universe`, code `all_sources_unavailable`, and ordered detail strings
-containing each source name and error code, but never raw response bodies.
+The selector must be the only layer that performs
+`AkShare Eastmoney -> Tencent -> Sina`; no source adapter may call another
+source internally. The public `AkShareUniverseProvider.get_quotes()` API must
+remain `list[UniverseQuote]` for the CLI and resumable scanner. Source names
+are runtime-only: they appear in structured errors and diagnostic logging,
+not in `UniverseQuote`, the return value, or checkpoint JSON. The historical
+provider registry and configuration are unchanged.
+
+Each source adapter performs one quote request plus its own expected-code
+completeness check. For AkShare, this retains the existing independent
+expected-code endpoint behavior; Tencent uses its reported total; Sina uses
+the existing expected-code fallback. A source expected-code availability
+failure is an availability error for that source; a source data/schema
+failure is a data error. A source data error stops selection; an availability
+error permits the next source. If all sources are unavailable, raise one
+`ProviderAvailabilityError` with provider `universe`, code
+`all_sources_unavailable`, and ordered detail strings containing each source
+name and error code, but never raw response bodies. Each adapter and
+normalizer must construct errors with its own source name rather than the
+facade's name.
 
 The expected-code completeness check must continue to operate. The selected
 quote snapshot itself provides the expected code set when it is the Tencent
@@ -149,8 +160,9 @@ through to Sina.
 6. Apply the existing eligibility filters and send eligible candidates to the
    resumable history scan.
 
-Provider metadata and error details must identify the selected source without
-including credentials or raw response bodies.
+Structured errors and diagnostic logging identify the selected source without
+including credentials or raw response bodies. The successful return value
+does not expose source identity.
 
 ## Error handling
 
@@ -158,8 +170,10 @@ The Tencent adapter must classify the following as availability failures that
 permit the next provider:
 
 - connection, timeout, and transport failures;
+- non-2xx HTTP responses;
 - invalid JSON or an HTML/non-JSON upstream response;
-- an absent `data` envelope or absent `rank_list`;
+- a top-level JSON value that is not an object;
+- an absent or incorrectly typed `data`, `total`, or `rank_list` envelope;
 - an empty page while the reported total is positive.
 
 Once a valid response envelope is decoded, the following are data errors and
@@ -174,10 +188,15 @@ must be surfaced rather than silently recovered:
   not equal the reported total;
 - a snapshot that has fewer than 4,000 records.
 
-Pagination must have a bounded page count derived from the reported total and
-must reject repeated page progress or unexpected page growth. A malformed JSON
-body is an availability failure; a decoded JSON body with malformed records is
-a data failure.
+Pagination uses exactly
+`page_count = (total + page_size - 1) // page_size`. It requests offsets
+`page_index * page_size` for `page_index` in `range(page_count)` and makes no
+request after the final page. A final page of exactly 200 rows is valid when
+`total` is divisible by 200. A non-2xx HTTP response, malformed JSON body,
+top-level JSON value that is not an object, or invalid `data`/`total`/
+`rank_list` envelope is an availability failure. A decoded envelope with
+malformed rows, changing totals, duplicate codes, or a count mismatch is a
+data failure.
 
 Because Tencent's endpoint is a current snapshot and does not return a
 trade-date field, `quote_date` is derived with the existing
@@ -185,12 +204,13 @@ trade-date field, `quote_date` is derived with the existing
 therefore use the most recent weekday, matching the existing provider
 behavior; exchange holidays are not inferred by this adapter.
 
-The selected source name is runtime metadata only. It is not added to
-`UniverseQuote`, `manifest_hash_for()`, or checkpoint JSON. Resuming a saved
-checkpoint reuses the already normalized quote snapshot; a new scan hashes
-the selected snapshot contents as it does today. This intentionally preserves
-checkpoint schema version 1 and means a source switch on a later fresh run is
-handled as a new manifest rather than a migration.
+The selected source name is runtime-only. It is not added to `UniverseQuote`,
+`manifest_hash_for()`, or checkpoint JSON. Resuming a saved checkpoint first
+loads and validates the stored quotes and manifest, then skips live universe
+provider selection entirely. A fresh scan hashes only normalized quote
+contents, as it does today; if two sources produce identical normalized
+quotes, they intentionally share the same manifest. This preserves
+checkpoint schema version 1 and avoids a source-identity migration.
 
 ## Testing and validation
 
