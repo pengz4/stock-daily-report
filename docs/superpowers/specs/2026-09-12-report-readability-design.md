@@ -32,6 +32,10 @@ The HTML report will be organized into five layers:
    - Report date and latest trading date.
    - Link back to the dated-report index.
    - Quality status badge.
+   - The latest trading date comes from the market-ranking scan date when
+     rankings are available; otherwise it comes from the latest validated
+     watchlist trade date. If both exist and differ, show both dates rather
+     than silently choosing one.
    - Operational metadata such as generated time, providers, hashes, and
      analyzer version moved into a collapsible runtime-information region.
 
@@ -43,7 +47,11 @@ The HTML report will be organized into five layers:
      data. The renderer must not infer or fabricate missing metrics.
 
 3. **Consensus highlights**
-   - Show up to the first five consensus records as highlighted cards.
+   - Show up to five consensus records ordered by ascending
+     `trend_rank`, then ascending `balanced_rank`, then code as a stable
+     tie-breaker. If fewer than five records exist, show all available
+     records. If the intersection is empty, show the explicit no-consensus
+     state instead of an empty card grid.
    - Each card contains code, name, Trend and Balanced ranks, relevant scores,
      component summaries, evidence highlights, risks, trade date, and provider.
    - Clicking a card reveals its detail card without changing the underlying
@@ -53,9 +61,14 @@ The HTML report will be organized into five layers:
    - Render Trend Top 10 and Balanced Top 10 as compact single-column rows.
    - Each default row contains rank, code/name, score, consensus marker, and a
      short risk indication.
-   - Place ranks 11-30 in an explicit “view full ranking” expandable region.
-   - A full row detail card exposes the same audit-relevant fields as a
-     consensus card.
+   - Render all available records up to rank 10. If a profile has no records,
+     show an explicit unavailable/empty state. If it has records beyond rank
+     10, place ranks 11-30 in an explicit “view full ranking” expandable
+     region; hide that control when no additional records exist.
+   - A row detail card exposes the exact fields available for that record:
+     rank, code, name, score, Trend/Balanced consensus ranks and scores when
+     present, all five numeric components, evidence codes, risk codes, latest
+     trade date, and provider name.
 
 5. **Watchlist**
    - Preserve all watchlist content and semantics.
@@ -91,11 +104,13 @@ are not changed solely to serve the visual layout.
 - narrow-screen layout that keeps the primary content readable without
   requiring horizontal scrolling.
 
-The report may include a small inline or self-contained JavaScript behavior
-layer for opening and closing detail cards and full-ranking regions. The page
-must remain understandable if JavaScript is unavailable: critical content must
-still exist in the rendered HTML, and controls must not replace the only copy
-of a value.
+Use native `<details>` and `<summary>` controls for detail cards and full
+ranking regions. This provides keyboard access and an accessible default
+open/closed state without requiring JavaScript. The default state is closed
+for individual detail cards and full-ranking regions; the top-level summary
+and the first ten ranking rows are visible. The page must remain fully
+usable without JavaScript because all critical content exists in the rendered
+HTML and the native controls still work.
 
 ## Data flow and compatibility
 
@@ -126,7 +141,10 @@ shows an explicit no-intersection state.
 
 - **Unavailable scan:** warning panel with the existing unavailable reason and
   available metadata.
-- **Insufficient coverage:** warning styling and no ranking claims.
+- **Insufficient coverage:** when `coverage` is below the existing configured
+  `minimum_coverage_ratio` represented by the validated ranking artifact,
+  apply warning styling and do not render ranking claims. The renderer uses
+  the artifact's validated state and does not recompute the threshold.
 - **No consensus:** explicit “No exact intersection for this scan” state.
 - **Empty evidence or risks:** display `None`; do not silently remove the
   section.
