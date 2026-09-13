@@ -386,6 +386,7 @@ a {
   background: var(--report-panel-muted);
   border: 1px solid var(--report-border);
   border-radius: 0.9rem;
+  min-width: 0;
   padding: 0.9rem;
 }
 
