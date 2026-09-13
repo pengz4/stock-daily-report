@@ -347,6 +347,17 @@ def _market_rankings_no_consensus():
     )
 
 
+def test_market_rankings_no_consensus_fixture_is_isolated_and_valid():
+    rankings = _market_rankings_no_consensus()
+
+    assert rankings.status == "available"
+    assert rankings.consensus == ()
+    assert {record.code for record in rankings.trend}.isdisjoint(
+        {record.code for record in rankings.balanced}
+    )
+    assert rankings.failure_counts == ()
+
+
 def _document(
     name: str = "<script>alert(1)</script>",
     *,
