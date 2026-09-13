@@ -546,9 +546,20 @@ def _matches_selector_part(node: _HtmlElement, token: str) -> bool:
     )
 
 
+def _describe_node(node: _HtmlElement) -> str:
+    classes = tuple(
+        value for value in node.attrs.get("class", "").split() if value
+    )
+    class_suffix = "".join(f".{name}" for name in classes)
+    return f"<{node.tag}{class_suffix}>"
+
+
 def _require_one(node: _HtmlElement, selector: str) -> _HtmlElement:
     matches = node.select(selector)
-    assert matches, f"expected selector {selector!r} in HTML contract"
+    assert len(matches) == 1, (
+        f"expected exactly one match for selector {selector!r} within "
+        f"{_describe_node(node)} in HTML contract; found {len(matches)}"
+    )
     return matches[0]
 
 
@@ -594,16 +605,7 @@ def _row_rank_code_pairs(rows: list[_HtmlElement]) -> set[tuple[int, str]]:
 
 
 def _row_detail_controls(row: _HtmlElement) -> list[_HtmlElement]:
-    controls = row.select("details.ranking-detail")
-    if controls:
-        return controls
-    return [
-        child
-        for child in row.children
-        if isinstance(child, _HtmlElement)
-        and child.tag == "details"
-        and child.select("summary")
-    ]
+    return row.select("details.ranking-detail")
 
 
 def _assert_rows_have_scoped_ranking_details(rows, expected_records) -> None:
@@ -616,12 +618,61 @@ def _assert_rows_have_scoped_ranking_details(rows, expected_records) -> None:
         controls = _row_detail_controls(row)
         pair = (_extract_leading_rank(row), _extract_first_code(row))
         assert len(controls) == 1, (
-            f"expected one scoped detail control for ranking row {pair!r}"
+            "expected exactly one match for selector "
+            f"'details.ranking-detail' within ranking row {pair!r} "
+            f"in HTML contract; found {len(controls)}"
         )
         _assert_details_closed(controls[0])
         actual_pairs.add(pair)
 
     assert actual_pairs == expected_pairs
+
+
+def test_require_one_requires_exactly_one_selector_match():
+    root = _html_tree(
+        """
+        <section>
+          <div class="match">first</div>
+          <div class="match">second</div>
+        </section>
+        """
+    )
+
+    with pytest.raises(
+        AssertionError,
+        match=r"selector '.missing'.*found 0",
+    ):
+        _require_one(root, ".missing")
+    with pytest.raises(
+        AssertionError,
+        match=r"selector '.match'.*found 2",
+    ):
+        _require_one(root, ".match")
+
+
+def test_ranking_detail_assertions_require_stable_selector():
+    ranking = _market_rankings().trend[0]
+    row = _html_tree(
+        f"""
+        <div class="ranking-row">
+          #{ranking.rank} {ranking.code} {ranking.name}
+          <details>
+            <summary>Details</summary>
+            <p>Loose child details should not satisfy the contract.</p>
+          </details>
+        </div>
+        """
+    ).select(".ranking-row")[0]
+
+    assert _row_detail_controls(row) == []
+    with pytest.raises(
+        AssertionError,
+        match=(
+            r"selector 'details\.ranking-detail'.*ranking row \(1, '600519'\)"
+            r".*found 0"
+        ),
+    ):
+        _assert_rows_have_scoped_ranking_details([row], [ranking])
 
 
 def _document_with_shifted_watchlist_date(market_rankings) -> ReportDocument:
@@ -1192,20 +1243,19 @@ def test_market_scan_html_contract_keeps_detail_fields_and_failure_warning():
         root,
         '.ranking-profile[data-profile="trend"] .ranking-visible',
     )
-    detail = _row_detail_controls(
-        next(
-            row
-            for row in trend_visible.select(".ranking-row")
-            if (
-                _extract_leading_rank(row),
-                _extract_first_code(row),
-            )
-            == (
-                document.market_rankings.trend[0].rank,
-                document.market_rankings.trend[0].code,
-            )
+    detail_row = next(
+        row
+        for row in trend_visible.select(".ranking-row")
+        if (
+            _extract_leading_rank(row),
+            _extract_first_code(row),
         )
-    )[0]
+        == (
+            document.market_rankings.trend[0].rank,
+            document.market_rankings.trend[0].code,
+        )
+    )
+    detail = _require_one(detail_row, "details.ranking-detail")
     runtime_metadata = _require_one(root, "details.runtime-metadata")
 
     assert warning.normalized_text()
