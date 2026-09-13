@@ -15,73 +15,334 @@ from stock_daily_report.report.models import (
 from stock_daily_report.report.render import render_html, render_markdown
 
 
-def _market_rankings():
-    components = {
-        "trend": 90.0,
-        "momentum": 80.0,
-        "volume": 70.0,
-        "structure": 60.0,
-        "risk": 50.0,
+def _market_rankings_metadata():
+    return {
+        "scan_date": date(2026, 9, 4),
+        "generated_at": datetime(2026, 9, 4, 8, 30, tzinfo=UTC),
+        "rule_version": "market-scan-v1",
+        "config_hash": "c" * 64,
+        "input_hash": "d" * 64,
+        "provider_names": ("fixture", "fake-universe"),
+        "universe_count": 100,
+        "eligible_count": 80,
+        "valid_count": 72,
+        "coverage": 0.9,
+        "exclusion_counts": (
+            report_models.MarketScanReasonCount(code="st", count=20),
+        ),
+        "failure_counts": (
+            report_models.MarketScanReasonCount(code="network_error", count=8),
+        ),
     }
-    trend = report_models.MarketRanking(
-        code="600519",
-        name="贵州茅台",
-        profile="trend",
-        rank=1,
-        score=82.0,
+
+
+def _market_ranking_components(
+    trend: float,
+    momentum: float,
+    volume: float,
+    structure: float,
+    risk: float,
+):
+    return report_models.MarketRankingComponents(
+        trend=trend,
+        momentum=momentum,
+        volume=volume,
+        structure=structure,
+        risk=risk,
+    )
+
+
+def _market_ranking_record(
+    *,
+    code: str,
+    name: str,
+    profile: str,
+    rank: int,
+    score: float,
+    components,
+    evidence_codes: tuple[str, ...],
+    risk_codes: tuple[str, ...],
+    latest_trade_date: date = date(2026, 9, 4),
+    provider_name: str = "fixture",
+):
+    return report_models.MarketRanking(
+        code=code,
+        name=name,
+        profile=profile,
+        rank=rank,
+        score=score,
         components=components,
-        evidence_codes=("close_above_ma20",),
-        risk_codes=("elevated_volatility",),
-        latest_trade_date=date(2026, 9, 4),
-        provider_name="fixture",
+        evidence_codes=evidence_codes,
+        risk_codes=risk_codes,
+        latest_trade_date=latest_trade_date,
+        provider_name=provider_name,
     )
-    balanced_leader = trend.model_copy(
-        update={
-            "code": "000001",
-            "name": "平安银行",
-            "profile": "balanced",
-            "rank": 1,
-            "score": 76.0,
-        }
+
+
+def _market_consensus_record(
+    *,
+    code: str,
+    name: str,
+    trend_rank: int,
+    trend_score: float,
+    balanced_rank: int,
+    balanced_score: float,
+    trend_components,
+    balanced_components,
+    evidence_codes: tuple[str, ...],
+    risk_codes: tuple[str, ...],
+    latest_trade_date: date = date(2026, 9, 4),
+    provider_name: str = "fixture",
+):
+    return report_models.MarketConsensusRanking(
+        code=code,
+        name=name,
+        trend_rank=trend_rank,
+        trend_score=trend_score,
+        balanced_rank=balanced_rank,
+        balanced_score=balanced_score,
+        trend_components=trend_components,
+        balanced_components=balanced_components,
+        evidence_codes=evidence_codes,
+        risk_codes=risk_codes,
+        latest_trade_date=latest_trade_date,
+        provider_name=provider_name,
     )
-    balanced = trend.model_copy(
-        update={"profile": "balanced", "rank": 2, "score": 75.0}
+
+
+def _market_rankings_available_rows():
+    shared_codes = {
+        "first": "600519",
+        "second": "000001",
+    }
+    shared_components = _market_ranking_components(90.0, 80.0, 70.0, 60.0, 50.0)
+    shared_evidence = ("close_above_ma20",)
+    shared_risks = ("elevated_volatility",)
+    escaped_evidence = ("close_above_ma20", "trend & signal")
+    escaped_risks = ("elevated_volatility", "risk <tight>")
+
+    trend_rows = [
+        _market_ranking_record(
+            code=shared_codes["first"],
+            name="贵州茅台",
+            profile="trend",
+            rank=1,
+            score=82.0,
+            components=shared_components,
+            evidence_codes=shared_evidence,
+            risk_codes=shared_risks,
+        ),
+        _market_ranking_record(
+            code=shared_codes["second"],
+            name="平安银行",
+            profile="trend",
+            rank=2,
+            score=81.0,
+            components=shared_components,
+            evidence_codes=escaped_evidence,
+            risk_codes=escaped_risks,
+        ),
+    ]
+    for rank, code, name in (
+        (3, "600010", "趋势样本03"),
+        (4, "600011", "趋势样本04"),
+        (5, "600012", "趋势样本05"),
+        (6, "600013", "趋势样本06"),
+        (7, "600014", "趋势样本07"),
+        (8, "600015", "趋势样本08"),
+        (9, "600016", "趋势样本09"),
+        (10, "600017", "趋势样本10"),
+        (11, "600018", "趋势样本11"),
+        (12, "600019", "趋势样本12"),
+        (13, "600020", "趋势样本13"),
+        (14, "600021", "趋势样本14"),
+        (15, "600022", "趋势样本15"),
+        (16, "600023", "趋势样本16"),
+        (17, "600024", "趋势样本17"),
+        (18, "600025", "趋势样本18"),
+        (19, "600026", "趋势样本19"),
+        (20, "600027", "趋势样本20"),
+        (21, "600028", "趋势样本21"),
+        (22, "600029", "趋势样本22"),
+        (23, "600030", "趋势样本23"),
+        (24, "600031", "趋势样本24"),
+        (25, "600032", "趋势样本25"),
+        (26, "600033", "趋势样本26"),
+        (27, "600034", "趋势样本27"),
+        (28, "600035", "趋势样本28"),
+        (29, "600036", "趋势样本29"),
+        (30, "600037", "趋势样本30"),
+    ):
+        trend_rows.append(
+            _market_ranking_record(
+                code=code,
+                name=name,
+                profile="trend",
+                rank=rank,
+                score=79.5 - (rank - 3) * 0.5,
+                components=_market_ranking_components(
+                    95.0 - rank,
+                    85.0 - rank,
+                    75.0 - rank,
+                    65.0 - rank,
+                    55.0 - rank,
+                ),
+                evidence_codes=(f"trend evidence {rank} <escape>",),
+                risk_codes=(f"trend risk {rank} & review",),
+            )
+        )
+
+    balanced_rows = [
+        _market_ranking_record(
+            code=shared_codes["second"],
+            name="平安银行",
+            profile="balanced",
+            rank=1,
+            score=76.0,
+            components=shared_components,
+            evidence_codes=escaped_evidence,
+            risk_codes=escaped_risks,
+        ),
+        _market_ranking_record(
+            code=shared_codes["first"],
+            name="贵州茅台",
+            profile="balanced",
+            rank=2,
+            score=75.0,
+            components=shared_components,
+            evidence_codes=shared_evidence,
+            risk_codes=shared_risks,
+        ),
+    ]
+    for rank, code, name in (
+        (3, "000002", "平衡样本03"),
+        (4, "000333", "平衡样本04"),
+        (5, "000568", "平衡样本05"),
+    ):
+        balanced_rows.append(
+            _market_ranking_record(
+                code=code,
+                name=name,
+                profile="balanced",
+                rank=rank,
+                score=74.5 - (rank - 3) * 0.5,
+                components=_market_ranking_components(
+                    92.0 - rank,
+                    82.0 - rank,
+                    72.0 - rank,
+                    62.0 - rank,
+                    52.0 - rank,
+                ),
+                evidence_codes=(f"balanced evidence {rank} [escape]",),
+                risk_codes=(f"balanced risk {rank} <watch>",),
+            )
+        )
+
+    consensus_rows = [
+        _market_consensus_record(
+            code=shared_codes["first"],
+            name="贵州茅台",
+            trend_rank=1,
+            trend_score=82.0,
+            balanced_rank=2,
+            balanced_score=75.0,
+            trend_components=shared_components,
+            balanced_components=shared_components,
+            evidence_codes=shared_evidence,
+            risk_codes=shared_risks,
+        ),
+        _market_consensus_record(
+            code=shared_codes["second"],
+            name="平安银行",
+            trend_rank=2,
+            trend_score=81.0,
+            balanced_rank=1,
+            balanced_score=76.0,
+            trend_components=shared_components,
+            balanced_components=shared_components,
+            evidence_codes=escaped_evidence,
+            risk_codes=escaped_risks,
+        ),
+    ]
+    return tuple(trend_rows), tuple(balanced_rows), tuple(consensus_rows)
+
+
+def _market_rankings():
+    trend, balanced, consensus = _market_rankings_available_rows()
+    return report_models.MarketRankings(
+        status="available",
+        unavailable_reason=None,
+        **_market_rankings_metadata(),
+        trend=trend,
+        balanced=balanced,
+        consensus=consensus,
+    )
+
+
+def _market_rankings_unavailable():
+    return report_models.MarketRankings(
+        status="unavailable",
+        unavailable_reason="scan_rankings_unavailable",
+        **_market_rankings_metadata(),
+        trend=(),
+        balanced=(),
+        consensus=(),
+    )
+
+
+def _market_rankings_no_consensus():
+    metadata = _market_rankings_metadata()
+    trend = (
+        _market_ranking_record(
+            code="600100",
+            name="趋势空交集01",
+            profile="trend",
+            rank=1,
+            score=72.0,
+            components=_market_ranking_components(88.0, 78.0, 68.0, 58.0, 48.0),
+            evidence_codes=("disjoint trend evidence <one>",),
+            risk_codes=("disjoint trend risk & one",),
+        ),
+        _market_ranking_record(
+            code="600101",
+            name="趋势空交集02",
+            profile="trend",
+            rank=2,
+            score=71.0,
+            components=_market_ranking_components(87.0, 77.0, 67.0, 57.0, 47.0),
+            evidence_codes=("disjoint trend evidence <two>",),
+            risk_codes=("disjoint trend risk & two",),
+        ),
+    )
+    balanced = (
+        _market_ranking_record(
+            code="000100",
+            name="平衡空交集01",
+            profile="balanced",
+            rank=1,
+            score=74.0,
+            components=_market_ranking_components(86.0, 76.0, 66.0, 56.0, 46.0),
+            evidence_codes=("disjoint balanced evidence [one]",),
+            risk_codes=("disjoint balanced risk <one>",),
+        ),
+        _market_ranking_record(
+            code="000101",
+            name="平衡空交集02",
+            profile="balanced",
+            rank=2,
+            score=73.0,
+            components=_market_ranking_components(85.0, 75.0, 65.0, 55.0, 45.0),
+            evidence_codes=("disjoint balanced evidence [two]",),
+            risk_codes=("disjoint balanced risk <two>",),
+        ),
     )
     return report_models.MarketRankings(
         status="available",
         unavailable_reason=None,
-        scan_date=date(2026, 9, 4),
-        generated_at=datetime(2026, 9, 4, 8, 30, tzinfo=UTC),
-        rule_version="market-scan-v1",
-        config_hash="c" * 64,
-        input_hash="d" * 64,
-        provider_names=("fixture", "fake-universe"),
-        universe_count=100,
-        eligible_count=80,
-        valid_count=72,
-        coverage=0.9,
-        exclusion_counts=(report_models.MarketScanReasonCount(code="st", count=20),),
-        failure_counts=(
-            report_models.MarketScanReasonCount(code="network_error", count=8),
-        ),
-        trend=(trend,),
-        balanced=(balanced_leader, balanced),
-        consensus=(
-            report_models.MarketConsensusRanking(
-                code="600519",
-                name="贵州茅台",
-                trend_rank=1,
-                trend_score=82.0,
-                balanced_rank=2,
-                balanced_score=75.0,
-                trend_components=components,
-                balanced_components=components,
-                evidence_codes=("close_above_ma20",),
-                risk_codes=("elevated_volatility",),
-                latest_trade_date=date(2026, 9, 4),
-                provider_name="fixture",
-            ),
-        ),
+        **metadata,
+        trend=trend,
+        balanced=balanced,
+        consensus=(),
     )
 
 
@@ -298,12 +559,8 @@ def test_market_scan_renderers_safely_handle_partial_unavailable_metadata():
 def test_market_scan_rankings_reject_duplicate_profile_codes(profile):
     document = _market_rankings().model_dump()
     duplicate = dict(document[profile][-1])
-    duplicate["rank"] = len(document[profile]) + 1
-    document[profile] = (*document[profile], duplicate)
-    if profile == "trend":
-        document["consensus"][0]["trend_rank"] = duplicate["rank"]
-    else:
-        document["consensus"][0]["balanced_rank"] = duplicate["rank"]
+    duplicate["code"] = document[profile][0]["code"]
+    document[profile] = (*document[profile][:-1], duplicate)
 
     with pytest.raises(
         ValueError,
