@@ -563,6 +563,20 @@ def _require_one(node: _HtmlElement, selector: str) -> _HtmlElement:
     return matches[0]
 
 
+def _require_one_direct_child(node: _HtmlElement, selector: str) -> _HtmlElement:
+    matches = [
+        child
+        for child in node.children
+        if isinstance(child, _HtmlElement) and _matches_selector_part(child, selector)
+    ]
+    assert len(matches) == 1, (
+        "expected exactly one direct child match for selector "
+        f"{selector!r} within {_describe_node(node)} in HTML contract; "
+        f"found {len(matches)}"
+    )
+    return matches[0]
+
+
 def _extract_first_code(node: _HtmlElement) -> str:
     match = re.search(r"\b\d{6}\b", node.normalized_text())
     assert match, f"expected a six-digit stock code in {node.normalized_text()!r}"
@@ -673,6 +687,27 @@ def test_ranking_detail_assertions_require_stable_selector():
         ),
     ):
         _assert_rows_have_scoped_ranking_details([row], [ranking])
+
+
+def test_full_ranking_summary_assertion_ignores_nested_row_summaries():
+    trend_full = _html_tree(
+        """
+        <details class="full-ranking">
+          <summary>View remaining rankings</summary>
+          <div class="ranking-row">
+            #11 600018 趋势样本11
+            <details class="ranking-detail">
+              <summary>Details</summary>
+              <p>Nested row disclosure.</p>
+            </details>
+          </div>
+        </details>
+        """
+    ).select("details.full-ranking")[0]
+
+    summary = _require_one_direct_child(trend_full, "summary")
+
+    assert summary.normalized_text() == "View remaining rankings"
 
 
 def _document_with_shifted_watchlist_date(market_rankings) -> ReportDocument:
@@ -1195,7 +1230,7 @@ def test_market_scan_html_contract_uses_compact_rankings_and_full_disclosure():
     assert root.select(".ranking-table-wrap") == []
     assert "<table" not in html.lower()
     assert root.select("article.stock") == []
-    _require_one(trend_full, "summary")
+    _require_one_direct_child(trend_full, "summary")
     _assert_details_closed(trend_full)
     assert len(trend_visible_rows) == 10
     assert [_extract_leading_rank(row) for row in trend_visible_rows] == list(
