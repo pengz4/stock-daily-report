@@ -237,7 +237,7 @@ def _render_market_rankings_html(rankings: MarketRankings) -> str:
     warning = _render_ranking_warning(rankings)
     if rankings.status == "unavailable":
         warning_html = f"\n      {warning}" if warning else ""
-        return f"""<section class="market-rankings">
+        return f"""<section class="market-rankings unavailable">
       <h2>Full-market rankings</h2>{warning_html}
       <p>Full-market rankings unavailable.</p>
       <p><strong>Reason:</strong> <code>{_format_html_optional(rankings.unavailable_reason)}</code></p>
@@ -275,6 +275,7 @@ def _render_market_summary_html(report: ReportDocument) -> str:
 
 def _render_runtime_metadata(report: ReportDocument, rankings: MarketRankings) -> str:
     metadata = report.metadata
+    has_ranking_metadata = _has_market_ranking_metadata(rankings)
     report_fields = "".join(
         (
             _render_html_field("Report generated", metadata.generated_at.isoformat()),
@@ -294,54 +295,71 @@ def _render_runtime_metadata(report: ReportDocument, rankings: MarketRankings) -
                 "Analyzer",
                 metadata.analyzer_versions.structural,
             ),
-        )
-    )
-    ranking_fields = "".join(
-        (
-            _render_html_field("Ranking status", rankings.status),
-            _render_html_field("Ranking reason", rankings.unavailable_reason),
-            _render_html_field(
-                "Ranking scan date",
-                rankings.scan_date.isoformat() if rankings.scan_date is not None else None,
+            (
+                ""
+                if has_ranking_metadata
+                else _render_html_field("Ranking status", rankings.status)
             ),
-            _render_html_field(
-                "Ranking generated",
-                rankings.generated_at.isoformat()
-                if rankings.generated_at is not None
-                else None,
-            ),
-            _render_html_field("Ranking rule version", rankings.rule_version),
-            _render_html_field(
-                "Ranking providers",
-                _sequence_text(rankings.provider_names),
-            ),
-            _render_html_field("Ranking config hash", rankings.config_hash),
-            _render_html_field("Ranking input hash", rankings.input_hash),
-            _render_html_field("Universe count", rankings.universe_count),
-            _render_html_field("Eligible count", rankings.eligible_count),
-            _render_html_field("Valid count", rankings.valid_count),
-            _render_html_field(
-                "Coverage",
-                f"{rankings.coverage:.2%}" if rankings.coverage is not None else None,
-            ),
-            _render_html_field(
-                "Exclusions",
-                _format_reason_counts(rankings.exclusion_counts),
-            ),
-            _render_html_field(
-                "Failures",
-                _format_reason_counts(rankings.failure_counts),
+            (
+                ""
+                if has_ranking_metadata
+                else _render_html_field("Ranking reason", rankings.unavailable_reason)
             ),
         )
     )
-    body = f"""<div class="runtime-metadata__section">
-        <h3>Report metadata</h3>
-        {report_fields}
-      </div>
+    ranking_metadata_section = ""
+    if has_ranking_metadata:
+        ranking_fields = "".join(
+            (
+                _render_html_field("Ranking status", rankings.status),
+                _render_html_field("Ranking reason", rankings.unavailable_reason),
+                _render_html_field(
+                    "Ranking scan date",
+                    rankings.scan_date.isoformat()
+                    if rankings.scan_date is not None
+                    else None,
+                ),
+                _render_html_field(
+                    "Ranking generated",
+                    rankings.generated_at.isoformat()
+                    if rankings.generated_at is not None
+                    else None,
+                ),
+                _render_html_field("Ranking rule version", rankings.rule_version),
+                _render_html_field(
+                    "Ranking providers",
+                    _sequence_text(rankings.provider_names),
+                ),
+                _render_html_field("Ranking config hash", rankings.config_hash),
+                _render_html_field("Ranking input hash", rankings.input_hash),
+                _render_html_field("Universe count", rankings.universe_count),
+                _render_html_field("Eligible count", rankings.eligible_count),
+                _render_html_field("Valid count", rankings.valid_count),
+                _render_html_field(
+                    "Coverage",
+                    f"{rankings.coverage:.2%}"
+                    if rankings.coverage is not None
+                    else None,
+                ),
+                _render_html_field(
+                    "Exclusions",
+                    _format_reason_counts(rankings.exclusion_counts),
+                ),
+                _render_html_field(
+                    "Failures",
+                    _format_reason_counts(rankings.failure_counts),
+                ),
+            )
+        )
+        ranking_metadata_section = f"""
       <div class="runtime-metadata__section">
         <h3>Ranking metadata</h3>
         {ranking_fields}
       </div>"""
+    body = f"""<div class="runtime-metadata__section">
+        <h3>Report metadata</h3>
+        {report_fields}
+      </div>{ranking_metadata_section}"""
     return _render_html_details("Runtime metadata", body, class_name="runtime-metadata")
 
 
