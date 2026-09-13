@@ -585,6 +585,45 @@ def _assert_details_closed(node: _HtmlElement) -> None:
     assert "open" not in node.attrs
 
 
+def _ranking_pairs(records) -> set[tuple[int, str]]:
+    return {(record.rank, record.code) for record in records}
+
+
+def _row_rank_code_pairs(rows: list[_HtmlElement]) -> set[tuple[int, str]]:
+    return {(_extract_leading_rank(row), _extract_first_code(row)) for row in rows}
+
+
+def _row_detail_controls(row: _HtmlElement) -> list[_HtmlElement]:
+    controls = row.select("details.ranking-detail")
+    if controls:
+        return controls
+    return [
+        child
+        for child in row.children
+        if isinstance(child, _HtmlElement)
+        and child.tag == "details"
+        and child.select("summary")
+    ]
+
+
+def _assert_rows_have_scoped_ranking_details(rows, expected_records) -> None:
+    expected_pairs = _ranking_pairs(expected_records)
+
+    assert _row_rank_code_pairs(rows) == expected_pairs
+
+    actual_pairs: set[tuple[int, str]] = set()
+    for row in rows:
+        controls = _row_detail_controls(row)
+        pair = (_extract_leading_rank(row), _extract_first_code(row))
+        assert len(controls) == 1, (
+            f"expected one scoped detail control for ranking row {pair!r}"
+        )
+        _assert_details_closed(controls[0])
+        actual_pairs.add(pair)
+
+    assert actual_pairs == expected_pairs
+
+
 def _document_with_shifted_watchlist_date(market_rankings) -> ReportDocument:
     document = _document(name="visible", market_rankings=market_rankings)
     shifted_stock = document.stocks[0].model_copy(
@@ -1004,7 +1043,10 @@ def test_market_scan_html_contract_limits_and_orders_consensus_cards(
 
 def test_market_scan_html_contract_uses_compact_rankings_and_full_disclosure():
     document = _document(name="visible", market_rankings=_market_rankings())
-    root = _html_tree(render_html(document))
+    html = render_html(document)
+    root = _html_tree(html)
+    expected_trend_visible = list(document.market_rankings.trend[:10])
+    expected_trend_full = list(document.market_rankings.trend[10:])
     expected_balanced = list(document.market_rankings.balanced)
 
     trend_visible = _require_one(
@@ -1025,6 +1067,10 @@ def test_market_scan_html_contract_uses_compact_rankings_and_full_disclosure():
     trend_full_rows = trend_full.select(".ranking-row")
     balanced_visible_rows = balanced_visible.select(".ranking-row")
 
+    assert root.select(".ranking-table") == []
+    assert root.select(".ranking-table-wrap") == []
+    assert "<table" not in html.lower()
+    assert root.select("article.stock") == []
     _require_one(trend_full, "summary")
     _assert_details_closed(trend_full)
     assert len(trend_visible_rows) == 10
@@ -1035,12 +1081,28 @@ def test_market_scan_html_contract_uses_compact_rankings_and_full_disclosure():
         range(11, 31)
     )
     assert len(balanced_visible_rows) == 5
+    assert _row_rank_code_pairs(trend_visible_rows) == _ranking_pairs(
+        expected_trend_visible
+    )
+    assert _row_rank_code_pairs(trend_full_rows) == _ranking_pairs(expected_trend_full)
     assert [_extract_leading_rank(row) for row in balanced_visible_rows] == [
         ranking.rank for ranking in expected_balanced
     ]
     assert [_extract_first_code(row) for row in balanced_visible_rows] == [
         ranking.code for ranking in expected_balanced
     ]
+    _assert_rows_have_scoped_ranking_details(
+        trend_visible_rows,
+        expected_trend_visible,
+    )
+    _assert_rows_have_scoped_ranking_details(
+        trend_full_rows,
+        expected_trend_full,
+    )
+    _assert_rows_have_scoped_ranking_details(
+        balanced_visible_rows,
+        expected_balanced,
+    )
     for row, ranking in zip(balanced_visible_rows, expected_balanced, strict=True):
         row_text = row.normalized_text()
         assert ranking.name in row_text
@@ -1053,12 +1115,24 @@ def test_market_scan_html_contract_keeps_detail_fields_and_failure_warning():
     root = _html_tree(render_html(document))
 
     warning = _require_one(root, ".ranking-warning")
-    trend_profile = _require_one(root, '.ranking-profile[data-profile="trend"]')
-    detail = next(
-        item
-        for item in trend_profile.select("details.ranking-detail")
-        if document.market_rankings.trend[0].code in item.normalized_text()
+    trend_visible = _require_one(
+        root,
+        '.ranking-profile[data-profile="trend"] .ranking-visible',
     )
+    detail = _row_detail_controls(
+        next(
+            row
+            for row in trend_visible.select(".ranking-row")
+            if (
+                _extract_leading_rank(row),
+                _extract_first_code(row),
+            )
+            == (
+                document.market_rankings.trend[0].rank,
+                document.market_rankings.trend[0].code,
+            )
+        )
+    )[0]
     runtime_metadata = _require_one(root, "details.runtime-metadata")
 
     assert warning.normalized_text()
@@ -1125,6 +1199,7 @@ def test_market_scan_html_contract_retains_watchlist_fields_and_none_states():
 
     stock_cards = root.select("article.stock-card")
     assert len(stock_cards) == 2
+    assert root.select("article.stock") == []
 
     primary_stock = document.stocks[0]
     primary_card = next(
