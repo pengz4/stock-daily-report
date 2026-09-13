@@ -292,6 +292,7 @@ def _market_rankings_unavailable():
 
 def _market_rankings_no_consensus():
     metadata = _market_rankings_metadata()
+    metadata["failure_counts"] = ()
     trend = (
         _market_ranking_record(
             code="600100",
