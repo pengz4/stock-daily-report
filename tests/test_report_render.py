@@ -1041,6 +1041,79 @@ def test_market_scan_html_contract_limits_and_orders_consensus_cards(
         assert f"{ranking.balanced_score:.2f}" in balanced.normalized_text()
 
 
+def test_market_scan_html_contract_orders_tied_consensus_cards_by_code():
+    base_document = _document(name="visible", market_rankings=_market_rankings())
+
+    # This intentionally bypasses model validation because valid rankings cannot
+    # contain identical (trend_rank, balanced_rank) pairs; the synthetic tie
+    # exercises the renderer's defensive deterministic sort-by-code fallback.
+    tied_consensus = (
+        report_models.MarketConsensusRanking.model_construct(
+            code="600519",
+            name="贵州茅台",
+            trend_rank=1,
+            trend_score=82.0,
+            balanced_rank=1,
+            balanced_score=76.0,
+            trend_components=_market_ranking_components(90.0, 80.0, 70.0, 60.0, 50.0),
+            balanced_components=_market_ranking_components(
+                90.0, 80.0, 70.0, 60.0, 50.0
+            ),
+            evidence_codes=("close_above_ma20",),
+            risk_codes=("elevated_volatility",),
+            latest_trade_date=date(2026, 9, 4),
+            provider_name="fixture",
+        ),
+        report_models.MarketConsensusRanking.model_construct(
+            code="000001",
+            name="平安银行",
+            trend_rank=1,
+            trend_score=82.0,
+            balanced_rank=1,
+            balanced_score=76.0,
+            trend_components=_market_ranking_components(90.0, 80.0, 70.0, 60.0, 50.0),
+            balanced_components=_market_ranking_components(
+                90.0, 80.0, 70.0, 60.0, 50.0
+            ),
+            evidence_codes=("close_above_ma20",),
+            risk_codes=("elevated_volatility",),
+            latest_trade_date=date(2026, 9, 4),
+            provider_name="fixture",
+        ),
+    )
+    tied_rankings = report_models.MarketRankings.model_construct(
+        status="available",
+        unavailable_reason=None,
+        scan_date=base_document.market_rankings.scan_date,
+        generated_at=base_document.market_rankings.generated_at,
+        rule_version=base_document.market_rankings.rule_version,
+        config_hash=base_document.market_rankings.config_hash,
+        input_hash=base_document.market_rankings.input_hash,
+        provider_names=base_document.market_rankings.provider_names,
+        universe_count=base_document.market_rankings.universe_count,
+        eligible_count=base_document.market_rankings.eligible_count,
+        valid_count=base_document.market_rankings.valid_count,
+        coverage=base_document.market_rankings.coverage,
+        exclusion_counts=base_document.market_rankings.exclusion_counts,
+        failure_counts=base_document.market_rankings.failure_counts,
+        trend=base_document.market_rankings.trend,
+        balanced=base_document.market_rankings.balanced,
+        consensus=tied_consensus,
+    )
+    document = ReportDocument.model_construct(
+        schema_version=base_document.schema_version,
+        metadata=base_document.metadata,
+        market_summary=base_document.market_summary,
+        market_rankings=tied_rankings,
+        stocks=base_document.stocks,
+    )
+
+    root = _html_tree(render_html(document))
+    cards = root.select(".consensus-card")
+
+    assert [_extract_first_code(card) for card in cards[:2]] == ["000001", "600519"]
+
+
 def test_market_scan_html_contract_uses_compact_rankings_and_full_disclosure():
     document = _document(name="visible", market_rankings=_market_rankings())
     html = render_html(document)
