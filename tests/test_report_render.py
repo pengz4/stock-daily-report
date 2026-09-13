@@ -1005,6 +1005,7 @@ def test_market_scan_html_contract_limits_and_orders_consensus_cards(
 def test_market_scan_html_contract_uses_compact_rankings_and_full_disclosure():
     document = _document(name="visible", market_rankings=_market_rankings())
     root = _html_tree(render_html(document))
+    expected_balanced = list(document.market_rankings.balanced)
 
     trend_visible = _require_one(
         root,
@@ -1034,6 +1035,16 @@ def test_market_scan_html_contract_uses_compact_rankings_and_full_disclosure():
         range(11, 31)
     )
     assert len(balanced_visible_rows) == 5
+    assert [_extract_leading_rank(row) for row in balanced_visible_rows] == [
+        ranking.rank for ranking in expected_balanced
+    ]
+    assert [_extract_first_code(row) for row in balanced_visible_rows] == [
+        ranking.code for ranking in expected_balanced
+    ]
+    for row, ranking in zip(balanced_visible_rows, expected_balanced, strict=True):
+        row_text = row.normalized_text()
+        assert ranking.name in row_text
+        assert f"{ranking.score:.2f}" in row_text
     assert balanced_profile.select(".full-ranking") == []
 
 
