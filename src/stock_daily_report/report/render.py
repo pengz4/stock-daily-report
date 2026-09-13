@@ -520,7 +520,11 @@ def _render_consensus_card(record: MarketConsensusRanking) -> str:
         <p>Date: {_html(record.latest_trade_date.isoformat())}</p>
         <p>Provider: {_html(record.provider_name)}</p>
       </div>
-      {_render_html_details("Audit details", detail_body, class_name="consensus-detail")}
+      {_render_html_details(
+          f"Audit details for {record.code}",
+          detail_body,
+          class_name="consensus-detail",
+      )}
     </article>"""
 
 
@@ -546,7 +550,7 @@ def _render_ranking_profile(
         )
         full_ranking = (
             _render_html_details(
-                "View full ranking (11–30)",
+                f"{profile_title} full ranking (11–30)",
                 full_rows,
                 class_name="full-ranking",
             )
@@ -628,7 +632,7 @@ def _render_ranking_detail(
         )
     )
     return _render_html_details(
-        "Details",
+        f"Details for #{record.rank} {record.code}",
         "".join(fields),
         class_name="ranking-detail",
     )
