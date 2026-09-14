@@ -32,7 +32,9 @@ from stock_daily_report.pipeline import (
     PublicationRollbackError,
     run_daily_report,
 )
+from stock_daily_report.providers.base import ProviderError
 from stock_daily_report.providers.service import CacheRollbackError, MarketDataService
+from stock_daily_report.providers.universe import UniverseQuote
 from stock_daily_report.quality.checks import DataQualitySettings
 from stock_daily_report.snapshots import SnapshotError, load_snapshot
 
@@ -3560,3 +3562,155 @@ def test_static_site_index_links_to_relative_dated_report_pages(tmp_path, fixtur
 
     site_index = (tmp_path / "site/index.html").read_text(encoding="utf-8")
     assert "../reports/2026-09-04/index.html" in site_index
+
+
+class FakeUniverseProvider:
+    def __init__(self, quotes=None, error=None):
+        self.quotes = quotes or []
+        self.error = error
+        self.calls = 0
+
+    def get_quotes(self):
+        self.calls += 1
+        if self.error is not None:
+            raise self.error
+        return list(self.quotes)
+
+
+def _light_quote(code, name, price, change_pct, amount):
+    return UniverseQuote(
+        code=code,
+        name=name,
+        market="SH" if code.startswith("6") else "SZ",
+        latest_price=price,
+        volume=1_000.0,
+        amount=amount,
+        quote_date=date(2026, 9, 4),
+        change_pct=change_pct,
+    )
+
+
+def test_priority_watchlist_analyzes_core_only_and_renders_pool_overview(
+    tmp_path, fixture_settings
+):
+    watchlist = Watchlist(
+        stocks=[
+            {
+                "code": "600519",
+                "name": "贵州茅台",
+                "group": "consumer",
+                "priority": "core",
+            },
+            {
+                "code": "000001",
+                "name": "平安银行",
+                "group": "自选股",
+                "priority": "extended",
+            },
+        ]
+    )
+    provider = RecordingProvider({"600519": make_bars("600519")})
+    universe = FakeUniverseProvider(
+        quotes=[
+            _light_quote("600519", "贵州茅台", 1500.0, 1.23, 3_000_000.0),
+            _light_quote("000001", "平安银行", 10.5, -0.45, 900_000.0),
+        ]
+    )
+
+    outputs = run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=provider,
+        universe_provider=universe,
+        report_date=date(2026, 9, 4),
+        now=lambda: datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
+    )
+
+    assert provider.calls == ["600519"]
+    assert [stock.code for stock in outputs.report.stocks] == ["600519"]
+    assert universe.calls == 1
+    pool = outputs.report.pool_overview
+    assert pool is not None
+    assert pool.unavailable_reason is None
+    assert {row.code for row in pool.rows} == {"600519", "000001"}
+    extended_row = next(row for row in pool.rows if row.code == "000001")
+    assert extended_row.latest_price == pytest.approx(10.5)
+    assert extended_row.change_pct == pytest.approx(-0.45)
+    assert extended_row.priority == "extended"
+
+    document = json.loads(outputs.json_path.read_text(encoding="utf-8"))
+    assert document["pool_overview"]["quote_date"] == "2026-09-04"
+    markdown = outputs.markdown_path.read_text(encoding="utf-8")
+    html = outputs.html_path.read_text(encoding="utf-8")
+    assert "## 全池速览" in markdown
+    assert "平安银行" in markdown
+    assert 'class="pool-overview"' in html
+    assert 'class="down"' in html
+
+
+def test_light_quote_failure_degrades_to_unavailable_pool_overview(
+    tmp_path, fixture_settings
+):
+    watchlist = Watchlist(
+        stocks=[
+            {"code": "600519", "name": "贵州茅台", "priority": "core"},
+            {"code": "000001", "name": "平安银行", "priority": "extended"},
+        ]
+    )
+    universe = FakeUniverseProvider(
+        error=ProviderError("fake-universe", "network_error", "boom")
+    )
+
+    outputs = run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        universe_provider=universe,
+        report_date=date(2026, 9, 4),
+        now=lambda: datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
+    )
+
+    pool = outputs.report.pool_overview
+    assert pool is not None
+    assert pool.unavailable_reason is not None
+    assert all(row.latest_price is None for row in pool.rows)
+    assert [stock.code for stock in outputs.report.stocks] == ["600519"]
+
+
+def test_watchlist_with_priorities_requires_at_least_one_core_stock(
+    tmp_path, fixture_settings
+):
+    watchlist = Watchlist(
+        stocks=[{"code": "600519", "name": "贵州茅台", "priority": "extended"}]
+    )
+
+    with pytest.raises(ValueError, match="no 'core' stock"):
+        run_daily_report(
+            fixture_settings,
+            output_root=tmp_path,
+            watchlist=watchlist,
+            provider=RecordingProvider({"600519": make_bars("600519")}),
+            report_date=date(2026, 9, 4),
+            now=lambda: datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
+        )
+
+
+def test_legacy_watchlist_without_priority_keeps_full_analysis(
+    tmp_path, fixture_settings
+):
+    watchlist = Watchlist(stocks=[{"code": "600519", "name": "贵州茅台"}])
+    provider = RecordingProvider({"600519": make_bars("600519")})
+
+    outputs = run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=provider,
+        report_date=date(2026, 9, 4),
+        now=lambda: datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
+    )
+
+    assert outputs.report.pool_overview is None
+    assert [stock.code for stock in outputs.report.stocks] == ["600519"]

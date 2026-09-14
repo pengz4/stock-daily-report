@@ -10,6 +10,8 @@ from stock_daily_report.report.models import (
     MarketRanking,
     MarketRankingComponents,
     MarketRankings,
+    PoolOverview,
+    PoolOverviewRow,
     ReportDocument,
     StockReport,
 )
@@ -54,10 +56,11 @@ def render_markdown(report: ReportDocument) -> str:
         "",
     ]
     lines.extend(_render_market_rankings_markdown(report.market_rankings))
+    lines.extend(_render_pool_overview_markdown(report.pool_overview))
     lines.extend(
         [
         "## Watchlist",
-        "",
+        ""
         ]
     )
     for stock in report.stocks:
@@ -73,6 +76,7 @@ def render_html(report: ReportDocument) -> str:
     header = _render_report_header(report, report.market_rankings)
     market_summary = _render_market_summary_html(report)
     market_rankings = _render_market_rankings_html(report.market_rankings)
+    pool_overview = _render_pool_overview_html(report.pool_overview)
     stock_sections = "\n".join(_render_watchlist_card(stock) for stock in report.stocks)
     return f"""<!doctype html>
 <html lang="zh-CN">
@@ -88,6 +92,7 @@ def render_html(report: ReportDocument) -> str:
     {header}
     {market_summary}
     {market_rankings}
+    {pool_overview}
     <section>
       <h2>自选股跟踪</h2>
       {stock_sections}
@@ -231,6 +236,110 @@ def _render_consensus_markdown(record: MarketConsensusRanking) -> str:
         )
         + " |"
     )
+
+
+def _render_pool_overview_markdown(pool: PoolOverview | None) -> list[str]:
+    """Render the lightweight full-pool overview table; empty in legacy mode."""
+    if pool is None:
+        return []
+    lines = [
+        "",
+        "## 全池速览",
+        "",
+        f"- 行情快照日期: {_md(pool.quote_date.isoformat())}",
+    ]
+    if pool.unavailable_reason:
+        lines.append(f"- 行情快照不可用: {_md(pool.unavailable_reason)}")
+    lines.extend(
+        [
+            "",
+            "| 代码 | 名称 | 分组 | 层级 | 最新价 | 涨跌幅% | 成交额(元) |",
+            "| ---: | --- | --- | --- | ---: | ---: | ---: |",
+        ]
+    )
+    for row in _pool_rows_for_display(pool):
+        lines.append(
+            "| "
+            + " | ".join(
+                (
+                    _md(row.code),
+                    _md(row.name),
+                    _md(row.group),
+                    _md(row.priority),
+                    _EM_DASH
+                    if row.latest_price is None
+                    else f"{row.latest_price:.2f}",
+                    _EM_DASH
+                    if row.change_pct is None
+                    else f"{row.change_pct:+.2f}",
+                    _EM_DASH if row.amount is None else f"{row.amount:.0f}",
+                )
+            )
+            + " |"
+        )
+    return lines
+
+
+def _pool_rows_for_display(pool: PoolOverview) -> Sequence[PoolOverviewRow]:
+    """Order rows by change percent descending, missing values last."""
+    return sorted(
+        pool.rows,
+        key=lambda row: (
+            row.change_pct is None,
+            -(row.change_pct if row.change_pct is not None else 0.0),
+            row.code,
+        ),
+    )
+
+
+def _render_pool_overview_html(pool: PoolOverview | None) -> str:
+    """Render the lightweight full-pool overview section for the HTML page."""
+    if pool is None:
+        return ""
+    unavailable_html = (
+        f'\n      <p class="pool-overview-warning">行情快照不可用：'
+        f"{_html(pool.unavailable_reason)}</p>"
+        if pool.unavailable_reason
+        else ""
+    )
+    rows = "\n".join(
+        f"""<tr class="pool-row" data-priority="{_html(row.priority)}">
+        <td>{_html(row.code)}</td>
+        <td>{_html(row.name)}</td>
+        <td>{_html(row.group)}</td>
+        <td>{_html(row.priority)}</td>
+        <td class="numeric">{_format_html_float(row.latest_price)}</td>
+        <td class="numeric {_pool_change_class(row.change_pct)}">{_format_html_float(row.change_pct)}</td>
+        <td class="numeric">{_format_html_amount(row.amount)}</td>
+      </tr>"""
+        for row in _pool_rows_for_display(pool)
+    )
+    return f"""<section class="pool-overview">
+      <h2>全池速览</h2>{unavailable_html}
+      <p>行情快照日期：{_html(pool.quote_date.isoformat())}</p>
+      <table class="pool-table">
+        <thead>
+          <tr><th>代码</th><th>名称</th><th>分组</th><th>层级</th><th>最新价</th><th>涨跌幅%</th><th>成交额(元)</th></tr>
+        </thead>
+        <tbody>
+{rows}
+        </tbody>
+      </table>
+    </section>"""
+
+
+def _pool_change_class(change_pct: float | None) -> str:
+    if change_pct is None:
+        return ""
+    if change_pct > 0:
+        return "up"
+    if change_pct < 0:
+        return "down"
+    return "flat"
+
+
+def _format_html_amount(amount: float | None) -> str:
+    return _EM_DASH if amount is None else f"{amount:.0f}"
 
 
 def _render_market_rankings_html(rankings: MarketRankings) -> str:

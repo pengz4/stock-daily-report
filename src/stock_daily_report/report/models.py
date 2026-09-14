@@ -289,6 +289,30 @@ class StructureSummary(BaseModel):
     observations: tuple[str, ...]
 
 
+class PoolOverviewRow(BaseModel):
+    """One lightweight watchlist row in the pool overview table."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    code: str = Field(pattern=r"^\d{6}$")
+    name: str = Field(min_length=1)
+    group: str = Field(min_length=1)
+    priority: Literal["core", "extended"]
+    latest_price: float | None = None
+    change_pct: float | None = None
+    amount: float | None = None
+
+
+class PoolOverview(BaseModel):
+    """Bulk-quote snapshot covering the full watchlist, deep analysis aside."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    quote_date: date
+    rows: tuple[PoolOverviewRow, ...]
+    unavailable_reason: str | None = None
+
+
 class StockReport(BaseModel):
     """One validated watchlist security in a daily report."""
 
@@ -331,6 +355,7 @@ class ReportDocument(BaseModel):
     market_summary: MarketSummary
     market_rankings: MarketRankings
     stocks: tuple[StockReport, ...]
+    pool_overview: PoolOverview | None = None
 
 
 __all__ = [
@@ -343,6 +368,8 @@ __all__ = [
     "MarketRankingsUnavailableReason",
     "MarketScanReasonCount",
     "MarketSummary",
+    "PoolOverview",
+    "PoolOverviewRow",
     "ReportDocument",
     "ReportMetadata",
     "ReportMetrics",

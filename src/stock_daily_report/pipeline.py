@@ -35,10 +35,11 @@ from stock_daily_report.market_scan.report import (
     MarketScanArtifactError,
     load_scan_artifact,
 )
-from stock_daily_report.models import DailyBar, Settings, Watchlist
+from stock_daily_report.models import DailyBar, Settings, Watchlist, WatchlistStock
 from stock_daily_report.providers.akshare import AkShareMarketDataProvider
 from stock_daily_report.providers.base import MarketDataProvider, ProviderError
 from stock_daily_report.providers.fixture import FixtureMarketDataProvider
+from stock_daily_report.providers.universe import AkShareUniverseProvider, UniverseQuote
 from stock_daily_report.providers.service import (
     CacheRollbackError,
     FetchedBars,
@@ -63,6 +64,8 @@ from stock_daily_report.report.models import (
     ReportDocument,
     ReportMetadata,
     ReportMetrics,
+    PoolOverview,
+    PoolOverviewRow,
     StockReport,
     StructureLevel,
     StructureSummary,
@@ -168,6 +171,48 @@ class ReportOutputs:
     report: ReportDocument
 
 
+def _split_watchlist_by_priority(
+    watchlist: Watchlist,
+) -> tuple[list[WatchlistStock], list[WatchlistStock]]:
+    """Split the watchlist into (deep-analysis, lightweight) stocks.
+
+    Legacy lists without any explicit priority analyse every stock in depth.
+    Once any priority is set, only ``core`` stocks are analysed in depth and
+    the remaining ``extended`` stocks receive a lightweight pool-overview row
+    sourced from one bulk quote snapshot.
+    """
+    if not any(stock.priority is not None for stock in watchlist.stocks):
+        return list(watchlist.stocks), []
+    core = [stock for stock in watchlist.stocks if stock.priority == "core"]
+    extended = [stock for stock in watchlist.stocks if stock.priority != "core"]
+    if not core:
+        raise ValueError(
+            "watchlist sets priorities but contains no 'core' stock; mark at "
+            "least one stock with priority: core"
+        )
+    return core, extended
+
+
+def _fetch_light_quotes(
+    extended_stocks: Sequence[WatchlistStock],
+    universe_provider: AkShareUniverseProvider | None,
+) -> tuple[dict[str, UniverseQuote], str | None]:
+    """Fetch one bulk quote snapshot for the lightweight pool.
+
+    A provider failure degrades gracefully: the report still publishes with
+    deep analysis for core stocks, and the pool overview records the reason.
+    """
+    if not extended_stocks:
+        return {}, None
+    provider = universe_provider or AkShareUniverseProvider()
+    try:
+        quotes = provider.get_quotes()
+    except ProviderError as error:
+        return {}, str(error)
+    wanted = {stock.code for stock in extended_stocks}
+    return {quote.code: quote for quote in quotes if quote.code in wanted}, None
+
+
 def run_daily_report(
     settings: Settings | str | Path,
     *,
@@ -176,6 +221,7 @@ def run_daily_report(
     provider: MarketDataProvider | None = None,
     service: MarketDataService | None = None,
     providers: Mapping[str, MarketDataProvider] | None = None,
+    universe_provider: AkShareUniverseProvider | None = None,
     fixture_directory: str | Path | None = None,
     report_date: date | None = None,
     now: Callable[[], datetime] | None = None,
@@ -194,6 +240,7 @@ def run_daily_report(
         load_settings(settings) if isinstance(settings, (str, Path)) else settings
     )
     active_watchlist = watchlist or _load_default_watchlist()
+    core_stocks, extended_stocks = _split_watchlist_by_priority(active_watchlist)
     generated_at = _normalise_now(now)
     active_report_date = report_date or generated_at.date()
     if not isinstance(active_report_date, date) or isinstance(
@@ -204,6 +251,8 @@ def run_daily_report(
     root.mkdir(parents=True, exist_ok=True)
     failures: list[PipelineFailure] = []
     fetched: dict[str, FetchedBars] = {}
+    light_quotes: dict[str, UniverseQuote] = {}
+    light_quote_error: str | None = None
     snapshot_for_reuse: InputSnapshot | None = None
     if reuse_existing_snapshot:
         snapshot_for_reuse = load_snapshot(
@@ -251,7 +300,8 @@ def run_daily_report(
             _recover_pending_publications(root)
 
         def fetch_all() -> None:
-            for stock in sorted(active_watchlist.stocks, key=lambda item: item.code):
+            nonlocal light_quotes, light_quote_error
+            for stock in sorted(core_stocks, key=lambda item: item.code):
                 try:
                     if snapshot_for_reuse is not None:
                         bars = snapshot_for_reuse.bars_by_code.get(stock.code)
@@ -331,6 +381,9 @@ def run_daily_report(
                     failures.append(
                         PipelineFailure(stock.code, str(error), tuple(issue_codes))
                     )
+            light_quotes, light_quote_error = _fetch_light_quotes(
+                extended_stocks, universe_provider
+            )
             if failures:
                 raise PipelineError(failures)
 
@@ -357,6 +410,8 @@ def run_daily_report(
                         watchlist=active_watchlist,
                         fetched=fetched,
                         bars_by_code=bars_by_code,
+                        light_quotes=light_quotes,
+                        light_quote_error=light_quote_error,
                         service=active_service,
                         json_path=json_path,
                         markdown_path=markdown_path,
@@ -1318,6 +1373,8 @@ def _publish_report_transaction(
     watchlist: Watchlist,
     fetched: Mapping[str, FetchedBars],
     bars_by_code: Mapping[str, Sequence[DailyBar]],
+    light_quotes: Mapping[str, UniverseQuote],
+    light_quote_error: str | None,
     service: MarketDataService | None,
     json_path: Path,
     markdown_path: Path,
@@ -1346,6 +1403,8 @@ def _publish_report_transaction(
             report_date=report_date,
             generated_at=generated_at,
             market_rankings=market_rankings,
+            light_quotes=light_quotes,
+            light_quote_error=light_quote_error,
         )
 
         staged_report_dir = transaction_root / "reports" / report_date.isoformat()
@@ -2056,12 +2115,21 @@ def _build_report(
     report_date: date,
     generated_at: datetime,
     market_rankings: MarketRankings,
+    light_quotes: Mapping[str, UniverseQuote],
+    light_quote_error: str | None,
 ) -> ReportDocument:
     rule_hash = configuration_hash(resolve_risk_rules(settings))
     stocks: list[StockReport] = []
     latest_source_timestamp: datetime | None = None
     provider_names: set[str] = set()
-    for stock in sorted(watchlist.stocks, key=lambda item: item.code):
+    # Only core stocks receive full analysis; extended stocks appear in the
+    # lightweight pool overview instead of consuming history and indicators.
+    analyzed = [
+        stock
+        for stock in sorted(watchlist.stocks, key=lambda item: item.code)
+        if stock.code in fetched
+    ]
+    for stock in analyzed:
         item = fetched[stock.code]
         bars = list(item.bars)
         metrics = calculate_technical_metrics(bars)
@@ -2137,6 +2205,47 @@ def _build_report(
         market_summary=_build_market_summary(fetched),
         market_rankings=market_rankings,
         stocks=tuple(stocks),
+        pool_overview=_build_pool_overview(
+            watchlist,
+            light_quotes,
+            light_quote_error,
+            report_date=report_date,
+        ),
+    )
+
+
+def _build_pool_overview(
+    watchlist: Watchlist,
+    light_quotes: Mapping[str, UniverseQuote],
+    light_quote_error: str | None,
+    *,
+    report_date: date,
+) -> PoolOverview | None:
+    """Build the lightweight full-pool overview, or None in legacy mode."""
+    if not light_quotes and light_quote_error is None:
+        return None
+    rows: list[PoolOverviewRow] = []
+    for stock in sorted(watchlist.stocks, key=lambda item: item.code):
+        quote = light_quotes.get(stock.code)
+        rows.append(
+            PoolOverviewRow(
+                code=stock.code,
+                name=stock.name,
+                group=stock.group,
+                priority=stock.priority or "core",
+                latest_price=quote.latest_price if quote else None,
+                change_pct=quote.change_pct if quote else None,
+                amount=quote.amount if quote else None,
+            )
+        )
+    quote_dates = {quote.quote_date for quote in light_quotes.values()}
+    quote_date = (
+        max(quote_dates) if quote_dates else report_date
+    )
+    return PoolOverview(
+        quote_date=quote_date,
+        rows=tuple(rows),
+        unavailable_reason=light_quote_error,
     )
 
 

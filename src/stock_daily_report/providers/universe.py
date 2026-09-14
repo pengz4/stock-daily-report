@@ -38,6 +38,8 @@ class UniverseQuote:
     volume: float | None
     amount: float | None
     quote_date: date
+    # Optional percent change; only the primary AkShare endpoint exposes it.
+    change_pct: float | None = None
 
     @property
     def exchange(self) -> Market:
@@ -391,6 +393,13 @@ class AkShareUniverseProvider:
                 allow_exchange_prefix=endpoint == _FALLBACK_ENDPOINT,
             )
             name = _normalize_name(record["名称"])
+            # The percent-change column is optional: the primary endpoint
+            # exposes "涨跌幅" while the sina fallback does not.
+            change_pct = (
+                _optional_float(record["涨跌幅"], "涨跌幅")
+                if "涨跌幅" in record
+                else None
+            )
             return UniverseQuote(
                 code=code,
                 name=name,
@@ -399,6 +408,7 @@ class AkShareUniverseProvider:
                 volume=_optional_float(record["成交量"], "成交量"),
                 amount=_optional_float(record["成交额"], "成交额"),
                 quote_date=quote_date,
+                change_pct=change_pct,
             )
         except ProviderError:
             raise

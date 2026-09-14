@@ -741,3 +741,26 @@ def test_unsupported_instruments_and_codes_are_rejected(code):
         match=rf"akshare\[unsupported_symbol\].*{code}",
     ):
         provider.get_quotes()
+
+
+def test_universe_quote_parses_optional_change_pct():
+    row = _row("600519", "贵州茅台")
+    row["涨跌幅"] = 1.23
+
+    quote = AkShareUniverseProvider(
+        fetcher=lambda: [row],
+        clock=lambda: date(2026, 9, 11),
+        expected_codes_fetcher=lambda: _expected_codes("600519"),
+    ).get_quotes()[0]
+
+    assert quote.change_pct == pytest.approx(1.23)
+
+
+def test_universe_quote_change_pct_defaults_to_none_without_column():
+    quote = AkShareUniverseProvider(
+        fetcher=lambda: [_row("600519", "贵州茅台")],
+        clock=lambda: date(2026, 9, 11),
+        expected_codes_fetcher=lambda: _expected_codes("600519"),
+    ).get_quotes()[0]
+
+    assert quote.change_pct is None
