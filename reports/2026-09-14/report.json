@@ -2,7 +2,7 @@
   "schema_version": 2,
   "metadata": {
     "report_date": "2026-09-14",
-    "generated_at": "2026-09-14T05:32:36.688790Z",
+    "generated_at": "2026-09-14T05:47:41.584737Z",
     "latest_source_timestamp": "2026-09-14T05:32:36.688790Z",
     "snapshot_path": "snapshots/2026-09-14/input.json",
     "snapshot_hash": "2845ee84db440d71a80ff2b6054858a5f820978d354e363963501cb6e97d1196",
@@ -22,19 +22,57 @@
   },
   "market_rankings": {
     "status": "unavailable",
-    "unavailable_reason": "scan_artifact_missing",
-    "scan_date": null,
-    "generated_at": null,
-    "rule_version": null,
-    "config_hash": null,
-    "input_hash": null,
-    "provider_names": [],
-    "universe_count": null,
-    "eligible_count": null,
-    "valid_count": null,
-    "coverage": null,
-    "exclusion_counts": [],
-    "failure_counts": [],
+    "unavailable_reason": "scan_incomplete",
+    "scan_date": "2026-09-14",
+    "generated_at": "2026-09-14T05:37:00.723080Z",
+    "rule_version": "market-scan-v1",
+    "config_hash": "339411c28627ae1c710b761873f3c6c59507933ba9a4207901dadb83e071d598",
+    "input_hash": "18dca3ea0c29f5366cc6551b2020f7148f33985fb3a89fbba86060f46ab4cfa2",
+    "provider_names": [
+      "MarketDataService",
+      "akshare",
+      "sina"
+    ],
+    "universe_count": 5561,
+    "eligible_count": 3168,
+    "valid_count": 244,
+    "coverage": 0.07702020202020202,
+    "exclusion_counts": [
+      {
+        "code": "data_quality_rejected",
+        "count": 956
+      },
+      {
+        "code": "insufficient_history",
+        "count": 6
+      },
+      {
+        "code": "insufficient_latest_amount",
+        "count": 2344
+      },
+      {
+        "code": "invalid_latest_quote",
+        "count": 12
+      },
+      {
+        "code": "special_treatment_name",
+        "count": 204
+      },
+      {
+        "code": "stale_last_trade_date",
+        "count": 953
+      },
+      {
+        "code": "suspended_quote",
+        "count": 12
+      }
+    ],
+    "failure_counts": [
+      {
+        "code": "candidate_limit_exceeded",
+        "count": 1968
+      }
+    ],
     "trend": [],
     "balanced": [],
     "consensus": []
