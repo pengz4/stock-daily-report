@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import shutil
+import sys
 import tempfile
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import contextmanager
@@ -387,10 +388,16 @@ def run_daily_report(
                     if snapshot_for_reuse is not None:
                         bars = snapshot_for_reuse.bars_by_code.get(stock.code)
                         if bars is None:
-                            raise SnapshotError(
-                                f"Existing snapshot is missing watchlist code: "
-                                f"{stock.code}"
+                            # The snapshot for a date is frozen, so a code that
+                            # was not part of the original publication cannot be
+                            # analysed for that same date. It is picked up by the
+                            # next report date instead of failing the run.
+                            print(
+                                f"Skipping {stock.code}: the frozen snapshot for "
+                                f"{active_report_date.isoformat()} has no bars for it",
+                                file=sys.stderr,
                             )
+                            continue
                         bar_providers = tuple(
                             sorted({bar.provider_name for bar in bars})
                         )
@@ -462,6 +469,18 @@ def run_daily_report(
                     failures.append(
                         PipelineFailure(stock.code, str(error), tuple(issue_codes))
                     )
+            if not fetched:
+                raise PipelineError(
+                    [
+                        PipelineFailure(
+                            "snapshot_selection_unavailable",
+                            "The frozen snapshot for "
+                            f"{active_report_date.isoformat()} contains none of the "
+                            "selected watchlist codes; the deep-analysis section "
+                            "refreshes on the next report date",
+                        )
+                    ]
+                )
             light_quotes, light_quote_error = _fetch_light_quotes(
                 extended_stocks, universe_provider
             )

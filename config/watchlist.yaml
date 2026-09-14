@@ -108,9 +108,6 @@ stocks:
   - code: "000813"
     name: 德展健康
     group: 自选股
-  - code: "000821"
-    name: ST京机
-    group: 钙钛矿
   - code: "000823"
     name: 超声电子
     group: 自选股
@@ -137,9 +134,6 @@ stocks:
     group: 自选股
   - code: "000878"
     name: 云南铜业
-    group: 自选股
-  - code: "000903"
-    name: ST云动
     group: 自选股
   - code: "000937"
     name: 冀中能源
@@ -414,9 +408,6 @@ stocks:
   - code: "002671"
     name: 龙泉股份
     group: 自选股
-  - code: "002719"
-    name: ST麦趣
-    group: 自选股
   - code: "002734"
     name: 利民股份
     group: 自选股
@@ -513,9 +504,6 @@ stocks:
   - code: "300065"
     name: 海兰信
     group: boo
-  - code: "300081"
-    name: ST恒信
-    group: boo
   - code: "300085"
     name: 银之杰
     group: 自选股
@@ -525,9 +513,6 @@ stocks:
   - code: "300122"
     name: 智飞生物
     group: 十一入选
-  - code: "300123"
-    name: ST亚光
-    group: 自选股
   - code: "300124"
     name: 汇川技术
     group: 近期Follow
@@ -545,9 +530,6 @@ stocks:
     group: 诗酒
   - code: "300207"
     name: 欣旺达
-    group: 自选股
-  - code: "300212"
-    name: *ST易录
     group: 自选股
   - code: "300232"
     name: 洲明科技
@@ -816,9 +798,6 @@ stocks:
   - code: "301113"
     name: 雅艺科技
     group: 自选股
-  - code: "301117"
-    name: ST佳缘
-    group: 商业航天
   - code: "301118"
     name: 恒光股份
     group: 烟花爆竹
@@ -933,18 +912,12 @@ stocks:
   - code: "600171"
     name: 上海贝岭
     group: 自选股
-  - code: "600187"
-    name: *ST国中
-    group: 自选股
   - code: "600206"
     name: 有研新材
     group: 自选股
   - code: "600217"
     name: 中再资环
     group: 自选股
-  - code: "600239"
-    name: ST云城
-    group: 诗酒
   - code: "600256"
     name: 广汇能源
     group: 咔咔自选
@@ -1070,9 +1043,6 @@ stocks:
     group: 自选股
   - code: "600754"
     name: 锦江酒店
-    group: 自选股
-  - code: "600759"
-    name: ST洲际
     group: 自选股
   - code: "600760"
     name: 中航沈飞
@@ -1335,9 +1305,6 @@ stocks:
   - code: "603579"
     name: 荣泰健康
     group: 脑机接口
-  - code: "603595"
-    name: ST东尼
-    group: boo
   - code: "603610"
     name: 麒盛科技
     group: 脑机接口
