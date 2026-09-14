@@ -166,6 +166,16 @@ jobs:
               raise SystemExit(1)
 
           pool = report.pool_overview
+          # The deep-analysis section is stale when it predates the scan or
+          # when it analyses fewer names than the scan ranked (a sign that an
+          # earlier run snapshot only covered a subset).
+          ranked_codes = {
+              record.code
+              for record in (*scan.rankings.trend, *scan.rankings.balanced)
+          }
+          deep_codes = {stock.code for stock in report.stocks}
+          minimal_deep = min(20, len(ranked_codes))
+          deep_ok = len(deep_codes & ranked_codes) >= minimal_deep
           raise SystemExit(
               0
               if (
@@ -173,6 +183,7 @@ jobs:
                   and pool.scan_date == scan.report_date
                   and pool.config_hash == scan.config_hash
                   and pool.input_hash == scan.input_hash
+                  and deep_ok
               )
               else 1
           )
