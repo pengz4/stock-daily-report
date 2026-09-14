@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import html
 import shutil
 import sys
 from pathlib import Path
@@ -36,6 +37,7 @@ def stage_pages(root: str | Path, output: str | Path) -> None:
     _copy_public_tree(site_root, output_root / "site")
     _write_root_entry(output_root / "index.html")
     _copy_public_tree(reports_root, output_root / "reports")
+    _write_reports_index(output_root / "reports" / "index.html", reports_root)
 
 
 def _copy_public_tree(source: Path, destination: Path) -> None:
@@ -75,6 +77,51 @@ def _write_root_entry(path: Path) -> None:
 """,
         encoding="utf-8",
     )
+
+
+def _write_reports_index(path: Path, reports_root: Path) -> None:
+    """Write a directory index listing every dated report, relative to /reports/."""
+
+    report_dates = sorted(
+        {
+            child.name
+            for child in reports_root.iterdir()
+            if child.is_dir() and (child / "index.html").exists()
+        },
+        reverse=True,
+    )
+    links = "\n".join(
+        f'      <li><a href="{_html(report_date)}/index.html">{_html(report_date)}</a></li>'
+        for report_date in report_dates
+    )
+    if not links:
+        links = "      <li>No reports published yet.</li>"
+    path.write_text(
+        f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>A-share daily reports</title>
+  <link rel="stylesheet" href="../site/styles.css">
+</head>
+<body>
+  <main>
+    <h1>A-share daily reports</h1>
+    <p>Published dated reports.</p>
+    <ul>
+{links}
+    </ul>
+  </main>
+</body>
+</html>
+""",
+        encoding="utf-8",
+    )
+
+
+def _html(value: object) -> str:
+    return html.escape(str(value), quote=True)
 
 
 def main(argv: list[str] | None = None) -> int:
