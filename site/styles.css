@@ -77,6 +77,72 @@ a {
   box-shadow: inset 0.25rem 0 #059669;
 }
 
+.pool-overview {
+  border-top: 1px solid #d9e2ec;
+  margin-top: 1.5rem;
+  overflow-x: auto;
+  padding-top: 1rem;
+}
+
+.pool-overview p {
+  color: #486581;
+  font-size: 0.875rem;
+}
+
+.pool-overview-warning {
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  color: #9a3412;
+  padding: 0.5rem 0.75rem;
+}
+
+.pool-table {
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  margin-bottom: 1.5rem;
+  width: 100%;
+}
+
+.pool-table th,
+.pool-table td {
+  border: 1px solid #d9e2ec;
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.pool-table th {
+  background: #f0f4f8;
+  position: sticky;
+  top: 0;
+}
+
+.pool-table td.numeric,
+.pool-table th.numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.pool-table .pool-row[data-priority="core"] {
+  background: #eef4ff;
+}
+
+/* A股惯例：涨红跌绿 */
+.pool-table .up {
+  color: #c0392b;
+  font-weight: 600;
+}
+
+.pool-table .down {
+  color: #047857;
+  font-weight: 600;
+}
+
+.pool-table .flat {
+  color: #486581;
+}
+
 .report-page {
   --report-bg: #fcfdff;
   --report-panel: #ffffff;
