@@ -2143,6 +2143,8 @@ def _build_report(
 def _load_market_rankings(root: Path, report_date: date) -> MarketRankings:
     scan_path = root / "market-scans" / report_date.isoformat() / "scan.json"
     if not scan_path.exists():
+        if _scan_progress_exists(root, report_date):
+            return _unavailable_market_rankings("scan_incomplete")
         return _unavailable_market_rankings("scan_artifact_missing")
     try:
         artifact = load_scan_artifact(scan_path)
@@ -2158,6 +2160,13 @@ def _load_market_rankings(root: Path, report_date: date) -> MarketRankings:
             artifact,
         )
     return _market_rankings_from_artifact(artifact)
+
+
+def _scan_progress_exists(root: Path, report_date: date) -> bool:
+    """Return whether a resumable scan has an in-flight checkpoint."""
+
+    progress_path = root / "market-scans" / report_date.isoformat() / "progress.json"
+    return progress_path.exists()
 
 
 def _unavailable_market_rankings(

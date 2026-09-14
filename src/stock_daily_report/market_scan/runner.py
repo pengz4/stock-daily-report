@@ -87,12 +87,27 @@ def scan_market(
     report_date: date,
     generated_at: datetime | None = None,
     configuration_hash: str | None = None,
+    universe_quotes: Sequence[UniverseQuote] | None = None,
+    resume_from: Mapping[str, _CandidateResult] | None = None,
 ) -> MarketScanArtifact:
-    """Scan, filter, and rank a universe without allowing one symbol to abort."""
+    """Scan, filter, and rank a universe without allowing one symbol to abort.
+
+    ``universe_quotes``, when provided, replaces a live ``get_quotes()`` call so
+    a resumed scan uses the original snapshot instead of a newer one.
+
+    ``resume_from`` supplies already-completed candidate results so a resumed
+    scan skips re-fetching their history. Its keys must be a subset of the
+    eligible candidates; any eligible candidate absent from ``resume_from`` is
+    processed normally (subject to ``max_candidates``).
+    """
 
     _require_date(report_date)
     timestamp = _normalize_timestamp(generated_at or datetime.now(UTC))
-    quotes = tuple(sorted(universe_provider.get_quotes(), key=lambda quote: quote.code))
+    if universe_quotes is None:
+        universe_quotes = tuple(
+            sorted(universe_provider.get_quotes(), key=lambda quote: quote.code)
+        )
+    quotes = tuple(universe_quotes)
     _require_unique_quotes(quotes)
     exclusion_counts: Counter[str] = Counter()
     failure_counts: Counter[str] = Counter()
@@ -116,8 +131,12 @@ def scan_market(
             reason_codes=eligibility.reason_codes,
         )
 
-    selected = candidates[: settings.max_candidates]
-    for quote in candidates[settings.max_candidates :]:
+    resume_from = dict(resume_from or {})
+    results: dict[str, _CandidateResult] = dict(resume_from)
+
+    remaining = [quote for quote in candidates if quote.code not in results]
+    selected = remaining[: settings.max_candidates]
+    for quote in remaining[settings.max_candidates :]:
         reason = "candidate_limit_exceeded"
         failure_counts[reason] += 1
         statuses[quote.code] = ScanStatus(
@@ -127,7 +146,6 @@ def scan_market(
             reason_codes=(reason,),
         )
 
-    results: dict[str, _CandidateResult] = {}
     with ThreadPoolExecutor(max_workers=settings.max_workers) as executor:
         futures: dict[Future[_CandidateResult], str] = {
             executor.submit(
@@ -166,7 +184,7 @@ def scan_market(
     coverage = valid_count / eligible_count if eligible_count else 0.0
     rankings = ProfileRankings()
     consensus: tuple[ConsensusRecord, ...] = ()
-    scan_complete = len(selected) == len(candidates)
+    scan_complete = len(selected) == len(remaining)
     if scan_complete and coverage >= settings.minimum_coverage_ratio:
         trend = _ranking_records(
             rank_scores(trend_scores),
@@ -598,9 +616,166 @@ def market_scan_config_hash(
     )
 
 
+def scoring_config_hash(settings: MarketScanSettings) -> str:
+    """Hash only the scoring-semantic settings, excluding runtime parameters.
+
+    ``max_workers`` and ``max_candidates`` affect batching and concurrency,
+    not the ranked outcome, so they are deliberately excluded. This lets a
+    resume survive tuning those values (for example, to fit the job timeout)
+    without invalidating an in-progress checkpoint.
+    """
+
+    semantic = settings.model_dump(mode="json")
+    semantic.pop("max_workers", None)
+    semantic.pop("max_candidates", None)
+    return _hash_json(semantic)
+
+
 def _provider_name(provider: object) -> str:
     name = getattr(provider, "name", provider.__class__.__name__)
     return str(name).strip() or provider.__class__.__name__
+
+
+def _quote_to_json(quote: UniverseQuote) -> dict[str, object]:
+    """Serialize a ``UniverseQuote`` for checkpoint storage."""
+
+    return {
+        "code": quote.code,
+        "name": quote.name,
+        "market": quote.market,
+        "latest_price": quote.latest_price,
+        "volume": quote.volume,
+        "amount": quote.amount,
+        "quote_date": quote.quote_date.isoformat(),
+    }
+
+
+def _quote_from_json(document: Mapping[str, object]) -> UniverseQuote:
+    """Rebuild a ``UniverseQuote`` from a checkpoint document."""
+
+    quote_date = document.get("quote_date")
+    if isinstance(quote_date, str):
+        parsed_date = date.fromisoformat(quote_date)
+    elif isinstance(quote_date, date):
+        parsed_date = quote_date
+    else:
+        raise ValueError("universe quote is missing a valid quote_date")
+    return UniverseQuote(
+        code=str(document["code"]),
+        name=str(document["name"]),
+        market=str(document["market"]),  # type: ignore[arg-type]
+        latest_price=document.get("latest_price"),
+        volume=document.get("volume"),
+        amount=document.get("amount"),
+        quote_date=parsed_date,
+    )
+
+
+def _candidate_result_to_json(result: _CandidateResult) -> dict[str, object]:
+    """Serialize a ``_CandidateResult`` for checkpoint storage."""
+
+    return {
+        "quote": _quote_to_json(result.quote),
+        "status": result.status.model_dump(mode="json"),
+        "scores": _scores_to_json(result.scores) if result.scores else None,
+        "latest_trade_date": (
+            result.latest_trade_date.isoformat()
+            if result.latest_trade_date is not None
+            else None
+        ),
+        "provider_name": result.provider_name,
+        "history_hash": result.history_hash,
+        "provider_names": list(result.provider_names),
+    }
+
+
+def _candidate_result_from_json(
+    document: Mapping[str, object],
+) -> _CandidateResult:
+    """Rebuild a ``_CandidateResult`` from a checkpoint document."""
+
+    quote = _quote_from_json(document["quote"])  # type: ignore[arg-type]
+    status = ScanStatus.model_validate(document["status"])
+    raw_scores = document.get("scores")
+    scores = _scores_from_json(raw_scores) if raw_scores else None
+    latest = document.get("latest_trade_date")
+    latest_trade_date = (
+        date.fromisoformat(latest) if isinstance(latest, str) else latest
+    )
+    provider_names = tuple(document.get("provider_names") or ())
+    return _CandidateResult(
+        quote=quote,
+        status=status,
+        scores=scores,
+        latest_trade_date=latest_trade_date,
+        provider_name=document.get("provider_name"),
+        history_hash=document.get("history_hash"),
+        provider_names=provider_names,
+    )
+
+
+def _scores_to_json(scores: CandidateScores) -> dict[str, object]:
+    """Serialize ``CandidateScores`` into a flat JSON document."""
+
+    return {
+        "trend": _profile_score_to_json(scores.trend),
+        "balanced": _profile_score_to_json(scores.balanced),
+    }
+
+
+def _scores_from_json(document: Mapping[str, object]) -> CandidateScores:
+    """Rebuild ``CandidateScores`` from a flat JSON document."""
+
+    return CandidateScores(
+        trend=_profile_score_from_json(document["trend"]),  # type: ignore[arg-type]
+        balanced=_profile_score_from_json(document["balanced"]),  # type: ignore[arg-type]
+    )
+
+
+def _profile_score_to_json(score: ProfileScore) -> dict[str, object]:
+    """Serialize a ``ProfileScore`` into a flat JSON document."""
+
+    return {
+        "code": score.code,
+        "profile": score.profile,
+        "rule_version": score.rule_version,
+        "as_of": score.as_of.isoformat() if score.as_of is not None else None,
+        "total": score.total,
+        "components": {
+            "trend": score.components.trend,
+            "momentum": score.components.momentum,
+            "volume": score.components.volume,
+            "structure": score.components.structure,
+            "risk": score.components.risk,
+        },
+        "evidence_codes": list(score.evidence_codes),
+        "risk_codes": list(score.risk_codes),
+    }
+
+
+def _profile_score_from_json(document: Mapping[str, object]) -> ProfileScore:
+    """Rebuild a ``ProfileScore`` from a flat JSON document."""
+
+    from stock_daily_report.market_scan.scoring import ScoreComponents
+
+    components = document["components"]
+    as_of = document.get("as_of")
+    return ProfileScore(
+        code=str(document["code"]),
+        profile=document["profile"],  # type: ignore[arg-type]
+        rule_version=str(document["rule_version"]),
+        as_of=date.fromisoformat(as_of) if isinstance(as_of, str) else as_of,
+        total=float(document["total"]),
+        components=ScoreComponents(
+            trend=float(components["trend"]),
+            momentum=float(components["momentum"]),
+            volume=float(components["volume"]),
+            structure=float(components["structure"]),
+            risk=float(components["risk"]),
+        ),
+        evidence_codes=tuple(document.get("evidence_codes") or ()),
+        risk_codes=tuple(document.get("risk_codes") or ()),
+    )
 
 
 def _require_unique_quotes(quotes: Sequence[UniverseQuote]) -> None:
@@ -628,4 +803,5 @@ __all__ = [
     "market_scan_config_hash",
     "run_market_scan",
     "scan_market",
+    "scoring_config_hash",
 ]

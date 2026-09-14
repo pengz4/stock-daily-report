@@ -23,6 +23,7 @@ from stock_daily_report.market_scan.report import (
     MarketScanArtifactError,
     load_scan_artifact,
 )
+from stock_daily_report.market_scan.resume import CheckpointError
 from stock_daily_report.market_scan.runner import (
     market_scan_config_hash,
     run_market_scan,
@@ -109,6 +110,17 @@ def main(argv: list[str] | None = None) -> int:
         default=_project_root() / "config/settings.yaml",
     )
     market_scan.add_argument("--output-root", type=Path, default=Path.cwd())
+    market_scan.add_argument(
+        "--resumable",
+        action="store_true",
+        help="process in resumable batches, persisting a checkpoint after each",
+    )
+    market_scan.add_argument(
+        "--max-batches",
+        type=int,
+        default=None,
+        help="stop after this many batches, leaving the rest for a later run",
+    )
     args = parser.parse_args(argv)
 
     if args.command == "daily":
@@ -193,18 +205,49 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "market-scan":
         try:
             settings = load_market_scan_settings(args.settings)
+            data_settings = load_settings(args.data_settings)
+            configuration_hash = market_scan_config_hash(
+                settings,
+                data_settings.market_data,
+            )
             artifact_path = _scan_artifact_path(args.output_root, args.date)
             if artifact_path.exists():
-                data_settings = load_settings(args.data_settings)
                 artifact_path = _existing_scan_artifact(
                     artifact_path,
                     report_date=args.date,
-                    expected_config_hash=market_scan_config_hash(
-                        settings,
-                        data_settings.market_data,
-                    ),
+                    expected_config_hash=configuration_hash,
                     expected_rule_version=settings.rule_version,
                 )
+            elif args.resumable:
+                current_date = _current_market_date()
+                if args.date != current_date:
+                    raise _MarketScanCliError(
+                        "Resumable live scans only support the current "
+                        f"Asia/Shanghai date {current_date.isoformat()}; "
+                        f"requested {args.date.isoformat()}."
+                    )
+                from stock_daily_report.market_scan.resumable import (
+                    run_resumable_scan,
+                )
+
+                artifact_path = run_resumable_scan(
+                    settings,
+                    AkShareUniverseProvider(),
+                    build_market_data_service(
+                        data_settings,
+                        output_root=args.output_root,
+                    ),
+                    report_date=args.date,
+                    output_root=args.output_root,
+                    configuration_hash=configuration_hash,
+                    max_batches=args.max_batches,
+                )
+                if artifact_path is None:
+                    print(
+                        "scan incomplete; checkpoint persisted, resume later",
+                        file=sys.stderr,
+                    )
+                    return 0
             else:
                 current_date = _current_market_date()
                 if args.date != current_date:
@@ -213,11 +256,6 @@ def main(argv: list[str] | None = None) -> int:
                         f"Asia/Shanghai date {current_date.isoformat()}; "
                         f"requested {args.date.isoformat()}."
                     )
-                data_settings = load_settings(args.data_settings)
-                configuration_hash = market_scan_config_hash(
-                    settings,
-                    data_settings.market_data,
-                )
                 artifact_path = run_market_scan(
                     settings,
                     AkShareUniverseProvider(),
@@ -231,6 +269,7 @@ def main(argv: list[str] | None = None) -> int:
                 )
         except (
             ConfigurationError,
+            CheckpointError,
             MarketScanArtifactError,
             ProviderError,
             _MarketScanCliError,

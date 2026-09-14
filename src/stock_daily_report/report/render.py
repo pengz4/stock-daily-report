@@ -69,13 +69,13 @@ def render_html(report: ReportDocument) -> str:
     """Render a self-contained report page with escaped dynamic values."""
 
     metadata = report.metadata
-    title = _html(f"A-share daily report — {metadata.report_date.isoformat()}")
+    title = _html(f"A股每日研报 — {metadata.report_date.isoformat()}")
     header = _render_report_header(report, report.market_rankings)
     market_summary = _render_market_summary_html(report)
     market_rankings = _render_market_rankings_html(report.market_rankings)
     stock_sections = "\n".join(_render_watchlist_card(stock) for stock in report.stocks)
     return f"""<!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -89,7 +89,7 @@ def render_html(report: ReportDocument) -> str:
     {market_summary}
     {market_rankings}
     <section>
-      <h2>Watchlist</h2>
+      <h2>自选股跟踪</h2>
       {stock_sections}
     </section>
   </main>
@@ -238,15 +238,15 @@ def _render_market_rankings_html(rankings: MarketRankings) -> str:
     if rankings.status == "unavailable":
         warning_html = f"\n      {warning}" if warning else ""
         return f"""<section class="market-rankings unavailable">
-      <h2>Full-market rankings</h2>{warning_html}
-      <p>Full-market rankings unavailable.</p>
-      <p><strong>Reason:</strong> <code>{_format_html_optional(rankings.unavailable_reason)}</code></p>
+      <h2>全市场排名</h2>{warning_html}
+      <p>全市场排名不可用。</p>
+      <p><strong>原因：</strong> <code>{_format_html_optional(rankings.unavailable_reason)}</code></p>
     </section>"""
 
     consensus_by_code = {record.code: record for record in rankings.consensus}
     warning_html = f"\n      {warning}" if warning else ""
     return f"""<section class="market-rankings">
-      <h2>Full-market rankings</h2>{warning_html}
+      <h2>全市场排名</h2>{warning_html}
       {_render_consensus_cards(rankings.consensus)}
       {_render_ranking_profile("trend", rankings.trend, consensus_by_code)}
       {_render_ranking_profile("balanced", rankings.balanced, consensus_by_code)}
@@ -256,10 +256,10 @@ def _render_market_rankings_html(rankings: MarketRankings) -> str:
 def _render_report_header(report: ReportDocument, rankings: MarketRankings) -> str:
     metadata = report.metadata
     return f"""<header class="report-header">
-      <p><a href="../../site/index.html">All dated reports</a></p>
-      <p><strong>Report date:</strong> {_html(metadata.report_date.strftime("%Y/%m/%d"))}</p>
-      <p><strong>Latest trading date:</strong> {_render_latest_trading_text(report, rankings)}</p>
-      <p class="quality-badge">Quality: {_html(metadata.quality_status)}</p>
+      <p><a href="../../site/index.html">返回报告列表</a></p>
+      <p><strong>报告日期：</strong> {_html(metadata.report_date.strftime("%Y/%m/%d"))}</p>
+      <p><strong>最新交易日：</strong> {_render_latest_trading_text(report, rankings)}</p>
+      <p class="quality-badge">数据质量：{_html(metadata.quality_status)}</p>
       {_render_runtime_metadata(report, rankings)}
     </header>"""
 
@@ -268,7 +268,7 @@ def _render_market_summary_html(report: ReportDocument) -> str:
     summary_metrics = _render_summary_metrics(report.market_rankings)
     summary_metrics_html = f"\n      {summary_metrics}" if summary_metrics else ""
     return f"""<section class="market-summary">
-      <h2>Market summary</h2>
+      <h2>市场摘要</h2>
       <p>{_html(report.market_summary.text)}</p>{summary_metrics_html}
     </section>"""
 
@@ -278,32 +278,32 @@ def _render_runtime_metadata(report: ReportDocument, rankings: MarketRankings) -
     has_ranking_metadata = _has_market_ranking_metadata(rankings)
     report_fields = "".join(
         (
-            _render_html_field("Report generated", metadata.generated_at.isoformat()),
+            _render_html_field("报告生成时间", metadata.generated_at.isoformat()),
             _render_html_field(
-                "Report latest source timestamp",
+                "报告最新数据时间",
                 metadata.latest_source_timestamp.isoformat(),
             ),
             _render_html_field(
-                "Report providers",
+                "报告数据源",
                 _sequence_text(metadata.provider_names),
             ),
-            _render_html_field("Stock count", metadata.stock_count),
-            _render_html_field("Snapshot path", metadata.snapshot_path),
-            _render_html_field("Snapshot hash", metadata.snapshot_hash),
-            _render_html_field("Report config hash", metadata.config_hash),
+            _render_html_field("股票数量", metadata.stock_count),
+            _render_html_field("快照路径", metadata.snapshot_path),
+            _render_html_field("快照哈希", metadata.snapshot_hash),
+            _render_html_field("报告配置哈希", metadata.config_hash),
             _render_html_field(
-                "Analyzer",
+                "分析器",
                 metadata.analyzer_versions.structural,
             ),
             (
                 ""
                 if has_ranking_metadata
-                else _render_html_field("Ranking status", rankings.status)
+                else _render_html_field("排名状态", rankings.status)
             ),
             (
                 ""
                 if has_ranking_metadata
-                else _render_html_field("Ranking reason", rankings.unavailable_reason)
+                else _render_html_field("排名原因", rankings.unavailable_reason)
             ),
         )
     )
@@ -311,56 +311,56 @@ def _render_runtime_metadata(report: ReportDocument, rankings: MarketRankings) -
     if has_ranking_metadata:
         ranking_fields = "".join(
             (
-                _render_html_field("Ranking status", rankings.status),
-                _render_html_field("Ranking reason", rankings.unavailable_reason),
+                _render_html_field("排名状态", rankings.status),
+                _render_html_field("排名原因", rankings.unavailable_reason),
                 _render_html_field(
-                    "Ranking scan date",
+                    "排名扫描日期",
                     rankings.scan_date.isoformat()
                     if rankings.scan_date is not None
                     else None,
                 ),
                 _render_html_field(
-                    "Ranking generated",
+                    "排名生成时间",
                     rankings.generated_at.isoformat()
                     if rankings.generated_at is not None
                     else None,
                 ),
-                _render_html_field("Ranking rule version", rankings.rule_version),
+                _render_html_field("排名规则版本", rankings.rule_version),
                 _render_html_field(
-                    "Ranking providers",
+                    "排名数据源",
                     _sequence_text(rankings.provider_names),
                 ),
-                _render_html_field("Ranking config hash", rankings.config_hash),
-                _render_html_field("Ranking input hash", rankings.input_hash),
-                _render_html_field("Universe count", rankings.universe_count),
-                _render_html_field("Eligible count", rankings.eligible_count),
-                _render_html_field("Valid count", rankings.valid_count),
+                _render_html_field("排名配置哈希", rankings.config_hash),
+                _render_html_field("排名输入哈希", rankings.input_hash),
+                _render_html_field("股票池总数", rankings.universe_count),
+                _render_html_field("候选股票", rankings.eligible_count),
+                _render_html_field("有效股票", rankings.valid_count),
                 _render_html_field(
-                    "Coverage",
+                    "扫描覆盖率",
                     f"{rankings.coverage:.2%}"
                     if rankings.coverage is not None
                     else None,
                 ),
                 _render_html_field(
-                    "Exclusions",
+                    "排除统计",
                     _format_reason_counts(rankings.exclusion_counts),
                 ),
                 _render_html_field(
-                    "Failures",
+                    "失败统计",
                     _format_reason_counts(rankings.failure_counts),
                 ),
             )
         )
         ranking_metadata_section = f"""
       <div class="runtime-metadata__section">
-        <h3>Ranking metadata</h3>
+        <h3>排名元数据</h3>
         {ranking_fields}
       </div>"""
     body = f"""<div class="runtime-metadata__section">
-        <h3>Report metadata</h3>
+        <h3>报告元数据</h3>
         {report_fields}
       </div>{ranking_metadata_section}"""
-    return _render_html_details("Runtime metadata", body, class_name="runtime-metadata")
+    return _render_html_details("运行时元数据", body, class_name="runtime-metadata")
 
 
 def _render_summary_metrics(rankings: MarketRankings) -> str:
@@ -369,7 +369,7 @@ def _render_summary_metrics(rankings: MarketRankings) -> str:
         cards.append(
             _render_metric_card(
                 "coverage",
-                "Coverage",
+                "扫描覆盖率",
                 f"{rankings.coverage:.2%}",
             )
         )
@@ -377,7 +377,7 @@ def _render_summary_metrics(rankings: MarketRankings) -> str:
         cards.append(
             _render_metric_card(
                 "valid",
-                "Valid / eligible",
+                "有效 / 候选股票",
                 f"{rankings.valid_count} / {rankings.eligible_count}",
             )
         )
@@ -385,7 +385,7 @@ def _render_summary_metrics(rankings: MarketRankings) -> str:
         cards.append(
             _render_metric_card(
                 "universe",
-                "Universe",
+                "股票池总数",
                 str(rankings.universe_count),
             )
         )
@@ -393,7 +393,7 @@ def _render_summary_metrics(rankings: MarketRankings) -> str:
         cards.append(
             _render_metric_card(
                 "consensus",
-                "Consensus count",
+                "多策略共识",
                 str(len(rankings.consensus)),
             )
         )
@@ -423,24 +423,24 @@ def _render_latest_trading_text(
                 watchlist_latest.isoformat() if watchlist_latest is not None else None
             )
             return (
-                f"scan date {_html(scan_date)} · "
-                f"watchlist latest {_format_html_optional(watchlist_text)}"
+                f"扫描日期 {_html(scan_date)} · "
+                f"自选股最新 {_format_html_optional(watchlist_text)}"
             )
-        return f"scan date {_html(scan_date)}"
+        return f"扫描日期 {_html(scan_date)}"
     if watchlist_latest is None:
         return _EM_DASH
-    return f"watchlist latest {_html(watchlist_latest.isoformat())}"
+    return f"自选股最新 {_html(watchlist_latest.isoformat())}"
 
 
 def _render_ranking_warning(rankings: MarketRankings) -> str:
     if rankings.status == "unavailable":
         return (
-            '<p class="ranking-warning">Full-market rankings unavailable: '
+            '<p class="ranking-warning">全市场排名不可用：'
             f"{_format_html_optional(rankings.unavailable_reason)}</p>"
         )
     if rankings.failure_counts:
         return (
-            '<p class="ranking-warning">Ranking audit warning: failures reported — '
+            '<p class="ranking-warning">排名审计提示：存在失败记录 — '
             f"{_html(_format_reason_counts(rankings.failure_counts))}</p>"
         )
     return ""
@@ -450,15 +450,14 @@ def _render_consensus_cards(
     consensus: Sequence[MarketConsensusRanking],
 ) -> str:
     note = (
-        '<p class="consensus-note">Consensus is the exact intersection of '
-        "rankings built from shared technical inputs; it is not independently "
-        "validated predictive evidence.</p>"
+        '<p class="consensus-note">多策略共识是两个排名在共享技术输入上的'
+        "精确交集；它不是独立验证的预测性证据。</p>"
     )
     if not consensus:
         return f"""<section class="consensus-section">
-      <h3>多策略共识 / Consensus</h3>
+      <h3>多策略共识</h3>
       {note}
-      <p class="empty-state">No exact intersection for this scan.</p>
+      <p class="empty-state">本次扫描没有多策略交集。</p>
     </section>"""
 
     cards = "\n".join(
@@ -473,7 +472,7 @@ def _render_consensus_cards(
         )[:5]
     )
     return f"""<section class="consensus-section">
-      <h3>多策略共识 / Consensus</h3>
+      <h3>多策略共识</h3>
       {note}
       <div class="consensus-grid">
         {cards}
@@ -484,44 +483,44 @@ def _render_consensus_cards(
 def _render_consensus_card(record: MarketConsensusRanking) -> str:
     detail_body = "".join(
         (
-            _render_html_field("Code", record.code),
-            _render_html_field("Name", record.name),
-            _render_html_field("Trend rank", record.trend_rank),
-            _render_html_field("Trend score", f"{record.trend_score:.2f}"),
-            _render_html_field("Balanced rank", record.balanced_rank),
-            _render_html_field("Balanced score", f"{record.balanced_score:.2f}"),
-            _render_component_group("Trend components", record.trend_components),
+            _render_html_field("代码", record.code),
+            _render_html_field("名称", record.name),
+            _render_html_field("趋势排名", record.trend_rank),
+            _render_html_field("趋势评分", f"{record.trend_score:.2f}"),
+            _render_html_field("均衡排名", record.balanced_rank),
+            _render_html_field("均衡评分", f"{record.balanced_score:.2f}"),
+            _render_component_group("趋势组件", record.trend_components),
             _render_component_group(
-                "Balanced components",
+                "均衡组件",
                 record.balanced_components,
             ),
             _render_html_tag_field(
-                "Evidence",
+                "证据",
                 record.evidence_codes,
                 kind="evidence",
             ),
-            _render_html_tag_field("Risks", record.risk_codes, kind="risk"),
+            _render_html_tag_field("风险", record.risk_codes, kind="risk"),
             _render_html_field(
-                "Latest trade date",
+                "最新交易日",
                 record.latest_trade_date.isoformat(),
             ),
-            _render_html_field("Provider", record.provider_name),
+            _render_html_field("数据源", record.provider_name),
         )
     )
     return f"""<article class="consensus-card">
       <div class="consensus-row">
         <h4>{_html(record.code)} — {_html(record.name)}</h4>
-        <p class="consensus-trend">Trend rank {record.trend_rank} / {_format_html_float(record.trend_score)}</p>
-        <p class="consensus-balanced">Balanced rank {record.balanced_rank} / {_format_html_float(record.balanced_score)}</p>
-        <p>Trend components: {_html(_format_components(record.trend_components))}</p>
-        <p>Balanced components: {_html(_format_components(record.balanced_components))}</p>
-        <p>Evidence: {_render_html_tags(record.evidence_codes, kind="evidence")}</p>
-        <p>Risks: {_render_html_tags(record.risk_codes, kind="risk")}</p>
-        <p>Date: {_html(record.latest_trade_date.isoformat())}</p>
-        <p>Provider: {_html(record.provider_name)}</p>
+        <p class="consensus-trend">趋势排名 {record.trend_rank} / {_format_html_float(record.trend_score)}</p>
+        <p class="consensus-balanced">均衡排名 {record.balanced_rank} / {_format_html_float(record.balanced_score)}</p>
+        <p>趋势组件：{_html(_format_components(record.trend_components))}</p>
+        <p>均衡组件：{_html(_format_components(record.balanced_components))}</p>
+        <p>证据：{_render_html_tags(record.evidence_codes, kind="evidence")}</p>
+        <p>风险：{_render_html_tags(record.risk_codes, kind="risk")}</p>
+        <p>日期：{_html(record.latest_trade_date.isoformat())}</p>
+        <p>数据源：{_html(record.provider_name)}</p>
       </div>
       {_render_html_details(
-          f"Audit details for {record.code}",
+          f"{record.code} 的审计详情",
           detail_body,
           class_name="consensus-detail",
       )}
@@ -533,10 +532,10 @@ def _render_ranking_profile(
     records: Sequence[MarketRanking],
     consensus_by_code: dict[str, MarketConsensusRanking],
 ) -> str:
-    profile_title = "Trend Top 10" if profile == "trend" else "Balanced Top 10"
-    profile_scope = "Trend Top 30" if profile == "trend" else "Balanced Top 30"
+    profile_title = "趋势策略 Top 10" if profile == "trend" else "均衡策略 Top 10"
+    profile_scope = "趋势策略 Top 30" if profile == "trend" else "均衡策略 Top 30"
     if not records:
-        content = '<p class="empty-state">No ranking records available.</p>'
+        content = '<p class="empty-state">暂无排名记录。</p>'
     else:
         visible_rows = "\n".join(
             _render_ranking_row(record, consensus_by_code.get(record.code))
@@ -550,7 +549,7 @@ def _render_ranking_profile(
         )
         full_ranking = (
             _render_html_details(
-                f"{profile_title} full ranking (11–30)",
+                f"{profile_title} 完整排名（第 11–30 名）",
                 full_rows,
                 class_name="full-ranking",
             )
@@ -572,11 +571,11 @@ def _render_ranking_row(
     consensus: MarketConsensusRanking | None,
 ) -> str:
     consensus_marker = (
-        "Consensus"
+        "多策略共识"
         if consensus is not None
-        else "No consensus"
+        else "无共识"
     )
-    short_risk = record.risk_codes[0] if record.risk_codes else "None"
+    short_risk = record.risk_codes[0] if record.risk_codes else "无"
     return f"""<div class="ranking-row">
       <div class="ranking-row__summary">
         <span class="ranking-rank">#{record.rank}</span>
@@ -595,20 +594,20 @@ def _render_ranking_detail(
     consensus: MarketConsensusRanking | None,
 ) -> str:
     fields = [
-        _render_html_field("Rank", record.rank),
-        _render_html_field("Code", record.code),
-        _render_html_field("Name", record.name),
-        _render_html_field("Score", f"{record.score:.2f}"),
+        _render_html_field("排名", record.rank),
+        _render_html_field("代码", record.code),
+        _render_html_field("名称", record.name),
+        _render_html_field("评分", f"{record.score:.2f}"),
     ]
     if consensus is not None:
         fields.extend(
             (
                 _render_html_field(
-                    f"Trend rank {consensus.trend_rank}",
+                    f"趋势排名 {consensus.trend_rank}",
                     f"{consensus.trend_score:.2f}",
                 ),
                 _render_html_field(
-                    f"Balanced rank {consensus.balanced_rank}",
+                    f"均衡排名 {consensus.balanced_rank}",
                     f"{consensus.balanced_score:.2f}",
                 ),
             )
@@ -622,17 +621,17 @@ def _render_ranking_detail(
     )
     fields.extend(
         (
-            _render_html_tag_field("Evidence", record.evidence_codes, kind="evidence"),
-            _render_html_tag_field("Risks", record.risk_codes, kind="risk"),
+            _render_html_tag_field("证据", record.evidence_codes, kind="evidence"),
+            _render_html_tag_field("风险", record.risk_codes, kind="risk"),
             _render_html_field(
-                "Latest trade date",
+                "最新交易日",
                 record.latest_trade_date.isoformat(),
             ),
-            _render_html_field("Provider", record.provider_name),
+            _render_html_field("数据源", record.provider_name),
         )
     )
     return _render_html_details(
-        f"Details for #{record.rank} {record.code}",
+        f"#{record.rank} {record.code} 的详情",
         "".join(fields),
         class_name="ranking-detail",
     )
@@ -787,19 +786,19 @@ def render_site_index(report_dates: Sequence[str]) -> str:
         for report_date in sorted(set(report_dates), reverse=True)
     )
     if not links:
-        links = "      <li>No reports published yet.</li>"
+        links = "      <li>暂无已发布的报告。</li>"
     return f"""<!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>A-share daily reports</title>
+  <title>A股每日研报</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <main>
-    <h1>A-share daily reports</h1>
-    <p>Static, validated daily report artifacts.</p>
+    <h1>A股每日研报</h1>
+    <p>静态、可校验的每日研报产物。</p>
     <ul>
 {links}
     </ul>
@@ -850,9 +849,9 @@ def _render_watchlist_card(stock: StockReport) -> str:
     )
     quality_body = "".join(
         (
-            _render_html_field("bar_count", stock.bar_count),
-            _render_html_field("Quality status", stock.quality_status),
-            _render_html_list_field("Quality issues", stock.quality_issues),
+            _render_html_field("K线数量", stock.bar_count),
+            _render_html_field("质量状态", stock.quality_status),
+            _render_html_list_field("质量问题", stock.quality_issues),
         )
     )
     metrics_body = "".join(
@@ -869,39 +868,39 @@ def _render_watchlist_card(stock: StockReport) -> str:
     ]
     structure_body = "".join(
         (
-            _render_html_field("rule_version", stock.structure.rule_version),
-            _render_html_list_field("Structure Levels", structure_levels),
+            _render_html_field("规则版本", stock.structure.rule_version),
+            _render_html_list_field("结构价位", structure_levels),
             _render_html_list_field(
-                "Structure Observations",
+                "结构观察",
                 stock.structure.observations,
             ),
         )
     )
     signals_body = "".join(
         (
-            _render_html_list_field("Evidence", stock.evidence),
-            _render_html_list_field("Risks", stock.risks),
-            _render_html_list_field("Key levels", stock.key_levels),
-            _render_html_list_field("Next conditions", stock.next_conditions),
+            _render_html_list_field("证据", stock.evidence),
+            _render_html_list_field("风险", stock.risks),
+            _render_html_list_field("关键价位", stock.key_levels),
+            _render_html_list_field("后续条件", stock.next_conditions),
         )
     )
     return f"""<article class="stock-card">
       <div class="stock-card__identity">
         <h3>{_html(stock.code)} — {_html(stock.name)}</h3>
-        <p><strong>Group:</strong> {_html(stock.group)}</p>
-        <p><strong>Decision:</strong> {_html(stock.decision_label)}</p>
-        <p><strong>Structure:</strong> {_html(stock.structure.state_label)} ({_html(stock.structure.status)})</p>
-        <p><strong>Latest trade date:</strong> {_html(stock.latest_trade_date.isoformat())}</p>
-        <p><strong>Latest source timestamp:</strong> {_html(stock.latest_source_timestamp.isoformat())}</p>
-        <p><strong>Provider:</strong> {_html(stock.provider_name)}</p>
+        <p><strong>分组：</strong> {_html(stock.group)}</p>
+        <p><strong>决策：</strong> {_html(stock.decision_label)}</p>
+        <p><strong>结构：</strong> {_html(stock.structure.state_label)} ({_html(stock.structure.status)})</p>
+        <p><strong>最新交易日：</strong> {_html(stock.latest_trade_date.isoformat())}</p>
+        <p><strong>最新数据时间：</strong> {_html(stock.latest_source_timestamp.isoformat())}</p>
+        <p><strong>数据源：</strong> {_html(stock.provider_name)}</p>
       </div>
       <div class="stock-card__metrics">
         {primary_metrics}
       </div>
-      {_render_html_details("Quality and audit", quality_body, class_name="stock-detail")}
-      {_render_html_details("All metrics", metrics_body, class_name="stock-detail")}
-      {_render_html_details("Structure details", structure_body, class_name="stock-detail")}
-      {_render_html_details("Signals and levels", signals_body, class_name="stock-detail")}
+      {_render_html_details("数据质量与审计", quality_body, class_name="stock-detail")}
+      {_render_html_details("全部指标", metrics_body, class_name="stock-detail")}
+      {_render_html_details("结构分析详情", structure_body, class_name="stock-detail")}
+      {_render_html_details("信号、风险与关键价位", signals_body, class_name="stock-detail")}
     </article>"""
 
 

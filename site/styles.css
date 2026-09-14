@@ -99,7 +99,7 @@ a {
   display: grid;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   gap: 1.5rem;
-  max-width: 72rem;
+  width: min(94vw, 1320px);
   padding: 2rem;
 }
 
@@ -597,5 +597,57 @@ a {
   .report-page .runtime-metadata__section,
   .report-page .component-group {
     padding: 0.9rem;
+  }
+}
+
+@media (max-width: 375px) {
+  .report-page {
+    padding: 0.75rem;
+  }
+
+  .report-page > section,
+  .report-page .report-header,
+  .report-page .market-rankings,
+  .report-page .ranking-profile,
+  .report-page .stock-card {
+    padding: 0.75rem;
+  }
+
+  .report-page .ranking-row__summary {
+    grid-template-areas:
+      "rank code"
+      "name name"
+      "consensus consensus"
+      "risk risk"
+      "score score";
+    grid-template-columns: max-content minmax(0, 1fr);
+    row-gap: 0.4rem;
+  }
+
+  .report-page .ranking-score {
+    justify-self: end;
+    text-align: right;
+    width: 100%;
+  }
+
+  .report-page .ranking-risk {
+    justify-self: start;
+    text-align: left;
+    width: 100%;
+  }
+
+  .report-page .detail-field {
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .report-page .detail-field__label {
+    flex-basis: auto;
+  }
+
+  .report-page .detail-field__value,
+  .report-page .detail-field ul {
+    flex-basis: auto;
+    width: 100%;
   }
 }

@@ -71,7 +71,8 @@ jobs:
             --date "$report_date" \
             --settings config/market_scan.yaml \
             --data-settings config/settings.yaml \
-            --output-root .
+            --output-root . \
+            --resumable
       - name: Persist market scan history
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -84,18 +85,28 @@ jobs:
           fi
           rm -rf .report-history/market-scans
           cp -a market-scans .report-history/market-scans
+          find .report-history/market-scans -name '*.lock' -delete
           git -C .report-history config user.name "github-actions[bot]"
           git -C .report-history config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git -C .report-history add market-scans
           if ! git -C .report-history diff --cached --quiet; then
             git -C .report-history commit -m "chore: publish market scan history"
-            git -C .report-history -c \
-              http.extraheader="AUTHORIZATION: bearer ${GITHUB_TOKEN}" \
-              push origin HEAD:refs/heads/reports-history
+            for attempt in 1 2 3; do
+              if git -C .report-history -c \
+                http.extraheader="AUTHORIZATION: bearer ${GITHUB_TOKEN}" \
+                push origin HEAD:refs/heads/reports-history; then
+                break
+              fi
+              if [ "$attempt" -lt 3 ]; then
+                git -C .report-history pull --rebase --autostash origin \
+                  reports-history
+              fi
+            done
           fi
       - name: Upload market scan artifact
         uses: actions/upload-artifact@v4
         with:
           name: market-scan-${{ steps.report-date.outputs.report_date }}
-          path: market-scans/${{ steps.report-date.outputs.report_date }}/scan.json
+          path: market-scans/${{ steps.report-date.outputs.report_date }}
           retention-days: 30
+          overwrite: true

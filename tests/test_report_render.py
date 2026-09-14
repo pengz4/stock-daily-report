@@ -964,16 +964,18 @@ def test_market_scan_rankings_render_consistently_without_confidence_claims():
         "provider_name": "fixture",
     }
     for rendered in (markdown, html):
-        assert "Trend Top 30" in rendered
-        assert "Balanced Top 30" in rendered
         assert "多策略共识" in rendered
-        assert "shared technical inputs" in rendered
-        assert "not independently validated predictive evidence" in rendered
         assert "600519" in rendered
         assert "82.00" in rendered
         assert "75.00" in rendered
         assert "90.00%" in rendered
         assert "high confidence" not in rendered.lower()
+    assert "Trend Top 30" in markdown
+    assert "Balanced Top 30" in markdown
+    assert "shared technical inputs" in markdown
+    assert "not independently validated predictive evidence" in markdown
+    assert "趋势策略 Top 30" in html
+    assert "均衡策略 Top 30" in html
     assert r"close\_above\_ma20" in markdown
     assert r"elevated\_volatility" in markdown
     assert "close_above_ma20" in html
@@ -1002,12 +1004,11 @@ def test_market_scan_html_contract_renders_header_metrics_and_runtime_metadata()
     header_text = header.normalized_visible_text(
         exclude_selectors=("details.runtime-metadata",)
     )
-    header_text_lower = header_text.lower()
     scan_date = document.market_rankings.scan_date.isoformat()
     watchlist_date = document.stocks[0].latest_trade_date.isoformat()
-    assert "scan date" in header_text_lower
-    assert "watchlist" in header_text_lower
-    assert "latest trading" in header_text_lower
+    assert "扫描日期" in header_text
+    assert "自选股" in header_text
+    assert "最新交易日" in header_text
     assert scan_date in header_text
     assert watchlist_date in header_text
     assert header_text.index(scan_date) < header_text.index(watchlist_date)
@@ -1063,11 +1064,10 @@ def test_market_scan_html_contract_renders_header_metrics_and_runtime_metadata()
     unavailable_header_text = unavailable_header.normalized_visible_text(
         exclude_selectors=("details.runtime-metadata",)
     )
-    unavailable_header_text_lower = unavailable_header_text.lower()
     unavailable_watchlist_date = unavailable_document.stocks[0].latest_trade_date.isoformat()
     unavailable_scan_date = unavailable_document.market_rankings.scan_date.isoformat()
-    assert "watchlist" in unavailable_header_text_lower
-    assert "latest trading" in unavailable_header_text_lower
+    assert "自选股" in unavailable_header_text
+    assert "最新交易日" in unavailable_header_text
     assert unavailable_watchlist_date in unavailable_header_text
     assert unavailable_scan_date not in unavailable_header_text
 
@@ -1309,8 +1309,8 @@ def test_market_scan_html_contract_keeps_detail_fields_and_failure_warning():
         "elevated_volatility",
         document.market_rankings.trend[0].latest_trade_date.isoformat(),
         document.market_rankings.trend[0].provider_name,
-        "Trend rank 1",
-        "Balanced rank 2",
+        "趋势排名 1",
+        "均衡排名 2",
         "82.00",
         "75.00",
     ):
@@ -1335,7 +1335,7 @@ def test_market_scan_html_contract_handles_unavailable_and_no_consensus_states()
         )
     )
 
-    assert "Full-market rankings unavailable" in unavailable_root.normalized_text()
+    assert "全市场排名不可用" in unavailable_root.normalized_text()
     assert "scan_rankings_unavailable" in unavailable_root.normalized_text()
     _require_one(unavailable_root, ".ranking-warning")
     assert unavailable_root.select(".ranking-profile") == []
@@ -1347,7 +1347,7 @@ def test_market_scan_html_contract_handles_unavailable_and_no_consensus_states()
         )
     )
     empty_state = _require_one(no_consensus_root, ".consensus-section .empty-state")
-    assert "No exact intersection for this scan" in empty_state.normalized_text()
+    assert "本次扫描没有多策略交集" in empty_state.normalized_text()
     assert no_consensus_root.select(".consensus-card") == []
 
 
@@ -1445,13 +1445,13 @@ def test_market_scan_html_contract_retains_watchlist_fields_and_none_states():
     )
     empty_text = empty_card.normalized_text()
     for pattern in (
-        r"Quality issues\W+None",
-        r"(?:Structure )?Levels\W+None",
-        r"(?:Structure )?Observations\W+None",
-        r"Evidence\W+None",
-        r"Risks\W+None",
-        r"Key levels\W+None",
-        r"Next conditions\W+None",
+        r"质量问题\W+None",
+        r"(?:结构)?价位\W+None",
+        r"(?:结构)?观察\W+None",
+        r"证据\W+None",
+        r"风险\W+None",
+        r"关键价位\W+None",
+        r"后续条件\W+None",
     ):
         assert re.search(pattern, empty_text)
 
@@ -1479,8 +1479,8 @@ def test_market_scan_html_contract_escapes_static_controls_and_legacy_fallback()
     assert all("open" not in detail.attrs for detail in details)
     assert root.select("script") == []
     details_text = " ".join(detail.normalized_text() for detail in details)
-    assert re.search(r"Evidence\W+None", details_text)
-    assert re.search(r"Risks\W+None", details_text)
+    assert re.search(r"证据\W+None", details_text)
+    assert re.search(r"风险\W+None", details_text)
 
     legacy = _document(name="visible").model_dump(mode="json")
     legacy["schema_version"] = 1
@@ -1502,10 +1502,12 @@ def test_market_scan_unavailable_state_is_explicit_in_markdown_and_html():
     markdown = render_markdown(document)
     html = render_html(document)
 
-    for rendered in (markdown, html):
-        assert "Full-market rankings unavailable" in rendered
-        assert "scan_artifact_missing" in rendered
-        assert "high confidence" not in rendered.lower()
+    assert "Full-market rankings unavailable" in markdown
+    assert "scan_artifact_missing" in markdown
+    assert "high confidence" not in markdown.lower()
+    assert "全市场排名不可用" in html
+    assert "scan_artifact_missing" in html
+    assert "high confidence" not in html.lower()
 
 
 @pytest.mark.parametrize(
@@ -1541,9 +1543,10 @@ def test_market_scan_renderers_safely_handle_partial_unavailable_metadata():
     markdown = render_markdown(document)
     html = render_html(document)
 
-    for rendered in (markdown, html):
-        assert "Full-market rankings unavailable" in rendered
-        assert "—" in rendered
+    assert "Full-market rankings unavailable" in markdown
+    assert "—" in markdown
+    assert "全市场排名不可用" in html
+    assert "—" in html
     assert r"2026\-09\-04" in markdown
     assert "2026-09-04" in html
 
