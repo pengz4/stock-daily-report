@@ -3,6 +3,7 @@
 # the self-selected analysis without rerunning the full-market scan.
 # Editing this file also triggers the watchlist scan that ranks the pool and
 # selects the top candidates for deep analysis.
+# (no-op edit to re-trigger the watchlist scan as an independent job)
 stocks:
   - code: "600519"
     name: 贵州茅台
