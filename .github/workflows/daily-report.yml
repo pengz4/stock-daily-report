@@ -92,6 +92,7 @@ jobs:
           report_path="reports/${report_date}/report.json"
           snapshot_path="snapshots/${report_date}/input.json"
           scan_path="market-scans/${report_date}/scan.json"
+          watchlist_scan_path="watchlist-scans/${report_date}/scan.json"
           reuse_report=false
           reuse_snapshot=false
           if [ -f "$report_path" ] && [ -f "$snapshot_path" ]; then
@@ -125,14 +126,53 @@ jobs:
           )
           PY
               then
-                echo "Report already exists with current scan; reusing immutable artifacts"
+                echo "Report matches the current full-market scan"
               else
                 reuse_report=false
                 reuse_snapshot=true
                 echo "Existing report does not include the current scan; regenerating"
               fi
             else
-              echo "No scan artifact for this date; reusing immutable report"
+              echo "No full-market scan artifact for this date; reusing immutable report"
+            fi
+            # A changed or missing watchlist scan also forces regeneration of
+            # the self-selected deep-analysis section, without touching the
+            # immutable snapshot (which only depends on full-market history).
+            if [ "$reuse_report" = true ]; then
+              if [ ! -f "$watchlist_scan_path" ]; then
+                reuse_report=false
+                echo "No watchlist scan for this date; regenerating the self-selected section"
+              elif ! python - "$report_path" "$watchlist_scan_path" <<'PY'
+          import sys
+          from pathlib import Path
+
+          from stock_daily_report.market_scan.report import load_scan_artifact
+          from stock_daily_report.report.models import ReportDocument
+
+          try:
+              report = ReportDocument.model_validate_json(
+                  Path(sys.argv[1]).read_text(encoding="utf-8")
+              )
+              scan = load_scan_artifact(sys.argv[2])
+          except (OSError, ValueError):
+              raise SystemExit(1)
+
+          pool = report.pool_overview
+          raise SystemExit(
+              0
+              if (
+                  pool is not None
+                  and pool.scan_date == scan.report_date
+                  and pool.config_hash == scan.config_hash
+                  and pool.input_hash == scan.input_hash
+              )
+              else 1
+          )
+          PY
+              then
+                reuse_report=false
+                echo "Watchlist scan changed; regenerating the self-selected section"
+              fi
             fi
           fi
           if [ "$reuse_report" != true ]; then

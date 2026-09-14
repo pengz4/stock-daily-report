@@ -219,8 +219,8 @@ def _fetch_light_quotes(
 
 def _load_watchlist_scan_ranking(
     root: Path, report_date: date, limit: int = _DEEP_ANALYSIS_LIMIT
-) -> list[tuple[str, float]] | None:
-    """Return (code, score) for the top watchlist-scanned codes.
+) -> "WatchlistScanInfo | None":
+    """Return the watchlist scan ranking and fingerprint, or None.
 
     Returns ``None`` when no complete, same-day watchlist scan artifact exists
     so the caller can fall back to manual priorities or legacy behaviour.
@@ -243,7 +243,22 @@ def _load_watchlist_scan_ranking(
     if not best_scores:
         return None
     ordered = sorted(best_scores.items(), key=lambda item: (-item[1], item[0]))
-    return ordered[:limit]
+    return WatchlistScanInfo(
+        ranking=ordered[:limit],
+        scan_date=artifact.report_date,
+        config_hash=artifact.config_hash,
+        input_hash=artifact.input_hash,
+    )
+
+
+@dataclass(frozen=True)
+class WatchlistScanInfo:
+    """A same-day watchlist scan's ranking and provenance fingerprint."""
+
+    ranking: tuple[tuple[str, float], ...]
+    scan_date: date
+    config_hash: str
+    input_hash: str
 
 
 def _select_deep_stocks(
@@ -308,7 +323,10 @@ def run_daily_report(
         raise TypeError("report_date must be a date, not a datetime")
     root = Path(output_root).expanduser().resolve()
     root.mkdir(parents=True, exist_ok=True)
-    watchlist_scan_ranking = _load_watchlist_scan_ranking(root, active_report_date)
+    watchlist_scan_info = _load_watchlist_scan_ranking(root, active_report_date)
+    watchlist_scan_ranking = (
+        watchlist_scan_info.ranking if watchlist_scan_info is not None else None
+    )
     core_stocks, extended_stocks = _select_deep_stocks(
         active_watchlist, watchlist_scan_ranking
     )
@@ -476,6 +494,7 @@ def run_daily_report(
                         light_quotes=light_quotes,
                         light_quote_error=light_quote_error,
                         scan_ranking=watchlist_scan_ranking,
+                        watchlist_scan_info=watchlist_scan_info,
                         service=active_service,
                         json_path=json_path,
                         markdown_path=markdown_path,
@@ -1440,6 +1459,7 @@ def _publish_report_transaction(
     light_quotes: Mapping[str, UniverseQuote],
     light_quote_error: str | None,
     scan_ranking: Sequence[tuple[str, float]] | None,
+    watchlist_scan_info: "WatchlistScanInfo | None",
     service: MarketDataService | None,
     json_path: Path,
     markdown_path: Path,
@@ -1471,6 +1491,7 @@ def _publish_report_transaction(
             light_quotes=light_quotes,
             light_quote_error=light_quote_error,
             scan_ranking=scan_ranking,
+            watchlist_scan_info=watchlist_scan_info,
         )
 
         staged_report_dir = transaction_root / "reports" / report_date.isoformat()
@@ -2184,6 +2205,7 @@ def _build_report(
     light_quotes: Mapping[str, UniverseQuote],
     light_quote_error: str | None,
     scan_ranking: Sequence[tuple[str, float]] | None = None,
+    watchlist_scan_info: "WatchlistScanInfo | None" = None,
 ) -> ReportDocument:
     rule_hash = configuration_hash(resolve_risk_rules(settings))
     stocks: list[StockReport] = []
@@ -2278,6 +2300,7 @@ def _build_report(
             light_quote_error,
             report_date=report_date,
             scan_ranking=scan_ranking,
+            watchlist_scan_info=watchlist_scan_info,
         ),
     )
 
@@ -2289,6 +2312,7 @@ def _build_pool_overview(
     *,
     report_date: date,
     scan_ranking: Sequence[tuple[str, float]] | None = None,
+    watchlist_scan_info: "WatchlistScanInfo | None" = None,
 ) -> PoolOverview | None:
     """Build the lightweight full-pool overview, or None in legacy mode."""
     if not light_quotes and light_quote_error is None:
@@ -2323,6 +2347,15 @@ def _build_pool_overview(
         quote_date=quote_date,
         rows=tuple(rows),
         unavailable_reason=light_quote_error,
+        scan_date=(
+            watchlist_scan_info.scan_date if watchlist_scan_info is not None else None
+        ),
+        config_hash=(
+            watchlist_scan_info.config_hash if watchlist_scan_info is not None else None
+        ),
+        input_hash=(
+            watchlist_scan_info.input_hash if watchlist_scan_info is not None else None
+        ),
     )
 
 

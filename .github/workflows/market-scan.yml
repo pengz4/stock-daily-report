@@ -85,8 +85,7 @@ jobs:
             --data-settings config/settings.yaml \
             --output-root . \
             --scope watchlist \
-            --watchlist config/watchlist.yaml \
-            --resumable
+            --watchlist config/watchlist.yaml
       - name: Persist scan history
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

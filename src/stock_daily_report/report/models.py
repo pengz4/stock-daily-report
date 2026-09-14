@@ -314,6 +314,11 @@ class PoolOverview(BaseModel):
     quote_date: date
     rows: tuple[PoolOverviewRow, ...]
     unavailable_reason: str | None = None
+    # Fingerprints of the watchlist scan that drove the deep-analysis selection
+    # (when one existed); None in legacy reports or when the scan is missing.
+    scan_date: date | None = None
+    config_hash: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    input_hash: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
 
 
 class StockReport(BaseModel):

@@ -3814,6 +3814,10 @@ def test_watchlist_scan_selects_top_ranked_stocks_for_deep_analysis(
     assert [stock.code for stock in outputs.report.stocks] == ["000002", "000001"]
     pool = outputs.report.pool_overview
     assert pool is not None
+    # The pool overview records the watchlist scan fingerprint for change detection.
+    assert pool.scan_date == date(2026, 9, 4)
+    assert pool.config_hash == "c" * 64
+    assert pool.input_hash == "d" * 64
     ranks = {row.code: row.scan_rank for row in pool.rows}
     assert ranks == {"000002": 1, "000001": 2, "600519": None}
     assert [row.code for row in pool.rows] == ["000001", "000002", "600519"]
