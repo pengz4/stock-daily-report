@@ -49,6 +49,7 @@ Webhook URLs are runtime secrets, not configuration values:
 | --- | --- | --- |
 | `WECOM_WEBHOOK_URL` | Actions secret | `wecom` is enabled |
 | `FEISHU_WEBHOOK_URL` | Actions secret | `feishu` is enabled |
+| `FEISHU_WEBHOOK_SECRET` | Actions secret | `feishu` has signature verification enabled |
 | `REPORT_BASE_URL` | Actions variable | notifications are enabled |
 
 The scheduled workflow generates the report, deploys GitHub Pages, and sends

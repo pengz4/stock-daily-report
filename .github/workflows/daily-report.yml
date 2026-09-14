@@ -83,6 +83,7 @@ jobs:
         env:
           WECOM_WEBHOOK_URL: ${{ secrets.WECOM_WEBHOOK_URL }}
           FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+          FEISHU_WEBHOOK_SECRET: ${{ secrets.FEISHU_WEBHOOK_SECRET }}
         run: |
           report_date="${{ steps.report-date.outputs.report_date }}"
           report_path="reports/${report_date}/report.json"
@@ -201,6 +202,7 @@ jobs:
       REPORT_BASE_URL: ${{ vars.REPORT_BASE_URL }}
       WECOM_WEBHOOK_URL: ${{ secrets.WECOM_WEBHOOK_URL }}
       FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+      FEISHU_WEBHOOK_SECRET: ${{ secrets.FEISHU_WEBHOOK_SECRET }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4

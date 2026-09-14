@@ -1,8 +1,49 @@
+import base64
+import hashlib
+import hmac
 import json
 from datetime import UTC, datetime
 
 from stock_daily_report.notify.base import NotificationSummary
 from stock_daily_report.notify.feishu import FeishuNotifier
+
+
+def _summary() -> NotificationSummary:
+    return NotificationSummary(
+        report_date="2026-09-04",
+        generated_at=datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
+        data_timestamp=datetime(2026, 9, 4, 8, tzinfo=UTC),
+        report_url="https://reports.example/2026-09-04/",
+        stock_count=1,
+        decision_counts={"观察": 1},
+        focus_items=(),
+        high_risks=(),
+    )
+
+
+def test_feishu_signature_verification_stamps_timestamp_and_valid_sign(monkeypatch):
+    secret = "example-secret"
+    monkeypatch.setattr("stock_daily_report.notify.feishu.time.time", lambda: 1_700_000_000)
+
+    payload = FeishuNotifier("https://example.invalid", secret=secret).build_payload(
+        _summary()
+    )
+
+    assert payload["timestamp"] == "1700000000"
+    expected = base64.b64encode(
+        hmac.new(
+            f"{payload['timestamp']}\n{secret}".encode(),
+            digestmod=hashlib.sha256,
+        ).digest()
+    ).decode("utf-8")
+    assert payload["sign"] == expected
+
+
+def test_feishu_without_secret_omits_signature_fields():
+    payload = FeishuNotifier("https://example.invalid").build_payload(_summary())
+
+    assert "timestamp" not in payload
+    assert "sign" not in payload
 
 
 def test_feishu_summary_contains_link_counts_and_focus_without_full_report():

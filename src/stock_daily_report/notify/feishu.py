@@ -2,19 +2,49 @@
 
 from __future__ import annotations
 
+import base64
+import hashlib
+import hmac
 import json
+import time
+from collections.abc import Callable
 
 from stock_daily_report.notify.base import (
     NotificationSummary,
     WebhookNotifier,
+    WebhookTransport,
     _shorten,
 )
 
 
 class FeishuNotifier(WebhookNotifier):
-    """Send a compact rich-text summary through a Feishu bot webhook."""
+    """Send a compact rich-text summary through a Feishu bot webhook.
+
+    When the bot enables signature verification, supply the signing ``secret``;
+    each payload is then stamped with a fresh ``timestamp`` and its matching
+    HMAC-SHA256 ``sign`` so the request is accepted.
+    """
 
     channel = "feishu"
+
+    def __init__(
+        self,
+        webhook_url: str,
+        *,
+        secret: str | None = None,
+        timeout_seconds: float = 10.0,
+        max_attempts: int = 3,
+        transport: WebhookTransport | None = None,
+        sleep: Callable[[float], None] = time.sleep,
+    ) -> None:
+        super().__init__(
+            webhook_url,
+            timeout_seconds=timeout_seconds,
+            max_attempts=max_attempts,
+            transport=transport,
+            sleep=sleep,
+        )
+        self.secret = secret
 
     def build_payload(self, summary: NotificationSummary) -> dict[str, object]:
         return self.build_payloads(summary)[0]
@@ -61,7 +91,20 @@ class FeishuNotifier(WebhookNotifier):
         )
         if any(_payload_size(chunk) > _FEISHU_LIMIT for chunk in chunks):
             raise ValueError("notification summary exceeds Feishu message limit")
+        if self.secret:
+            chunks = [self._signed(chunk) for chunk in chunks]
         return tuple(chunks)
+
+    def _signed(self, payload: dict[str, object]) -> dict[str, object]:
+        timestamp = str(int(time.time()))
+        string_to_sign = f"{timestamp}\n{self.secret}"
+        digest = hmac.new(
+            string_to_sign.encode("utf-8"), digestmod=hashlib.sha256
+        ).digest()
+        signed = dict(payload)
+        signed["timestamp"] = timestamp
+        signed["sign"] = base64.b64encode(digest).decode("utf-8")
+        return signed
 
 
 _FEISHU_LIMIT = 20_000
