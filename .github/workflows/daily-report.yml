@@ -9,6 +9,12 @@ on:
         description: "Trading date to report (YYYY-MM-DD); blank means today"
         required: false
         type: string
+  push:
+    branches:
+      - master
+      - feature/report-wide-cn
+    paths:
+      - "config/watchlist.yaml"
 
 permissions:
   contents: write

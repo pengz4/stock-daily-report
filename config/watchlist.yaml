@@ -1,3 +1,6 @@
+# Self-selected A-shares. Risk-warning (ST) names are excluded, and this file
+# is the trigger for the daily report refresh: pushing a change here regenerates
+# the self-selected analysis without rerunning the full-market scan.
 stocks:
   - code: "600519"
     name: 贵州茅台
