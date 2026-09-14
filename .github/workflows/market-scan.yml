@@ -9,6 +9,12 @@ on:
         description: "Current Shanghai date; older dates require a valid artifact"
         required: false
         type: string
+  push:
+    branches:
+      - feature/report-wide-cn
+    paths:
+      - "config/market_scan.yaml"
+      - "config/watchlist.yaml"
 
 permissions:
   contents: write
