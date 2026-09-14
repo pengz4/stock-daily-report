@@ -2,7 +2,7 @@
   "schema_version": 2,
   "metadata": {
     "report_date": "2026-09-15",
-    "generated_at": "2026-09-14T23:09:49.503028Z",
+    "generated_at": "2026-09-14T23:32:16.046371Z",
     "latest_source_timestamp": "2026-09-14T23:09:49.503028Z",
     "snapshot_path": "snapshots/2026-09-15/input.json",
     "snapshot_hash": "94f46294e17d2fe6feea11b871ca677a4b1149555917380b13000a47a8006d1a",
@@ -21,23 +21,3091 @@
     "text": "Broad-market data unavailable; validated watchlist only: count=1, average_latest_return=0.22%, up=1, down=0, unchanged=0, latest_source=2026-09-14T23:09:49.503028+00:00."
   },
   "market_rankings": {
-    "status": "unavailable",
-    "unavailable_reason": "scan_artifact_missing",
-    "scan_date": null,
-    "generated_at": null,
-    "rule_version": null,
-    "config_hash": null,
-    "input_hash": null,
-    "provider_names": [],
-    "universe_count": null,
-    "eligible_count": null,
-    "valid_count": null,
-    "coverage": null,
-    "exclusion_counts": [],
+    "status": "available",
+    "unavailable_reason": null,
+    "scan_date": "2026-09-15",
+    "generated_at": "2026-09-14T23:30:06.547533Z",
+    "rule_version": "market-scan-v1",
+    "config_hash": "1f29a10131856884e84efeb9cf93b46f5290615447615faf0e5594a1a93afb9b",
+    "input_hash": "b00daf3f92298aa4c2a3d8d4c117e4008f084a687846947e570984b24d95fa66",
+    "provider_names": [
+      "MarketDataService",
+      "akshare",
+      "sina"
+    ],
+    "universe_count": 5561,
+    "eligible_count": 3652,
+    "valid_count": 3593,
+    "coverage": 0.9838444687842278,
+    "exclusion_counts": [
+      {
+        "code": "data_quality_rejected",
+        "count": 59
+      },
+      {
+        "code": "insufficient_history",
+        "count": 59
+      },
+      {
+        "code": "insufficient_latest_amount",
+        "count": 1846
+      },
+      {
+        "code": "invalid_latest_quote",
+        "count": 12
+      },
+      {
+        "code": "special_treatment_name",
+        "count": 204
+      },
+      {
+        "code": "suspended_quote",
+        "count": 12
+      }
+    ],
     "failure_counts": [],
-    "trend": [],
-    "balanced": [],
-    "consensus": []
+    "trend": [
+      {
+        "code": "603162",
+        "name": "海通发展",
+        "profile": "trend",
+        "rank": 1,
+        "score": 95.33727836116319,
+        "components": {
+          "trend": 100.0,
+          "momentum": 100.0,
+          "volume": 96.50719748661894,
+          "structure": 100.0,
+          "risk": 58.61198738170347
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "603261",
+        "name": "立航科技",
+        "profile": "trend",
+        "rank": 2,
+        "score": 92.56843856295052,
+        "components": {
+          "trend": 99.66746047862563,
+          "momentum": 94.44971315900253,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 43.831673998682284
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "high_realized_volatility",
+          "deep_trailing_drawdown"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "003033",
+        "name": "征和工业",
+        "profile": "trend",
+        "rank": 3,
+        "score": 91.36325157561733,
+        "components": {
+          "trend": 100.0,
+          "momentum": 89.06690140845072,
+          "volume": 98.47668944426862,
+          "structure": 100.0,
+          "risk": 48.71677736441824
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "high_realized_volatility",
+          "deep_trailing_drawdown"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "603983",
+        "name": "丸美生物",
+        "profile": "trend",
+        "rank": 4,
+        "score": 91.0492640204489,
+        "components": {
+          "trend": 100.0,
+          "momentum": 86.95312499999999,
+          "volume": 90.10287177353263,
+          "structure": 100.0,
+          "risk": 64.47895754419018
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "high_realized_volatility",
+          "deep_trailing_drawdown"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "002349",
+        "name": "精华制药",
+        "profile": "trend",
+        "rank": 5,
+        "score": 90.84628878765035,
+        "components": {
+          "trend": 90.25,
+          "momentum": 100.0,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 52.337887876503466
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "603136",
+        "name": "天目湖",
+        "profile": "trend",
+        "rank": 6,
+        "score": 90.4778855061715,
+        "components": {
+          "trend": 88.0340737880899,
+          "momentum": 92.42500321874597,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 81.35051335907252
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "000812",
+        "name": "陕西金叶",
+        "profile": "trend",
+        "rank": 7,
+        "score": 90.43348239741084,
+        "components": {
+          "trend": 88.59495760440525,
+          "momentum": 90.85140875632183,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 83.10328848531923
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "000713",
+        "name": "国投丰乐",
+        "profile": "trend",
+        "rank": 8,
+        "score": 89.89706014362658,
+        "components": {
+          "trend": 90.25,
+          "momentum": 94.28186714542191,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 60.0
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "601038",
+        "name": "一拖股份",
+        "profile": "trend",
+        "rank": 9,
+        "score": 89.31809917544008,
+        "components": {
+          "trend": 100.0,
+          "momentum": 97.95964125560538,
+          "volume": 43.17041917770446,
+          "structure": 100.0,
+          "risk": 84.54643922102805
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "600880",
+        "name": "博瑞传播",
+        "profile": "trend",
+        "rank": 10,
+        "score": 89.12257148066597,
+        "components": {
+          "trend": 89.46849541205725,
+          "momentum": 87.75720164609054,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 75.34588051413043
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "price_extended_above_ma20"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "000523",
+        "name": "红棉股份",
+        "profile": "trend",
+        "rank": 11,
+        "score": 88.8810024123752,
+        "components": {
+          "trend": 90.25,
+          "momentum": 94.92091735863977,
+          "volume": 100.0,
+          "structure": 85.0,
+          "risk": 47.922272047832585
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "688612",
+        "name": "威迈斯",
+        "profile": "trend",
+        "rank": 12,
+        "score": 88.65257821098633,
+        "components": {
+          "trend": 100.0,
+          "momentum": 72.13693663380384,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 70.11497220845177
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "001228",
+        "name": "永泰运",
+        "profile": "trend",
+        "rank": 13,
+        "score": 88.64176290788093,
+        "components": {
+          "trend": 88.00379139467151,
+          "momentum": 86.54734169653526,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 80.75854271318175
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "601169",
+        "name": "北京银行",
+        "profile": "trend",
+        "rank": 14,
+        "score": 88.60919836660139,
+        "components": {
+          "trend": 97.73626783936285,
+          "momentum": 86.66099934628113,
+          "volume": 57.53052023335845,
+          "structure": 100.0,
+          "risk": 100.0
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "603980",
+        "name": "吉华集团",
+        "profile": "trend",
+        "rank": 15,
+        "score": 88.51785537516366,
+        "components": {
+          "trend": 100.0,
+          "momentum": 94.79035639412997,
+          "volume": 59.18163682709306,
+          "structure": 100.0,
+          "risk": 62.035029328607045
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "001201",
+        "name": "东瑞股份",
+        "profile": "trend",
+        "rank": 16,
+        "score": 88.38698673044192,
+        "components": {
+          "trend": 90.25,
+          "momentum": 94.10161090458487,
+          "volume": 66.91440980024026,
+          "structure": 100.0,
+          "risk": 95.0684198903042
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "600738",
+        "name": "丽尚国潮",
+        "profile": "trend",
+        "rank": 17,
+        "score": 88.08106801915226,
+        "components": {
+          "trend": 86.80682974393767,
+          "momentum": 81.22846683893191,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 96.49454582700727
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "002561",
+        "name": "徐家汇",
+        "profile": "trend",
+        "rank": 18,
+        "score": 87.79112258070013,
+        "components": {
+          "trend": 86.15150535880112,
+          "momentum": 82.99029327541686,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 91.25857186614567
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "002909",
+        "name": "集泰股份",
+        "profile": "trend",
+        "rank": 19,
+        "score": 87.75910641745402,
+        "components": {
+          "trend": 90.25,
+          "momentum": 92.80265339966832,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 43.05810397553516
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "high_realized_volatility",
+          "deep_trailing_drawdown"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "600967",
+        "name": "内蒙一机",
+        "profile": "trend",
+        "rank": 20,
+        "score": 87.70757291820676,
+        "components": {
+          "trend": 90.25,
+          "momentum": 89.80408858603067,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 51.538463423975614
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "high_realized_volatility",
+          "price_extended_above_ma20"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "601665",
+        "name": "齐鲁银行",
+        "profile": "trend",
+        "rank": 21,
+        "score": 87.5923242048099,
+        "components": {
+          "trend": 99.12924813935507,
+          "momentum": 84.73389513175708,
+          "volume": 51.81094613907953,
+          "structure": 100.0,
+          "risk": 97.92352081711067
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "600104",
+        "name": "上汽集团",
+        "profile": "trend",
+        "rank": 22,
+        "score": 87.52206305173063,
+        "components": {
+          "trend": 83.53494195078088,
+          "momentum": 83.33550347222223,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 99.30688132212565
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "603999",
+        "name": "读者传媒",
+        "profile": "trend",
+        "rank": 23,
+        "score": 87.47680981590152,
+        "components": {
+          "trend": 90.25,
+          "momentum": 83.68969048292988,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 67.57402671022548
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "002161",
+        "name": "远 望 谷",
+        "profile": "trend",
+        "rank": 24,
+        "score": 87.37210735113749,
+        "components": {
+          "trend": 90.25,
+          "momentum": 89.00853273975144,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 50.57047529212053
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "high_realized_volatility",
+          "deep_trailing_drawdown"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "002377",
+        "name": "国创高新",
+        "profile": "trend",
+        "rank": 25,
+        "score": 87.18460120580512,
+        "components": {
+          "trend": 89.56110522378732,
+          "momentum": 87.23461379595207,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 57.11719716315208
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "600333",
+        "name": "长春燃气",
+        "profile": "trend",
+        "rank": 26,
+        "score": 87.13771945907096,
+        "components": {
+          "trend": 100.0,
+          "momentum": 79.58246374921194,
+          "volume": 58.202414066121335,
+          "structure": 100.0,
+          "risk": 95.32618224389186
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "601579",
+        "name": "会稽山",
+        "profile": "trend",
+        "rank": 27,
+        "score": 86.92947337195265,
+        "components": {
+          "trend": 100.0,
+          "momentum": 100.0,
+          "volume": 37.099475458684346,
+          "structure": 100.0,
+          "risk": 63.645520531499955
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "003039",
+        "name": "顺控发展",
+        "profile": "trend",
+        "rank": 28,
+        "score": 86.78345209679878,
+        "components": {
+          "trend": 86.6493318989921,
+          "momentum": 84.93464052287581,
+          "volume": 95.84723778549328,
+          "structure": 100.0,
+          "risk": 79.33774917565593
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "600256",
+        "name": "广汇能源",
+        "profile": "trend",
+        "rank": 29,
+        "score": 86.75785302452829,
+        "components": {
+          "trend": 90.25,
+          "momentum": 98.45345345345346,
+          "volume": 52.21359748312091,
+          "structure": 100.0,
+          "risk": 87.77277366024104
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "600697",
+        "name": "欧亚集团",
+        "profile": "trend",
+        "rank": 30,
+        "score": 86.66622626585524,
+        "components": {
+          "trend": 85.88348965071147,
+          "momentum": 82.32434222765235,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 83.21353254739385
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      }
+    ],
+    "balanced": [
+      {
+        "code": "603162",
+        "name": "海通发展",
+        "profile": "balanced",
+        "rank": 1,
+        "score": 93.26787773024836,
+        "components": {
+          "trend": 100.0,
+          "momentum": 100.0,
+          "volume": 96.50719748661894,
+          "structure": 100.0,
+          "risk": 58.61198738170347
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "000812",
+        "name": "陕西金叶",
+        "profile": "balanced",
+        "rank": 2,
+        "score": 92.21426230538383,
+        "components": {
+          "trend": 88.59495760440525,
+          "momentum": 90.85140875632183,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 83.10328848531923
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "603136",
+        "name": "天目湖",
+        "profile": "balanced",
+        "rank": 3,
+        "score": 92.09779978403705,
+        "components": {
+          "trend": 88.0340737880899,
+          "momentum": 92.42500321874597,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 81.35051335907252
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "600738",
+        "name": "丽尚国潮",
+        "profile": "balanced",
+        "rank": 4,
+        "score": 91.76192416501877,
+        "components": {
+          "trend": 86.80682974393767,
+          "momentum": 81.22846683893191,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 96.49454582700727
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "600104",
+        "name": "上汽集团",
+        "profile": "balanced",
+        "rank": 5,
+        "score": 91.62361547799756,
+        "components": {
+          "trend": 83.53494195078088,
+          "momentum": 83.33550347222223,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 99.30688132212565
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "002561",
+        "name": "徐家汇",
+        "profile": "balanced",
+        "rank": 6,
+        "score": 91.13229604264556,
+        "components": {
+          "trend": 86.15150535880112,
+          "momentum": 82.99029327541686,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 91.25857186614567
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "001228",
+        "name": "永泰运",
+        "profile": "balanced",
+        "rank": 7,
+        "score": 90.82438716468576,
+        "components": {
+          "trend": 88.00379139467151,
+          "momentum": 86.54734169653526,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 80.75854271318175
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "600880",
+        "name": "博瑞传播",
+        "profile": "balanced",
+        "rank": 8,
+        "score": 90.69387102995485,
+        "components": {
+          "trend": 89.46849541205725,
+          "momentum": 87.75720164609054,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 75.34588051413043
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [
+          "price_extended_above_ma20"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "603983",
+        "name": "丸美生物",
+        "profile": "balanced",
+        "rank": 9,
+        "score": 90.57789939765841,
+        "components": {
+          "trend": 100.0,
+          "momentum": 86.95312499999999,
+          "volume": 90.10287177353263,
+          "structure": 100.0,
+          "risk": 64.47895754419018
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [
+          "high_realized_volatility",
+          "deep_trailing_drawdown"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "600356",
+        "name": "恒丰纸业",
+        "profile": "balanced",
+        "rank": 10,
+        "score": 90.42631541577052,
+        "components": {
+          "trend": 86.00382099066249,
+          "momentum": 76.29247276108028,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 95.77783044237144
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "603261",
+        "name": "立航科技",
+        "profile": "balanced",
+        "rank": 11,
+        "score": 90.36493187519054,
+        "components": {
+          "trend": 99.66746047862563,
+          "momentum": 94.44971315900253,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 43.831673998682284
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [
+          "high_realized_volatility",
+          "deep_trailing_drawdown"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "601169",
+        "name": "北京银行",
+        "profile": "balanced",
+        "rank": 12,
+        "score": 90.28265825606884,
+        "components": {
+          "trend": 97.73626783936285,
+          "momentum": 86.66099934628113,
+          "volume": 57.53052023335845,
+          "structure": 100.0,
+          "risk": 100.0
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "001201",
+        "name": "东瑞股份",
+        "profile": "balanced",
+        "rank": 13,
+        "score": 90.19274663449865,
+        "components": {
+          "trend": 90.25,
+          "momentum": 94.10161090458487,
+          "volume": 66.91440980024026,
+          "structure": 100.0,
+          "risk": 95.0684198903042
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "688612",
+        "name": "威迈斯",
+        "profile": "balanced",
+        "rank": 14,
+        "score": 89.94463315802854,
+        "components": {
+          "trend": 100.0,
+          "momentum": 72.13693663380384,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 70.11497220845177
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "000713",
+        "name": "国投丰乐",
+        "profile": "balanced",
+        "rank": 15,
+        "score": 89.93137342908437,
+        "components": {
+          "trend": 90.25,
+          "momentum": 94.28186714542191,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 60.0
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "002349",
+        "name": "精华制药",
+        "profile": "balanced",
+        "rank": 16,
+        "score": 89.92568318147552,
+        "components": {
+          "trend": 90.25,
+          "momentum": 100.0,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 52.337887876503466
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "003033",
+        "name": "征和工业",
+        "profile": "balanced",
+        "rank": 17,
+        "score": 89.89240030299317,
+        "components": {
+          "trend": 100.0,
+          "momentum": 89.06690140845072,
+          "volume": 98.47668944426862,
+          "structure": 100.0,
+          "risk": 48.71677736441824
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [
+          "high_realized_volatility",
+          "deep_trailing_drawdown"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "600697",
+        "name": "欧亚集团",
+        "profile": "balanced",
+        "rank": 18,
+        "score": 89.71194522285299,
+        "components": {
+          "trend": 85.88348965071147,
+          "momentum": 82.32434222765235,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 83.21353254739385
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "601328",
+        "name": "交通银行",
+        "profile": "balanced",
+        "rank": 19,
+        "score": 89.64150979640822,
+        "components": {
+          "trend": 93.66173374882163,
+          "momentum": 75.62805637058773,
+          "volume": 76.11585598429457,
+          "structure": 100.0,
+          "risk": 100.0
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "603230",
+        "name": "内蒙新华",
+        "profile": "balanced",
+        "rank": 20,
+        "score": 89.36799078170336,
+        "components": {
+          "trend": 83.37041284403668,
+          "momentum": 78.3637492702378,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 91.22744716296526
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "003039",
+        "name": "顺控发展",
+        "profile": "balanced",
+        "rank": 21,
+        "score": 89.25947571844517,
+        "components": {
+          "trend": 86.6493318989921,
+          "momentum": 84.93464052287581,
+          "volume": 95.84723778549328,
+          "structure": 100.0,
+          "risk": 79.33774917565593
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "601665",
+        "name": "齐鲁银行",
+        "profile": "balanced",
+        "rank": 22,
+        "score": 89.14572351158647,
+        "components": {
+          "trend": 99.12924813935507,
+          "momentum": 84.73389513175708,
+          "volume": 51.81094613907953,
+          "structure": 100.0,
+          "risk": 97.92352081711067
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "688563",
+        "name": "航材股份",
+        "profile": "balanced",
+        "rank": 23,
+        "score": 88.96642206350731,
+        "components": {
+          "trend": 83.0424007662767,
+          "momentum": 74.00060856685207,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 95.02386746835921
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "603999",
+        "name": "读者传媒",
+        "profile": "balanced",
+        "rank": 24,
+        "score": 88.9490421031198,
+        "components": {
+          "trend": 90.25,
+          "momentum": 83.68969048292988,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 67.57402671022548
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "600333",
+        "name": "长春燃气",
+        "profile": "balanced",
+        "rank": 25,
+        "score": 88.94578219634437,
+        "components": {
+          "trend": 100.0,
+          "momentum": 79.58246374921194,
+          "volume": 58.202414066121335,
+          "structure": 100.0,
+          "risk": 95.32618224389186
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "601038",
+        "name": "一拖股份",
+        "profile": "balanced",
+        "rank": 26,
+        "score": 88.74945701093095,
+        "components": {
+          "trend": 100.0,
+          "momentum": 97.95964125560538,
+          "volume": 43.17041917770446,
+          "structure": 100.0,
+          "risk": 84.54643922102805
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "000921",
+        "name": "海信家电",
+        "profile": "balanced",
+        "rank": 27,
+        "score": 88.5799197033126,
+        "components": {
+          "trend": 92.18028241481821,
+          "momentum": 75.64776310628174,
+          "volume": 76.2202189422199,
+          "structure": 100.0,
+          "risk": 95.75499677518539
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "600710",
+        "name": "苏美达",
+        "profile": "balanced",
+        "rank": 28,
+        "score": 88.20730768131044,
+        "components": {
+          "trend": 82.08904314822207,
+          "momentum": 69.06603349993377,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 98.44925357904707
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "301355",
+        "name": "南王科技",
+        "profile": "balanced",
+        "rank": 29,
+        "score": 87.89871788219519,
+        "components": {
+          "trend": 85.33587373368853,
+          "momentum": 75.69723883036498,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 81.05671997343757
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "002377",
+        "name": "国创高新",
+        "profile": "balanced",
+        "rank": 30,
+        "score": 87.88283390079943,
+        "components": {
+          "trend": 89.56110522378732,
+          "momentum": 87.23461379595207,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 57.11719716315208
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      }
+    ],
+    "consensus": [
+      {
+        "code": "603162",
+        "name": "海通发展",
+        "trend_rank": 1,
+        "trend_score": 95.33727836116319,
+        "balanced_rank": 1,
+        "balanced_score": 93.26787773024836,
+        "trend_components": {
+          "trend": 100.0,
+          "momentum": 100.0,
+          "volume": 96.50719748661894,
+          "structure": 100.0,
+          "risk": 58.61198738170347
+        },
+        "balanced_components": {
+          "trend": 100.0,
+          "momentum": 100.0,
+          "volume": 96.50719748661894,
+          "structure": 100.0,
+          "risk": 58.61198738170347
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "confirmed_central_breakout_observation",
+          "confirmed_central_structure",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "ma20_above_ma60",
+          "ma20_slope_positive",
+          "ma60_above_ma120",
+          "ma60_slope_positive",
+          "macd_line_above_signal",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "603261",
+        "name": "立航科技",
+        "trend_rank": 2,
+        "trend_score": 92.56843856295052,
+        "balanced_rank": 11,
+        "balanced_score": 90.36493187519054,
+        "trend_components": {
+          "trend": 99.66746047862563,
+          "momentum": 94.44971315900253,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 43.831673998682284
+        },
+        "balanced_components": {
+          "trend": 99.66746047862563,
+          "momentum": 94.44971315900253,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 43.831673998682284
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "confirmed_central_breakout_observation",
+          "confirmed_central_structure",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "ma20_above_ma60",
+          "ma20_slope_positive",
+          "ma60_above_ma120",
+          "ma60_slope_positive",
+          "macd_line_above_signal",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "deep_trailing_drawdown",
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "003033",
+        "name": "征和工业",
+        "trend_rank": 3,
+        "trend_score": 91.36325157561733,
+        "balanced_rank": 17,
+        "balanced_score": 89.89240030299317,
+        "trend_components": {
+          "trend": 100.0,
+          "momentum": 89.06690140845072,
+          "volume": 98.47668944426862,
+          "structure": 100.0,
+          "risk": 48.71677736441824
+        },
+        "balanced_components": {
+          "trend": 100.0,
+          "momentum": 89.06690140845072,
+          "volume": 98.47668944426862,
+          "structure": 100.0,
+          "risk": 48.71677736441824
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "confirmed_central_breakout_observation",
+          "confirmed_central_structure",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "ma20_above_ma60",
+          "ma20_slope_positive",
+          "ma60_above_ma120",
+          "ma60_slope_positive",
+          "macd_line_above_signal",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "deep_trailing_drawdown",
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "603983",
+        "name": "丸美生物",
+        "trend_rank": 4,
+        "trend_score": 91.0492640204489,
+        "balanced_rank": 9,
+        "balanced_score": 90.57789939765841,
+        "trend_components": {
+          "trend": 100.0,
+          "momentum": 86.95312499999999,
+          "volume": 90.10287177353263,
+          "structure": 100.0,
+          "risk": 64.47895754419018
+        },
+        "balanced_components": {
+          "trend": 100.0,
+          "momentum": 86.95312499999999,
+          "volume": 90.10287177353263,
+          "structure": 100.0,
+          "risk": 64.47895754419018
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "confirmed_central_breakout_observation",
+          "confirmed_central_structure",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "ma20_above_ma60",
+          "ma20_slope_positive",
+          "ma60_above_ma120",
+          "ma60_slope_positive",
+          "macd_line_above_signal",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "deep_trailing_drawdown",
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "002349",
+        "name": "精华制药",
+        "trend_rank": 5,
+        "trend_score": 90.84628878765035,
+        "balanced_rank": 16,
+        "balanced_score": 89.92568318147552,
+        "trend_components": {
+          "trend": 90.25,
+          "momentum": 100.0,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 52.337887876503466
+        },
+        "balanced_components": {
+          "trend": 90.25,
+          "momentum": 100.0,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 52.337887876503466
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "confirmed_central_breakout_observation",
+          "confirmed_central_structure",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "ma20_above_ma60",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "macd_line_above_signal",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "603136",
+        "name": "天目湖",
+        "trend_rank": 6,
+        "trend_score": 90.4778855061715,
+        "balanced_rank": 3,
+        "balanced_score": 92.09779978403705,
+        "trend_components": {
+          "trend": 88.0340737880899,
+          "momentum": 92.42500321874597,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 81.35051335907252
+        },
+        "balanced_components": {
+          "trend": 88.0340737880899,
+          "momentum": 92.42500321874597,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 81.35051335907252
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "confirmed_central_breakout_observation",
+          "confirmed_central_structure",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "ma20_above_ma60",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "macd_line_above_signal",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "risk_measures_within_moderate_ranges",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "000812",
+        "name": "陕西金叶",
+        "trend_rank": 7,
+        "trend_score": 90.43348239741084,
+        "balanced_rank": 2,
+        "balanced_score": 92.21426230538383,
+        "trend_components": {
+          "trend": 88.59495760440525,
+          "momentum": 90.85140875632183,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 83.10328848531923
+        },
+        "balanced_components": {
+          "trend": 88.59495760440525,
+          "momentum": 90.85140875632183,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 83.10328848531923
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "confirmed_central_breakout_observation",
+          "confirmed_central_structure",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "ma20_above_ma60",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "macd_line_above_signal",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "risk_measures_within_moderate_ranges",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "000713",
+        "name": "国投丰乐",
+        "trend_rank": 8,
+        "trend_score": 89.89706014362658,
+        "balanced_rank": 15,
+        "balanced_score": 89.93137342908437,
+        "trend_components": {
+          "trend": 90.25,
+          "momentum": 94.28186714542191,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 60.0
+        },
+        "balanced_components": {
+          "trend": 90.25,
+          "momentum": 94.28186714542191,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 60.0
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "confirmed_central_breakout_observation",
+          "confirmed_central_structure",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "ma20_above_ma60",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "macd_line_above_signal",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "601038",
+        "name": "一拖股份",
+        "trend_rank": 9,
+        "trend_score": 89.31809917544008,
+        "balanced_rank": 26,
+        "balanced_score": 88.74945701093095,
+        "trend_components": {
+          "trend": 100.0,
+          "momentum": 97.95964125560538,
+          "volume": 43.17041917770446,
+          "structure": 100.0,
+          "risk": 84.54643922102805
+        },
+        "balanced_components": {
+          "trend": 100.0,
+          "momentum": 97.95964125560538,
+          "volume": 43.17041917770446,
+          "structure": 100.0,
+          "risk": 84.54643922102805
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "confirmed_central_breakout_observation",
+          "confirmed_central_structure",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "ma20_above_ma60",
+          "ma20_slope_positive",
+          "ma60_above_ma120",
+          "ma60_slope_positive",
+          "macd_line_above_signal",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "risk_measures_within_moderate_ranges",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "600880",
+        "name": "博瑞传播",
+        "trend_rank": 10,
+        "trend_score": 89.12257148066597,
+        "balanced_rank": 8,
+        "balanced_score": 90.69387102995485,
+        "trend_components": {
+          "trend": 89.46849541205725,
+          "momentum": 87.75720164609054,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 75.34588051413043
+        },
+        "balanced_components": {
+          "trend": 89.46849541205725,
+          "momentum": 87.75720164609054,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 75.34588051413043
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "confirmed_central_breakout_observation",
+          "confirmed_central_structure",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "ma20_above_ma60",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "macd_line_above_signal",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "price_extended_above_ma20"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "688612",
+        "name": "威迈斯",
+        "trend_rank": 12,
+        "trend_score": 88.65257821098633,
+        "balanced_rank": 14,
+        "balanced_score": 89.94463315802854,
+        "trend_components": {
+          "trend": 100.0,
+          "momentum": 72.13693663380384,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 70.11497220845177
+        },
+        "balanced_components": {
+          "trend": 100.0,
+          "momentum": 72.13693663380384,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 70.11497220845177
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "confirmed_central_breakout_observation",
+          "confirmed_central_structure",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "ma20_above_ma60",
+          "ma20_slope_positive",
+          "ma60_above_ma120",
+          "ma60_slope_positive",
+          "macd_line_above_signal",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "001228",
+        "name": "永泰运",
+        "trend_rank": 13,
+        "trend_score": 88.64176290788093,
+        "balanced_rank": 7,
+        "balanced_score": 90.82438716468576,
+        "trend_components": {
+          "trend": 88.00379139467151,
+          "momentum": 86.54734169653526,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 80.75854271318175
+        },
+        "balanced_components": {
+          "trend": 88.00379139467151,
+          "momentum": 86.54734169653526,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 80.75854271318175
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "confirmed_central_breakout_observation",
+          "confirmed_central_structure",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "ma20_above_ma60",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "macd_line_above_signal",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "601169",
+        "name": "北京银行",
+        "trend_rank": 14,
+        "trend_score": 88.60919836660139,
+        "balanced_rank": 12,
+        "balanced_score": 90.28265825606884,
+        "trend_components": {
+          "trend": 97.73626783936285,
+          "momentum": 86.66099934628113,
+          "volume": 57.53052023335845,
+          "structure": 100.0,
+          "risk": 100.0
+        },
+        "balanced_components": {
+          "trend": 97.73626783936285,
+          "momentum": 86.66099934628113,
+          "volume": 57.53052023335845,
+          "structure": 100.0,
+          "risk": 100.0
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "confirmed_central_breakout_observation",
+          "confirmed_central_structure",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "ma20_above_ma60",
+          "ma20_slope_positive",
+          "ma60_above_ma120",
+          "ma60_slope_positive",
+          "macd_line_above_signal",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "risk_measures_within_moderate_ranges",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "001201",
+        "name": "东瑞股份",
+        "trend_rank": 16,
+        "trend_score": 88.38698673044192,
+        "balanced_rank": 13,
+        "balanced_score": 90.19274663449865,
+        "trend_components": {
+          "trend": 90.25,
+          "momentum": 94.10161090458487,
+          "volume": 66.91440980024026,
+          "structure": 100.0,
+          "risk": 95.0684198903042
+        },
+        "balanced_components": {
+          "trend": 90.25,
+          "momentum": 94.10161090458487,
+          "volume": 66.91440980024026,
+          "structure": 100.0,
+          "risk": 95.0684198903042
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "confirmed_central_breakout_observation",
+          "confirmed_central_structure",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "ma20_above_ma60",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "macd_line_above_signal",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "risk_measures_within_moderate_ranges",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "600738",
+        "name": "丽尚国潮",
+        "trend_rank": 17,
+        "trend_score": 88.08106801915226,
+        "balanced_rank": 4,
+        "balanced_score": 91.76192416501877,
+        "trend_components": {
+          "trend": 86.80682974393767,
+          "momentum": 81.22846683893191,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 96.49454582700727
+        },
+        "balanced_components": {
+          "trend": 86.80682974393767,
+          "momentum": 81.22846683893191,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 96.49454582700727
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "confirmed_central_breakout_observation",
+          "confirmed_central_structure",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "ma20_above_ma60",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "macd_line_above_signal",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "risk_measures_within_moderate_ranges",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "002561",
+        "name": "徐家汇",
+        "trend_rank": 18,
+        "trend_score": 87.79112258070013,
+        "balanced_rank": 6,
+        "balanced_score": 91.13229604264556,
+        "trend_components": {
+          "trend": 86.15150535880112,
+          "momentum": 82.99029327541686,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 91.25857186614567
+        },
+        "balanced_components": {
+          "trend": 86.15150535880112,
+          "momentum": 82.99029327541686,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 91.25857186614567
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "confirmed_central_breakout_observation",
+          "confirmed_central_structure",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "ma20_above_ma60",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "macd_line_above_signal",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "risk_measures_within_moderate_ranges",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "601665",
+        "name": "齐鲁银行",
+        "trend_rank": 21,
+        "trend_score": 87.5923242048099,
+        "balanced_rank": 22,
+        "balanced_score": 89.14572351158647,
+        "trend_components": {
+          "trend": 99.12924813935507,
+          "momentum": 84.73389513175708,
+          "volume": 51.81094613907953,
+          "structure": 100.0,
+          "risk": 97.92352081711067
+        },
+        "balanced_components": {
+          "trend": 99.12924813935507,
+          "momentum": 84.73389513175708,
+          "volume": 51.81094613907953,
+          "structure": 100.0,
+          "risk": 97.92352081711067
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "confirmed_central_breakout_observation",
+          "confirmed_central_structure",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "ma20_above_ma60",
+          "ma20_slope_positive",
+          "ma60_above_ma120",
+          "ma60_slope_positive",
+          "macd_line_above_signal",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "risk_measures_within_moderate_ranges",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "600104",
+        "name": "上汽集团",
+        "trend_rank": 22,
+        "trend_score": 87.52206305173063,
+        "balanced_rank": 5,
+        "balanced_score": 91.62361547799756,
+        "trend_components": {
+          "trend": 83.53494195078088,
+          "momentum": 83.33550347222223,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 99.30688132212565
+        },
+        "balanced_components": {
+          "trend": 83.53494195078088,
+          "momentum": 83.33550347222223,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 99.30688132212565
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "confirmed_central_breakout_observation",
+          "confirmed_central_structure",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "ma20_above_ma60",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "macd_line_above_signal",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "risk_measures_within_moderate_ranges",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "603999",
+        "name": "读者传媒",
+        "trend_rank": 23,
+        "trend_score": 87.47680981590152,
+        "balanced_rank": 24,
+        "balanced_score": 88.9490421031198,
+        "trend_components": {
+          "trend": 90.25,
+          "momentum": 83.68969048292988,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 67.57402671022548
+        },
+        "balanced_components": {
+          "trend": 90.25,
+          "momentum": 83.68969048292988,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 67.57402671022548
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "confirmed_central_breakout_observation",
+          "confirmed_central_structure",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "ma20_above_ma60",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "macd_line_above_signal",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "002377",
+        "name": "国创高新",
+        "trend_rank": 25,
+        "trend_score": 87.18460120580512,
+        "balanced_rank": 30,
+        "balanced_score": 87.88283390079943,
+        "trend_components": {
+          "trend": 89.56110522378732,
+          "momentum": 87.23461379595207,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 57.11719716315208
+        },
+        "balanced_components": {
+          "trend": 89.56110522378732,
+          "momentum": 87.23461379595207,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 57.11719716315208
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "confirmed_central_breakout_observation",
+          "confirmed_central_structure",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "ma20_above_ma60",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "macd_line_above_signal",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "600333",
+        "name": "长春燃气",
+        "trend_rank": 26,
+        "trend_score": 87.13771945907096,
+        "balanced_rank": 25,
+        "balanced_score": 88.94578219634437,
+        "trend_components": {
+          "trend": 100.0,
+          "momentum": 79.58246374921194,
+          "volume": 58.202414066121335,
+          "structure": 100.0,
+          "risk": 95.32618224389186
+        },
+        "balanced_components": {
+          "trend": 100.0,
+          "momentum": 79.58246374921194,
+          "volume": 58.202414066121335,
+          "structure": 100.0,
+          "risk": 95.32618224389186
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "confirmed_central_breakout_observation",
+          "confirmed_central_structure",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "ma20_above_ma60",
+          "ma20_slope_positive",
+          "ma60_above_ma120",
+          "ma60_slope_positive",
+          "macd_line_above_signal",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "risk_measures_within_moderate_ranges",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "003039",
+        "name": "顺控发展",
+        "trend_rank": 28,
+        "trend_score": 86.78345209679878,
+        "balanced_rank": 21,
+        "balanced_score": 89.25947571844517,
+        "trend_components": {
+          "trend": 86.6493318989921,
+          "momentum": 84.93464052287581,
+          "volume": 95.84723778549328,
+          "structure": 100.0,
+          "risk": 79.33774917565593
+        },
+        "balanced_components": {
+          "trend": 86.6493318989921,
+          "momentum": 84.93464052287581,
+          "volume": 95.84723778549328,
+          "structure": 100.0,
+          "risk": 79.33774917565593
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "confirmed_central_breakout_observation",
+          "confirmed_central_structure",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "ma20_above_ma60",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "macd_line_above_signal",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      },
+      {
+        "code": "600697",
+        "name": "欧亚集团",
+        "trend_rank": 30,
+        "trend_score": 86.66622626585524,
+        "balanced_rank": 18,
+        "balanced_score": 89.71194522285299,
+        "trend_components": {
+          "trend": 85.88348965071147,
+          "momentum": 82.32434222765235,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 83.21353254739385
+        },
+        "balanced_components": {
+          "trend": 85.88348965071147,
+          "momentum": 82.32434222765235,
+          "volume": 100.0,
+          "structure": 100.0,
+          "risk": 83.21353254739385
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "confirmed_central_breakout_observation",
+          "confirmed_central_structure",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "ma20_above_ma60",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "macd_line_above_signal",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "risk_measures_within_moderate_ranges",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "risk_codes": [],
+        "latest_trade_date": "2026-09-14",
+        "provider_name": "sina"
+      }
+    ]
   },
   "stocks": [
     {
@@ -656,8 +3724,8 @@
         "latest_price": 8.28,
         "change_pct": -3.384,
         "amount": 153643986.0,
-        "scan_rank": null,
-        "scan_score": null
+        "scan_rank": 17,
+        "scan_score": 80.02074955815885
       },
       {
         "code": "000592",
@@ -887,8 +3955,8 @@
         "latest_price": 7.38,
         "change_pct": -1.862,
         "amount": 360286882.0,
-        "scan_rank": null,
-        "scan_score": null
+        "scan_rank": 16,
+        "scan_score": 80.13788417450105
       },
       {
         "code": "000878",
@@ -1558,8 +4626,8 @@
         "latest_price": 7.79,
         "change_pct": -5.461,
         "amount": 343276636.0,
-        "scan_rank": null,
-        "scan_score": null
+        "scan_rank": 13,
+        "scan_score": 81.58233709662811
       },
       {
         "code": "002385",
@@ -1767,8 +4835,8 @@
         "latest_price": 7.84,
         "change_pct": 1.423,
         "amount": 188616412.0,
-        "scan_rank": null,
-        "scan_score": null
+        "scan_rank": 8,
+        "scan_score": 84.06059195705454
       },
       {
         "code": "002549",
@@ -2724,8 +5792,8 @@
         "latest_price": 14.78,
         "change_pct": -0.605,
         "amount": 560374885.0,
-        "scan_rank": null,
-        "scan_score": null
+        "scan_rank": 11,
+        "scan_score": 83.0077244193804
       },
       {
         "code": "300499",
@@ -3010,8 +6078,8 @@
         "latest_price": 19.78,
         "change_pct": -6.389,
         "amount": 284211816.0,
-        "scan_rank": null,
-        "scan_score": null
+        "scan_rank": 20,
+        "scan_score": 79.11075215069152
       },
       {
         "code": "300722",
@@ -3725,8 +6793,8 @@
         "latest_price": 38.98,
         "change_pct": -1.937,
         "amount": 5804320388.0,
-        "scan_rank": null,
-        "scan_score": null
+        "scan_rank": 6,
+        "scan_score": 84.7422523057482
       },
       {
         "code": "600151",
@@ -3780,8 +6848,8 @@
         "latest_price": 6.89,
         "change_pct": -1.852,
         "amount": 957181674.0,
-        "scan_rank": null,
-        "scan_score": null
+        "scan_rank": 4,
+        "scan_score": 87.76364636219499
       },
       {
         "code": "600259",
@@ -4008,9 +7076,9 @@
         "name": "贵州茅台",
         "group": "consumer",
         "priority": "core",
-        "latest_price": null,
-        "change_pct": null,
-        "amount": null,
+        "latest_price": 1277.96,
+        "change_pct": 0.22,
+        "amount": 2116621850.0,
         "scan_rank": null,
         "scan_score": null
       },
@@ -4132,8 +7200,8 @@
         "latest_price": 3.52,
         "change_pct": 6.667,
         "amount": 376223172.0,
-        "scan_rank": null,
-        "scan_score": null
+        "scan_rank": 15,
+        "scan_score": 80.29876244174675
       },
       {
         "code": "600611",
@@ -4165,8 +7233,8 @@
         "latest_price": 16.05,
         "change_pct": 0.627,
         "amount": 328982964.0,
-        "scan_rank": null,
-        "scan_score": null
+        "scan_rank": 12,
+        "scan_score": 82.28443175338919
       },
       {
         "code": "600679",
@@ -4385,8 +7453,8 @@
         "latest_price": 17.69,
         "change_pct": 1.028,
         "amount": 887565101.0,
-        "scan_rank": null,
-        "scan_score": null
+        "scan_rank": 7,
+        "scan_score": 84.44768705501387
       },
       {
         "code": "600938",
@@ -4429,8 +7497,8 @@
         "latest_price": 14.31,
         "change_pct": -4.473,
         "amount": 2516398291.0,
-        "scan_rank": null,
-        "scan_score": null
+        "scan_rank": 3,
+        "scan_score": 87.76658723080247
       },
       {
         "code": "600977",
@@ -4495,8 +7563,8 @@
         "latest_price": 4.56,
         "change_pct": 0.885,
         "amount": 238557630.0,
-        "scan_rank": null,
-        "scan_score": null
+        "scan_rank": 10,
+        "scan_score": 83.17182373921867
       },
       {
         "code": "601012",
@@ -4638,8 +7706,8 @@
         "latest_price": 7.62,
         "change_pct": 1.872,
         "amount": 1694869749.0,
-        "scan_rank": null,
-        "scan_score": null
+        "scan_rank": 2,
+        "scan_score": 89.64150979640822
       },
       {
         "code": "601333",
@@ -4649,8 +7717,8 @@
         "latest_price": 3.14,
         "change_pct": 0.965,
         "amount": 206760669.0,
-        "scan_rank": null,
-        "scan_score": null
+        "scan_rank": 18,
+        "scan_score": 79.782810847463
       },
       {
         "code": "601336",
@@ -4847,8 +7915,8 @@
         "latest_price": 11.42,
         "change_pct": 1.692,
         "amount": 143884687.0,
-        "scan_rank": null,
-        "scan_score": null
+        "scan_rank": 19,
+        "scan_score": 79.35257594788646
       },
       {
         "code": "601985",
@@ -4979,8 +8047,8 @@
         "latest_price": 13.9,
         "change_pct": -1.836,
         "amount": 1381583685.0,
-        "scan_rank": null,
-        "scan_score": null
+        "scan_rank": 1,
+        "scan_score": 95.33727836116319
       },
       {
         "code": "603180",
@@ -5133,8 +8201,8 @@
         "latest_price": 10.39,
         "change_pct": 2.973,
         "amount": 723840938.0,
-        "scan_rank": null,
-        "scan_score": null
+        "scan_rank": 5,
+        "scan_score": 87.11918564879569
       },
       {
         "code": "603345",
@@ -5177,8 +8245,8 @@
         "latest_price": 12.96,
         "change_pct": -2.336,
         "amount": 1495438653.0,
-        "scan_rank": null,
-        "scan_score": null
+        "scan_rank": 9,
+        "scan_score": 83.1896911840381
       },
       {
         "code": "603501",
@@ -5936,8 +9004,8 @@
         "latest_price": 43.71,
         "change_pct": -5.635,
         "amount": 556651243.0,
-        "scan_rank": null,
-        "scan_score": null
+        "scan_rank": 14,
+        "scan_score": 80.33935087247578
       },
       {
         "code": "688575",
@@ -6073,8 +9141,8 @@
       }
     ],
     "unavailable_reason": null,
-    "scan_date": null,
-    "config_hash": null,
-    "input_hash": null
+    "scan_date": "2026-09-15",
+    "config_hash": "1f29a10131856884e84efeb9cf93b46f5290615447615faf0e5594a1a93afb9b",
+    "input_hash": "47266509263617aa35ca5f4304b487dd7cd04dbe6c7dac2eb23181c9d8ffdf23"
   }
 }
