@@ -70,6 +70,11 @@ def main(argv: list[str] | None = None) -> int:
         help="refresh report rendering without refetching an immutable snapshot",
     )
     daily.add_argument(
+        "--overwrite-snapshot",
+        action="store_true",
+        help="replace the date's snapshot when the deep-analysis set changed",
+    )
+    daily.add_argument(
         "--report-url",
         help="Final absolute published report URL; otherwise REPORT_BASE_URL is used",
     )
@@ -154,6 +159,7 @@ def main(argv: list[str] | None = None) -> int:
                 provider=provider,
                 report_date=args.date,
                 reuse_existing_snapshot=args.reuse_existing_snapshot,
+                overwrite_snapshot=args.overwrite_snapshot,
             )
             if settings.notifications.enabled_channels and not args.skip_notifications:
                 if args.report_url:

@@ -3898,3 +3898,55 @@ def test_incomplete_watchlist_scan_falls_back_to_manual_priorities(
     assert [stock.code for stock in outputs.report.stocks] == ["600519"]
     assert outputs.report.pool_overview is not None
     assert all(row.scan_rank is None for row in outputs.report.pool_overview.rows)
+
+
+def test_overwrite_snapshot_replaces_same_date_snapshot_for_new_deep_set(
+    tmp_path, fixture_settings
+):
+    watchlist = Watchlist(
+        stocks=[
+            {"code": "600519", "name": "贵州茅台", "priority": "core"},
+            {"code": "000001", "name": "平安银行", "priority": "extended"},
+        ]
+    )
+    provider = RecordingProvider(
+        {"600519": make_bars("600519"), "000001": make_bars("000001")}
+    )
+
+    # First run: only the core stock is analysed and snapshotted.
+    run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=provider,
+        report_date=date(2026, 9, 4),
+        now=lambda: datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
+    )
+    snapshot = load_snapshot(tmp_path / "snapshots/2026-09-04/input.json")
+    assert list(snapshot.bars_by_code) == ["600519"]
+
+    # Second run: the deep set gains 000001 via a watchlist scan ranking; the
+    # date's snapshot must be replaced instead of raising a conflict.
+    write_scan_artifact(
+        tmp_path,
+        _watchlist_scan_artifact(
+            ("000001", "平安银行", 90.0), ("600519", "贵州茅台", 80.0)
+        ),
+        directory="watchlist-scans",
+    )
+    outputs = run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=provider,
+        universe_provider=FakeUniverseProvider(
+            quotes=[_light_quote("000001", "平安银行", 10.5, 0.5, 900_000.0)]
+        ),
+        report_date=date(2026, 9, 4),
+        now=lambda: datetime(2026, 9, 4, 10, 0, tzinfo=UTC),
+        overwrite_snapshot=True,
+    )
+
+    replaced = load_snapshot(tmp_path / "snapshots/2026-09-04/input.json")
+    assert set(replaced.bars_by_code) == {"600519", "000001"}
+    assert {stock.code for stock in outputs.report.stocks} == {"600519", "000001"}

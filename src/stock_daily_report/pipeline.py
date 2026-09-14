@@ -304,6 +304,7 @@ def run_daily_report(
     report_date: date | None = None,
     now: Callable[[], datetime] | None = None,
     reuse_existing_snapshot: bool = False,
+    overwrite_snapshot: bool = False,
 ) -> ReportOutputs:
     """Fetch, validate, snapshot, analyze, and publish one daily report.
 
@@ -516,6 +517,7 @@ def run_daily_report(
                         light_quote_error=light_quote_error,
                         scan_ranking=watchlist_scan_ranking,
                         watchlist_scan_info=watchlist_scan_info,
+                        overwrite_snapshot=overwrite_snapshot,
                         service=active_service,
                         json_path=json_path,
                         markdown_path=markdown_path,
@@ -1481,6 +1483,7 @@ def _publish_report_transaction(
     light_quote_error: str | None,
     scan_ranking: Sequence[tuple[str, float]] | None,
     watchlist_scan_info: "WatchlistScanInfo | None",
+    overwrite_snapshot: bool,
     service: MarketDataService | None,
     json_path: Path,
     markdown_path: Path,
@@ -1497,7 +1500,9 @@ def _publish_report_transaction(
         staged_snapshot = load_snapshot(staged_snapshot_path)
         snapshot_target = root / "snapshots" / report_date.isoformat() / "input.json"
         snapshot = _resolve_snapshot_for_publication(
-            snapshot_target, staged_snapshot
+            snapshot_target,
+            staged_snapshot,
+            overwrite=overwrite_snapshot,
         )
         market_rankings = _load_market_rankings(root, report_date)
         report = _build_report(
@@ -1542,7 +1547,9 @@ def _publish_report_transaction(
             report_date=report_date,
             staged_report_dir=staged_report_dir,
             staged_snapshot_path=(
-                None if snapshot_target.exists() else staged_snapshot_path
+                None
+                if (snapshot_target.exists() and not overwrite_snapshot)
+                else staged_snapshot_path
             ),
             staged_site_index=staged_site_dir / "index.html",
             staged_styles_path=staged_styles_path,
@@ -1627,8 +1634,10 @@ def _publish_report_transaction(
 def _resolve_snapshot_for_publication(
     snapshot_target: Path,
     staged_snapshot: InputSnapshot,
+    *,
+    overwrite: bool = False,
 ) -> InputSnapshot:
-    if not snapshot_target.exists():
+    if not snapshot_target.exists() or overwrite:
         return staged_snapshot
     existing_snapshot = load_snapshot(snapshot_target)
     if (

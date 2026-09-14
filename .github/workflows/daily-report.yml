@@ -141,13 +141,14 @@ jobs:
             else
               echo "No full-market scan artifact for this date; reusing immutable report"
             fi
-            # A changed or missing watchlist scan also forces regeneration of
-            # the self-selected deep-analysis section. The date's snapshot is
-            # frozen, so reuse it instead of refetching history.
+            # A changed or missing watchlist scan forces regeneration of the
+            # self-selected deep-analysis section. The deep set itself changed,
+            # so refetch history (do NOT reuse the frozen snapshot, which only
+            # holds the previous deep set's bars).
             if [ "$reuse_report" = true ]; then
               if [ ! -f "$watchlist_scan_path" ]; then
                 reuse_report=false
-                reuse_snapshot=true
+                reuse_snapshot=false
                 echo "No watchlist scan for this date; regenerating the self-selected section"
               elif ! python - "$report_path" "$watchlist_scan_path" <<'PY'
           import sys
@@ -178,7 +179,7 @@ jobs:
           PY
               then
                 reuse_report=false
-                reuse_snapshot=true
+                reuse_snapshot=false
                 echo "Watchlist scan changed; regenerating the self-selected section"
               fi
             fi
@@ -187,6 +188,8 @@ jobs:
             refresh_args=()
             if [ "$reuse_snapshot" = true ]; then
               refresh_args+=(--reuse-existing-snapshot)
+            else
+              refresh_args+=(--overwrite-snapshot)
             fi
             python -m stock_daily_report.cli daily \
               --date "$report_date" \
