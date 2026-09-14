@@ -3638,6 +3638,10 @@ def test_priority_watchlist_analyzes_core_only_and_renders_pool_overview(
     assert extended_row.latest_price == pytest.approx(10.5)
     assert extended_row.change_pct == pytest.approx(-0.45)
     assert extended_row.priority == "extended"
+    # Core stocks are quoted too, so every pool row carries a price.
+    core_row = next(row for row in pool.rows if row.code == "600519")
+    assert core_row.latest_price == pytest.approx(1500.0)
+    assert core_row.priority == "core"
 
     document = json.loads(outputs.json_path.read_text(encoding="utf-8"))
     assert document["pool_overview"]["quote_date"] == "2026-09-04"

@@ -199,13 +199,15 @@ def _split_watchlist_by_priority(
 
 
 def _fetch_light_quotes(
+    watchlist: Watchlist,
     extended_stocks: Sequence[WatchlistStock],
     universe_provider: AkShareUniverseProvider | None,
 ) -> tuple[dict[str, UniverseQuote], str | None]:
-    """Fetch one bulk quote snapshot for the lightweight pool.
+    """Fetch one bulk quote snapshot for the pool overview.
 
-    A provider failure degrades gracefully: the report still publishes with
-    deep analysis for core stocks, and the pool overview records the reason.
+    Core stocks are quoted too, so every watchlist row carries a price. A
+    provider failure degrades gracefully: the report still publishes with deep
+    analysis for core stocks, and the pool overview records the reason.
     """
     if not extended_stocks:
         return {}, None
@@ -214,7 +216,7 @@ def _fetch_light_quotes(
         quotes = provider.get_quotes()
     except (ProviderError, ImportError, OSError) as error:
         return {}, str(error)
-    wanted = {stock.code for stock in extended_stocks}
+    wanted = {stock.code for stock in watchlist.stocks}
     return {quote.code: quote for quote in quotes if quote.code in wanted}, None
 
 
@@ -482,7 +484,7 @@ def run_daily_report(
                     ]
                 )
             light_quotes, light_quote_error = _fetch_light_quotes(
-                extended_stocks, universe_provider
+                active_watchlist, extended_stocks, universe_provider
             )
             if failures:
                 raise PipelineError(failures)
