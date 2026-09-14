@@ -1078,7 +1078,7 @@ def test_akshare_adapter_bounds_qfq_history_when_end_date_is_supplied():
 
     provider.get_daily_bars("600519", end=date(2026, 9, 10))
 
-    assert request["start_date"] == "20240910"
+    assert request["start_date"] == "20260103"
     assert request["end_date"] == "20260910"
 
 

@@ -6,7 +6,7 @@ import hashlib
 import json
 from collections import Counter
 from collections.abc import Mapping, Sequence
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
@@ -39,6 +39,9 @@ from stock_daily_report.providers.service import (
     DataQualityError,
 )
 from stock_daily_report.providers.universe import UniverseQuote
+
+_FETCH_TIMEOUT_SECONDS = 120.0
+_PROGRESS_INTERVAL = 50
 
 
 class UniverseProvider(Protocol):
@@ -126,7 +129,7 @@ def scan_market(
 
     results: dict[str, _CandidateResult] = {}
     with ThreadPoolExecutor(max_workers=settings.max_workers) as executor:
-        futures = {
+        futures: dict[Future[_CandidateResult], str] = {
             executor.submit(
                 _process_candidate,
                 quote,
@@ -136,9 +139,12 @@ def scan_market(
             ): quote.code
             for quote in selected
         }
-        for future in as_completed(futures):
-            code = futures[future]
-            results[code] = future.result()
+        _collect_with_timeout(
+            futures,
+            results,
+            quotes_by_code={quote.code: quote for quote in selected},
+            provider_name=_provider_name(history_provider),
+        )
 
     trend_scores: list[ProfileScore] = []
     balanced_scores: list[ProfileScore] = []
@@ -335,6 +341,57 @@ def _process_candidate(
         history_hash=history_hash,
         provider_names=providers,
     )
+
+
+def _collect_with_timeout(
+    futures: Mapping[Future[_CandidateResult], str],
+    results: dict[str, _CandidateResult],
+    *,
+    quotes_by_code: Mapping[str, UniverseQuote],
+    provider_name: str,
+) -> None:
+    """Drain completed futures, fusing those that exceed the per-symbol timeout.
+
+    ``wait`` is used instead of ``as_completed`` so we keep a live handle on
+    the still-pending set: when the timeout window elapses with no completed
+    future, we cancel every remaining request rather than blocking forever on
+    one hung network call.
+    """
+
+    pending: set[Future[_CandidateResult]] = set(futures)
+    total = len(pending)
+    completed = 0
+    while pending:
+        done, pending = wait(
+            pending,
+            timeout=_FETCH_TIMEOUT_SECONDS,
+            return_when=FIRST_COMPLETED,
+        )
+        if not done:
+            break
+        for future in done:
+            results[futures[future]] = future.result()
+            completed += 1
+        _report_progress(completed, total)
+
+    for future in pending:
+        future.cancel()
+        code = futures[future]
+        results[code] = _failed_result(
+            quotes_by_code[code],
+            reason="fetch_timeout",
+            provider_name=provider_name,
+        )
+        completed += 1
+    _report_progress(completed, total)
+
+
+def _report_progress(completed: int, total: int) -> None:
+    if completed % _PROGRESS_INTERVAL == 0 or completed == total:
+        print(
+            f"[market-scan] {completed}/{total} symbols processed",
+            flush=True,
+        )
 
 
 def _fetch_history(

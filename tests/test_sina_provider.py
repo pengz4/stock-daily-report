@@ -33,7 +33,7 @@ def test_sina_provider_maps_symbol_dates_and_daily_fields():
 
     assert request == {
         "symbol": "sh600519",
-        "start_date": "20240910",
+        "start_date": "20260103",
         "end_date": "20260910",
         "adjust": "qfq",
     }

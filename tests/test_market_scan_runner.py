@@ -202,6 +202,27 @@ def test_scanner_bounds_history_workers_and_passes_report_date():
     assert artifact.valid_count == len(codes)
 
 
+def test_hung_symbol_is_fused_without_aborting_the_scan(monkeypatch):
+    import stock_daily_report.market_scan.runner as runner
+
+    monkeypatch.setattr(runner, "_FETCH_TIMEOUT_SECONDS", 0.02)
+
+    codes = _codes(3)
+    bars_by_code = {code: _bars(code) for code in codes}
+    provider = FakeHistoryProvider(
+        bars_by_code,
+        delays={codes[0]: 1.0},
+    )
+
+    artifact = _scan(codes, provider, minimum_coverage_ratio=0.5)
+
+    assert artifact.valid_count == 2
+    assert artifact.failure_counts == {"fetch_timeout": 1}
+    hung = next(status for status in artifact.statuses if status.code == codes[0])
+    assert hung.status == "history_failed"
+    assert hung.reason_codes == ("fetch_timeout",)
+
+
 def test_scanner_output_is_deterministic_despite_completion_order():
     codes = _codes(6)
     bars_by_code = {code: _bars(code) for code in codes}

@@ -21,7 +21,7 @@ _SOURCE_FIELDS = {
     "成交额": "amount",
     "换手率": "turnover_rate",
 }
-_DEFAULT_HISTORY_DAYS = 730
+_DEFAULT_HISTORY_DAYS = 250
 
 
 class AkShareMarketDataProvider:
