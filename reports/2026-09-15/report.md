@@ -1,18 +1,18 @@
 # A-share daily report — 2026\-09\-15
 
-- Generated: 2026\-09\-14T23:32:16\.046371\+00:00
-- Latest source timestamp: 2026\-09\-14T23:09:49\.503028\+00:00
+- Generated: 2026\-09\-14T23:46:14\.914919\+00:00
+- Latest source timestamp: 2026\-09\-14T23:46:14\.914919\+00:00
 - Quality: passed
-- Stock count: 1
-- Providers: akshare
+- Stock count: 21
+- Providers: akshare, sina
 - Snapshot: `snapshots/2026\-09\-15/input\.json`
-- Snapshot hash: `94f46294e17d2fe6feea11b871ca677a4b1149555917380b13000a47a8006d1a`
+- Snapshot hash: `9c69e97c552b9f22e8326c5a1a4fce09115793064ea57144bf7fda440a967c83`
 - Config hash: `35a5a3eda61ccb84176125bfe14dff9cfd55d59a0951a3f9985b7b69efbd39d1`
 - Analyzer: simplified\-v1
 
 ## Market summary
 
-Broad\-market data unavailable; validated watchlist only: count=1, average\_latest\_return=0\.22%, up=1, down=0, unchanged=0, latest\_source=2026\-09\-14T23:09:49\.503028\+00:00\.
+Broad\-market data unavailable; validated watchlist only: count=21, average\_latest\_return=\-0\.83%, up=10, down=11, unchanged=0, latest\_source=2026\-09\-14T23:46:14\.914919\+00:00\.
 
 ## Full-market rankings
 
@@ -646,12 +646,680 @@ Consensus is the exact intersection of rankings built from shared technical inpu
 | — | — | 600359 | 新农开发 | 自选股 | core | 8.75 | -9.98 | 210366100 |
 ## Watchlist
 
+### 000576 — 甘化科工
+
+- Group: 自选股
+- Provider: akshare
+- Latest trade date: 2026\-09\-14
+- Source timestamp: 2026\-09\-14T23:46:14\.914919\+00:00
+- Bars: 167
+- Quality: passed
+- Decision: **风险升高**
+- Structure: neutral\_consolidation (confirmed)
+
+Evidence:
+- price\_above\_rising\_moving\_averages
+- positive\_20\_and\_60\_day\_returns
+- macd\_line\_above\_signal
+- rsi\_in\_constructive\_range
+- large\_drawdown60
+Risks:
+- large\_drawdown60
+Key levels:
+- support 10\.7100 \(confirmed\_central\_range\)
+- support 9\.1700 \(confirmed\_central\_range\)
+- support 6\.9300 \(confirmed\_central\_range\)
+- support 6\.3100 \(confirmed\_central\_range\)
+- support 7\.0900 \(confirmed\_central\_range\)
+- support 10\.5200 \(confirmed\_bottom\_fractal\)
+- support 11\.2500 \(confirmed\_bottom\_fractal\)
+- support 10\.2100 \(confirmed\_bottom\_fractal\)
+- support 10\.5000 \(confirmed\_bottom\_fractal\)
+- support 10\.6300 \(confirmed\_bottom\_fractal\)
+- support 10\.7100 \(confirmed\_bottom\_fractal\)
+- support 9\.7600 \(confirmed\_bottom\_fractal\)
+- support 8\.5300 \(confirmed\_bottom\_fractal\)
+- support 8\.8700 \(confirmed\_bottom\_fractal\)
+- support 9\.5900 \(confirmed\_bottom\_fractal\)
+- support 9\.1700 \(confirmed\_bottom\_fractal\)
+- support 8\.6800 \(confirmed\_bottom\_fractal\)
+- support 8\.6300 \(confirmed\_bottom\_fractal\)
+- support 6\.9300 \(confirmed\_bottom\_fractal\)
+- support 6\.9300 \(confirmed\_bottom\_fractal\)
+- support 6\.8000 \(confirmed\_bottom\_fractal\)
+- support 6\.3400 \(confirmed\_bottom\_fractal\)
+- support 6\.7200 \(confirmed\_bottom\_fractal\)
+- support 6\.3100 \(confirmed\_bottom\_fractal\)
+- support 5\.9000 \(confirmed\_bottom\_fractal\)
+- support 7\.0900 \(confirmed\_bottom\_fractal\)
+- support 7\.0100 \(confirmed\_bottom\_fractal\)
+- support 8\.3000 \(confirmed\_bottom\_fractal\)
+- resistance 10\.9500 \(confirmed\_central\_range\)
+- resistance 9\.5700 \(confirmed\_central\_range\)
+- resistance 7\.4000 \(confirmed\_central\_range\)
+- resistance 6\.7900 \(confirmed\_central\_range\)
+- resistance 7\.3700 \(confirmed\_central\_range\)
+- resistance 11\.2900 \(confirmed\_top\_fractal\)
+- resistance 11\.9900 \(confirmed\_top\_fractal\)
+- resistance 11\.8500 \(confirmed\_top\_fractal\)
+- resistance 10\.9500 \(confirmed\_top\_fractal\)
+- resistance 10\.9500 \(confirmed\_top\_fractal\)
+- resistance 11\.6100 \(confirmed\_top\_fractal\)
+- resistance 11\.2000 \(confirmed\_top\_fractal\)
+- resistance 10\.8100 \(confirmed\_top\_fractal\)
+- resistance 9\.5700 \(confirmed\_top\_fractal\)
+- resistance 9\.9500 \(confirmed\_top\_fractal\)
+- resistance 9\.9200 \(confirmed\_top\_fractal\)
+- resistance 9\.4700 \(confirmed\_top\_fractal\)
+- resistance 9\.1800 \(confirmed\_top\_fractal\)
+- resistance 9\.0100 \(confirmed\_top\_fractal\)
+- resistance 7\.3000 \(confirmed\_top\_fractal\)
+- resistance 7\.4000 \(confirmed\_top\_fractal\)
+- resistance 7\.2600 \(confirmed\_top\_fractal\)
+- resistance 8\.1400 \(confirmed\_top\_fractal\)
+- resistance 7\.3800 \(confirmed\_top\_fractal\)
+- resistance 6\.7900 \(confirmed\_top\_fractal\)
+- resistance 7\.4400 \(confirmed\_top\_fractal\)
+- resistance 7\.3700 \(confirmed\_top\_fractal\)
+- resistance 9\.1200 \(confirmed\_top\_fractal\)
+- resistance 8\.7200 \(confirmed\_top\_fractal\)
+- reference 7\.9760 \(technical\_ma20\)
+Next conditions:
+- 60日回撤收窄至风险阈值以内
+
+### 000876 — 新希望
+
+- Group: 自选股
+- Provider: akshare
+- Latest trade date: 2026\-09\-14
+- Source timestamp: 2026\-09\-14T23:46:14\.914919\+00:00
+- Bars: 167
+- Quality: passed
+- Decision: **风险升高**
+- Structure: neutral\_consolidation (confirmed)
+
+Evidence:
+- price\_above\_rising\_moving\_averages
+- positive\_20\_and\_60\_day\_returns
+- macd\_line\_above\_signal
+- rsi\_in\_constructive\_range
+- high\_realized\_volatility20
+Risks:
+- high\_realized\_volatility20
+Key levels:
+- support 8\.8100 \(confirmed\_central\_range\)
+- support 6\.9500 \(confirmed\_central\_range\)
+- support 8\.8100 \(confirmed\_bottom\_fractal\)
+- support 8\.5600 \(confirmed\_bottom\_fractal\)
+- support 8\.5700 \(confirmed\_bottom\_fractal\)
+- support 8\.5600 \(confirmed\_bottom\_fractal\)
+- support 8\.7100 \(confirmed\_bottom\_fractal\)
+- support 8\.0700 \(confirmed\_bottom\_fractal\)
+- support 8\.0700 \(confirmed\_bottom\_fractal\)
+- support 8\.1800 \(confirmed\_bottom\_fractal\)
+- support 8\.1700 \(confirmed\_bottom\_fractal\)
+- support 8\.4500 \(confirmed\_bottom\_fractal\)
+- support 8\.2000 \(confirmed\_bottom\_fractal\)
+- support 7\.7600 \(confirmed\_bottom\_fractal\)
+- support 6\.0600 \(confirmed\_bottom\_fractal\)
+- support 5\.8200 \(confirmed\_bottom\_fractal\)
+- support 6\.6800 \(confirmed\_bottom\_fractal\)
+- support 6\.8400 \(confirmed\_bottom\_fractal\)
+- support 6\.8800 \(confirmed\_bottom\_fractal\)
+- support 6\.8000 \(confirmed\_bottom\_fractal\)
+- support 6\.6800 \(confirmed\_bottom\_fractal\)
+- support 6\.8600 \(confirmed\_bottom\_fractal\)
+- support 6\.8200 \(confirmed\_bottom\_fractal\)
+- support 6\.7700 \(confirmed\_bottom\_fractal\)
+- support 6\.7800 \(confirmed\_bottom\_fractal\)
+- support 6\.9600 \(confirmed\_bottom\_fractal\)
+- support 6\.9500 \(confirmed\_bottom\_fractal\)
+- resistance 9\.0000 \(confirmed\_central\_range\)
+- resistance 7\.1000 \(confirmed\_central\_range\)
+- resistance 9\.2900 \(confirmed\_top\_fractal\)
+- resistance 8\.9400 \(confirmed\_top\_fractal\)
+- resistance 9\.2000 \(confirmed\_top\_fractal\)
+- resistance 8\.7800 \(confirmed\_top\_fractal\)
+- resistance 9\.0000 \(confirmed\_top\_fractal\)
+- resistance 9\.0400 \(confirmed\_top\_fractal\)
+- resistance 8\.2800 \(confirmed\_top\_fractal\)
+- resistance 8\.3300 \(confirmed\_top\_fractal\)
+- resistance 8\.4300 \(confirmed\_top\_fractal\)
+- resistance 9\.0000 \(confirmed\_top\_fractal\)
+- resistance 8\.8900 \(confirmed\_top\_fractal\)
+- resistance 8\.3700 \(confirmed\_top\_fractal\)
+- resistance 7\.9400 \(confirmed\_top\_fractal\)
+- resistance 6\.3800 \(confirmed\_top\_fractal\)
+- resistance 7\.1000 \(confirmed\_top\_fractal\)
+- resistance 7\.4700 \(confirmed\_top\_fractal\)
+- resistance 7\.2200 \(confirmed\_top\_fractal\)
+- resistance 7\.3500 \(confirmed\_top\_fractal\)
+- resistance 7\.0300 \(confirmed\_top\_fractal\)
+- resistance 7\.1000 \(confirmed\_top\_fractal\)
+- resistance 7\.1100 \(confirmed\_top\_fractal\)
+- resistance 7\.1500 \(confirmed\_top\_fractal\)
+- resistance 7\.2000 \(confirmed\_top\_fractal\)
+- resistance 7\.1000 \(confirmed\_top\_fractal\)
+- resistance 7\.2900 \(confirmed\_top\_fractal\)
+- resistance 8\.0200 \(confirmed\_top\_fractal\)
+- reference 7\.2670 \(technical\_ma20\)
+Next conditions:
+- 20日实现波动率回落至风险阈值以下
+
+### 002383 — 合众思壮
+
+- Group: 自选股
+- Provider: sina
+- Latest trade date: 2026\-09\-14
+- Source timestamp: 2026\-09\-14T23:46:14\.914919\+00:00
+- Bars: 167
+- Quality: passed
+- Decision: **风险升高**
+- Structure: neutral\_consolidation (confirmed)
+
+Evidence:
+- price\_above\_rising\_moving\_averages
+- positive\_20\_and\_60\_day\_returns
+- macd\_line\_above\_signal
+- rsi\_in\_constructive\_range
+- high\_realized\_volatility20
+Risks:
+- high\_realized\_volatility20
+Key levels:
+- support 11\.4100 \(confirmed\_central\_range\)
+- support 9\.2200 \(confirmed\_central\_range\)
+- support 6\.5400 \(confirmed\_central\_range\)
+- support 7\.0400 \(confirmed\_central\_range\)
+- support 11\.4100 \(confirmed\_bottom\_fractal\)
+- support 11\.2000 \(confirmed\_bottom\_fractal\)
+- support 10\.9200 \(confirmed\_bottom\_fractal\)
+- support 11\.1000 \(confirmed\_bottom\_fractal\)
+- support 11\.0300 \(confirmed\_bottom\_fractal\)
+- support 9\.1400 \(confirmed\_bottom\_fractal\)
+- support 9\.3000 \(confirmed\_bottom\_fractal\)
+- support 9\.2200 \(confirmed\_bottom\_fractal\)
+- support 9\.5000 \(confirmed\_bottom\_fractal\)
+- support 9\.5000 \(confirmed\_bottom\_fractal\)
+- support 9\.0400 \(confirmed\_bottom\_fractal\)
+- support 8\.4300 \(confirmed\_bottom\_fractal\)
+- support 7\.5800 \(confirmed\_bottom\_fractal\)
+- support 7\.1200 \(confirmed\_bottom\_fractal\)
+- support 6\.7700 \(confirmed\_bottom\_fractal\)
+- support 6\.4600 \(confirmed\_bottom\_fractal\)
+- support 6\.5400 \(confirmed\_bottom\_fractal\)
+- support 6\.3800 \(confirmed\_bottom\_fractal\)
+- support 6\.1800 \(confirmed\_bottom\_fractal\)
+- support 6\.3000 \(confirmed\_bottom\_fractal\)
+- support 6\.8600 \(confirmed\_bottom\_fractal\)
+- support 6\.9400 \(confirmed\_bottom\_fractal\)
+- support 6\.6800 \(confirmed\_bottom\_fractal\)
+- support 7\.0400 \(confirmed\_bottom\_fractal\)
+- resistance 11\.6400 \(confirmed\_central\_range\)
+- resistance 9\.7800 \(confirmed\_central\_range\)
+- resistance 6\.5900 \(confirmed\_central\_range\)
+- resistance 7\.2700 \(confirmed\_central\_range\)
+- resistance 15\.4700 \(confirmed\_top\_fractal\)
+- resistance 12\.2800 \(confirmed\_top\_fractal\)
+- resistance 11\.6700 \(confirmed\_top\_fractal\)
+- resistance 11\.6400 \(confirmed\_top\_fractal\)
+- resistance 11\.4700 \(confirmed\_top\_fractal\)
+- resistance 13\.3900 \(confirmed\_top\_fractal\)
+- resistance 9\.6800 \(confirmed\_top\_fractal\)
+- resistance 9\.9400 \(confirmed\_top\_fractal\)
+- resistance 9\.7800 \(confirmed\_top\_fractal\)
+- resistance 9\.8500 \(confirmed\_top\_fractal\)
+- resistance 10\.4000 \(confirmed\_top\_fractal\)
+- resistance 9\.8900 \(confirmed\_top\_fractal\)
+- resistance 8\.6800 \(confirmed\_top\_fractal\)
+- resistance 7\.9600 \(confirmed\_top\_fractal\)
+- resistance 7\.4700 \(confirmed\_top\_fractal\)
+- resistance 7\.2400 \(confirmed\_top\_fractal\)
+- resistance 7\.2500 \(confirmed\_top\_fractal\)
+- resistance 7\.4200 \(confirmed\_top\_fractal\)
+- resistance 6\.7800 \(confirmed\_top\_fractal\)
+- resistance 6\.5900 \(confirmed\_top\_fractal\)
+- resistance 7\.1800 \(confirmed\_top\_fractal\)
+- resistance 7\.2000 \(confirmed\_top\_fractal\)
+- resistance 7\.2700 \(confirmed\_top\_fractal\)
+- resistance 7\.3900 \(confirmed\_top\_fractal\)
+- reference 7\.2690 \(technical\_ma20\)
+Next conditions:
+- 20日实现波动率回落至风险阈值以下
+
+### 002543 — 万和电气
+
+- Group: boo
+- Provider: sina
+- Latest trade date: 2026\-09\-14
+- Source timestamp: 2026\-09\-14T23:46:14\.914919\+00:00
+- Bars: 167
+- Quality: passed
+- Decision: **风险升高**
+- Structure: neutral\_consolidation (confirmed)
+
+Evidence:
+- price\_above\_rising\_moving\_averages
+- positive\_20\_and\_60\_day\_returns
+- macd\_line\_above\_signal
+- rsi\_in\_constructive\_range
+- high\_realized\_volatility20
+Risks:
+- high\_realized\_volatility20
+Key levels:
+- support 8\.8500 \(confirmed\_central\_range\)
+- support 7\.9700 \(confirmed\_central\_range\)
+- support 6\.4700 \(confirmed\_central\_range\)
+- support 9\.7200 \(confirmed\_bottom\_fractal\)
+- support 8\.7300 \(confirmed\_bottom\_fractal\)
+- support 8\.7900 \(confirmed\_bottom\_fractal\)
+- support 8\.4000 \(confirmed\_bottom\_fractal\)
+- support 8\.4900 \(confirmed\_bottom\_fractal\)
+- support 8\.8500 \(confirmed\_bottom\_fractal\)
+- support 8\.4300 \(confirmed\_bottom\_fractal\)
+- support 8\.6100 \(confirmed\_bottom\_fractal\)
+- support 7\.9400 \(confirmed\_bottom\_fractal\)
+- support 8\.0800 \(confirmed\_bottom\_fractal\)
+- support 7\.9700 \(confirmed\_bottom\_fractal\)
+- support 7\.8800 \(confirmed\_bottom\_fractal\)
+- support 7\.5800 \(confirmed\_bottom\_fractal\)
+- support 7\.1200 \(confirmed\_bottom\_fractal\)
+- support 6\.9100 \(confirmed\_bottom\_fractal\)
+- support 6\.7200 \(confirmed\_bottom\_fractal\)
+- support 6\.3000 \(confirmed\_bottom\_fractal\)
+- support 6\.0500 \(confirmed\_bottom\_fractal\)
+- support 6\.2800 \(confirmed\_bottom\_fractal\)
+- support 6\.2400 \(confirmed\_bottom\_fractal\)
+- support 6\.4700 \(confirmed\_bottom\_fractal\)
+- support 6\.7600 \(confirmed\_bottom\_fractal\)
+- support 7\.0600 \(confirmed\_bottom\_fractal\)
+- support 6\.9800 \(confirmed\_bottom\_fractal\)
+- resistance 8\.9700 \(confirmed\_central\_range\)
+- resistance 8\.1400 \(confirmed\_central\_range\)
+- resistance 6\.7400 \(confirmed\_central\_range\)
+- resistance 10\.0400 \(confirmed\_top\_fractal\)
+- resistance 10\.3500 \(confirmed\_top\_fractal\)
+- resistance 9\.2300 \(confirmed\_top\_fractal\)
+- resistance 9\.0700 \(confirmed\_top\_fractal\)
+- resistance 8\.7200 \(confirmed\_top\_fractal\)
+- resistance 9\.4900 \(confirmed\_top\_fractal\)
+- resistance 9\.2900 \(confirmed\_top\_fractal\)
+- resistance 9\.2200 \(confirmed\_top\_fractal\)
+- resistance 8\.9700 \(confirmed\_top\_fractal\)
+- resistance 8\.4400 \(confirmed\_top\_fractal\)
+- resistance 8\.3000 \(confirmed\_top\_fractal\)
+- resistance 8\.2200 \(confirmed\_top\_fractal\)
+- resistance 8\.1400 \(confirmed\_top\_fractal\)
+- resistance 7\.8100 \(confirmed\_top\_fractal\)
+- resistance 7\.4400 \(confirmed\_top\_fractal\)
+- resistance 7\.1800 \(confirmed\_top\_fractal\)
+- resistance 6\.9900 \(confirmed\_top\_fractal\)
+- resistance 6\.7000 \(confirmed\_top\_fractal\)
+- resistance 6\.7400 \(confirmed\_top\_fractal\)
+- resistance 6\.9100 \(confirmed\_top\_fractal\)
+- resistance 6\.8600 \(confirmed\_top\_fractal\)
+- resistance 7\.3700 \(confirmed\_top\_fractal\)
+- resistance 8\.2900 \(confirmed\_top\_fractal\)
+- resistance 7\.3900 \(confirmed\_top\_fractal\)
+- resistance 7\.8300 \(confirmed\_top\_fractal\)
+- reference 7\.4205 \(technical\_ma20\)
+Next conditions:
+- 20日实现波动率回落至风险阈值以下
+
+### 300498 — 温氏股份
+
+- Group: 自选股
+- Provider: sina
+- Latest trade date: 2026\-09\-14
+- Source timestamp: 2026\-09\-14T23:46:14\.914919\+00:00
+- Bars: 167
+- Quality: passed
+- Decision: **偏强**
+- Structure: neutral\_consolidation (confirmed)
+
+Evidence:
+- price\_above\_rising\_moving\_averages
+- positive\_20\_and\_60\_day\_returns
+- macd\_line\_above\_signal
+- rsi\_in\_constructive\_range
+Risks:
+- None
+Key levels:
+- support 15\.0800 \(confirmed\_central\_range\)
+- support 16\.7900 \(confirmed\_central\_range\)
+- support 12\.8700 \(confirmed\_central\_range\)
+- support 13\.7100 \(confirmed\_central\_range\)
+- support 14\.9000 \(confirmed\_bottom\_fractal\)
+- support 15\.0600 \(confirmed\_bottom\_fractal\)
+- support 15\.0800 \(confirmed\_bottom\_fractal\)
+- support 15\.5700 \(confirmed\_bottom\_fractal\)
+- support 15\.6800 \(confirmed\_bottom\_fractal\)
+- support 16\.5100 \(confirmed\_bottom\_fractal\)
+- support 16\.7900 \(confirmed\_bottom\_fractal\)
+- support 16\.1600 \(confirmed\_bottom\_fractal\)
+- support 15\.9700 \(confirmed\_bottom\_fractal\)
+- support 15\.6700 \(confirmed\_bottom\_fractal\)
+- support 16\.1400 \(confirmed\_bottom\_fractal\)
+- support 15\.2100 \(confirmed\_bottom\_fractal\)
+- support 13\.3500 \(confirmed\_bottom\_fractal\)
+- support 12\.9800 \(confirmed\_bottom\_fractal\)
+- support 12\.3500 \(confirmed\_bottom\_fractal\)
+- support 11\.9700 \(confirmed\_bottom\_fractal\)
+- support 11\.5400 \(confirmed\_bottom\_fractal\)
+- support 12\.8700 \(confirmed\_bottom\_fractal\)
+- support 13\.7100 \(confirmed\_bottom\_fractal\)
+- support 13\.3200 \(confirmed\_bottom\_fractal\)
+- support 13\.3900 \(confirmed\_bottom\_fractal\)
+- support 13\.3400 \(confirmed\_bottom\_fractal\)
+- support 14\.3200 \(confirmed\_bottom\_fractal\)
+- resistance 15\.6600 \(confirmed\_central\_range\)
+- resistance 16\.8900 \(confirmed\_central\_range\)
+- resistance 13\.0600 \(confirmed\_central\_range\)
+- resistance 14\.0000 \(confirmed\_central\_range\)
+- resistance 16\.8700 \(confirmed\_top\_fractal\)
+- resistance 15\.6600 \(confirmed\_top\_fractal\)
+- resistance 15\.9400 \(confirmed\_top\_fractal\)
+- resistance 16\.0600 \(confirmed\_top\_fractal\)
+- resistance 16\.1000 \(confirmed\_top\_fractal\)
+- resistance 17\.1500 \(confirmed\_top\_fractal\)
+- resistance 17\.5900 \(confirmed\_top\_fractal\)
+- resistance 17\.2000 \(confirmed\_top\_fractal\)
+- resistance 16\.8900 \(confirmed\_top\_fractal\)
+- resistance 16\.9200 \(confirmed\_top\_fractal\)
+- resistance 16\.5900 \(confirmed\_top\_fractal\)
+- resistance 17\.1200 \(confirmed\_top\_fractal\)
+- resistance 16\.3700 \(confirmed\_top\_fractal\)
+- resistance 13\.7900 \(confirmed\_top\_fractal\)
+- resistance 13\.6100 \(confirmed\_top\_fractal\)
+- resistance 13\.0600 \(confirmed\_top\_fractal\)
+- resistance 12\.6200 \(confirmed\_top\_fractal\)
+- resistance 13\.7700 \(confirmed\_top\_fractal\)
+- resistance 14\.7200 \(confirmed\_top\_fractal\)
+- resistance 14\.3900 \(confirmed\_top\_fractal\)
+- resistance 14\.1300 \(confirmed\_top\_fractal\)
+- resistance 14\.0000 \(confirmed\_top\_fractal\)
+- resistance 14\.7500 \(confirmed\_top\_fractal\)
+- resistance 15\.4900 \(confirmed\_top\_fractal\)
+- reference 14\.4160 \(technical\_ma20\)
+Next conditions:
+- 继续观察价格、技术指标与结构确认状态
+
+### 300711 — 广哈通信
+
+- Group: 自选股
+- Provider: sina
+- Latest trade date: 2026\-09\-14
+- Source timestamp: 2026\-09\-14T23:46:14\.914919\+00:00
+- Bars: 167
+- Quality: passed
+- Decision: **风险升高**
+- Structure: neutral\_consolidation (confirmed)
+
+Evidence:
+- price\_above\_rising\_moving\_averages
+- positive\_20\_and\_60\_day\_returns
+- macd\_line\_above\_signal
+- rsi\_in\_constructive\_range
+- high\_realized\_volatility20
+- large\_drawdown60
+Risks:
+- high\_realized\_volatility20
+- large\_drawdown60
+Key levels:
+- support 27\.0900 \(confirmed\_central\_range\)
+- support 24\.2700 \(confirmed\_central\_range\)
+- support 20\.2000 \(confirmed\_central\_range\)
+- support 16\.6000 \(confirmed\_central\_range\)
+- support 25\.7400 \(confirmed\_bottom\_fractal\)
+- support 26\.2000 \(confirmed\_bottom\_fractal\)
+- support 26\.0700 \(confirmed\_bottom\_fractal\)
+- support 27\.0900 \(confirmed\_bottom\_fractal\)
+- support 27\.1300 \(confirmed\_bottom\_fractal\)
+- support 25\.0500 \(confirmed\_bottom\_fractal\)
+- support 25\.9900 \(confirmed\_bottom\_fractal\)
+- support 24\.9300 \(confirmed\_bottom\_fractal\)
+- support 23\.3600 \(confirmed\_bottom\_fractal\)
+- support 23\.8800 \(confirmed\_bottom\_fractal\)
+- support 23\.4400 \(confirmed\_bottom\_fractal\)
+- support 24\.2300 \(confirmed\_bottom\_fractal\)
+- support 24\.5100 \(confirmed\_bottom\_fractal\)
+- support 24\.2700 \(confirmed\_bottom\_fractal\)
+- support 20\.2000 \(confirmed\_bottom\_fractal\)
+- support 20\.3400 \(confirmed\_bottom\_fractal\)
+- support 19\.9600 \(confirmed\_bottom\_fractal\)
+- support 19\.2900 \(confirmed\_bottom\_fractal\)
+- support 19\.3500 \(confirmed\_bottom\_fractal\)
+- support 17\.4700 \(confirmed\_bottom\_fractal\)
+- support 15\.4800 \(confirmed\_bottom\_fractal\)
+- support 14\.9300 \(confirmed\_bottom\_fractal\)
+- support 14\.3000 \(confirmed\_bottom\_fractal\)
+- support 13\.2900 \(confirmed\_bottom\_fractal\)
+- support 16\.6000 \(confirmed\_bottom\_fractal\)
+- support 17\.9300 \(confirmed\_bottom\_fractal\)
+- support 17\.9900 \(confirmed\_bottom\_fractal\)
+- support 18\.8000 \(confirmed\_bottom\_fractal\)
+- resistance 27\.9300 \(confirmed\_central\_range\)
+- resistance 24\.9900 \(confirmed\_central\_range\)
+- resistance 20\.9600 \(confirmed\_central\_range\)
+- resistance 16\.7200 \(confirmed\_central\_range\)
+- resistance 34\.7900 \(confirmed\_top\_fractal\)
+- resistance 27\.9300 \(confirmed\_top\_fractal\)
+- resistance 28\.6100 \(confirmed\_top\_fractal\)
+- resistance 28\.7900 \(confirmed\_top\_fractal\)
+- resistance 29\.1700 \(confirmed\_top\_fractal\)
+- resistance 28\.9100 \(confirmed\_top\_fractal\)
+- resistance 28\.2100 \(confirmed\_top\_fractal\)
+- resistance 28\.4700 \(confirmed\_top\_fractal\)
+- resistance 26\.3400 \(confirmed\_top\_fractal\)
+- resistance 25\.5100 \(confirmed\_top\_fractal\)
+- resistance 24\.9900 \(confirmed\_top\_fractal\)
+- resistance 25\.1000 \(confirmed\_top\_fractal\)
+- resistance 25\.7000 \(confirmed\_top\_fractal\)
+- resistance 25\.2900 \(confirmed\_top\_fractal\)
+- resistance 25\.1400 \(confirmed\_top\_fractal\)
+- resistance 21\.1900 \(confirmed\_top\_fractal\)
+- resistance 21\.8600 \(confirmed\_top\_fractal\)
+- resistance 20\.7300 \(confirmed\_top\_fractal\)
+- resistance 20\.1900 \(confirmed\_top\_fractal\)
+- resistance 20\.9600 \(confirmed\_top\_fractal\)
+- resistance 18\.2100 \(confirmed\_top\_fractal\)
+- resistance 16\.7200 \(confirmed\_top\_fractal\)
+- resistance 16\.5600 \(confirmed\_top\_fractal\)
+- resistance 15\.2900 \(confirmed\_top\_fractal\)
+- resistance 21\.2000 \(confirmed\_top\_fractal\)
+- resistance 19\.9900 \(confirmed\_top\_fractal\)
+- resistance 19\.1700 \(confirmed\_top\_fractal\)
+- resistance 21\.4800 \(confirmed\_top\_fractal\)
+- reference 18\.6965 \(technical\_ma20\)
+Next conditions:
+- 20日实现波动率回落至风险阈值以下
+- 60日回撤收窄至风险阈值以内
+
+### 600150 — 中国船舶
+
+- Group: 小郑自选
+- Provider: sina
+- Latest trade date: 2026\-09\-14
+- Source timestamp: 2026\-09\-14T23:46:14\.914919\+00:00
+- Bars: 167
+- Quality: passed
+- Decision: **偏强**
+- Structure: neutral\_consolidation (confirmed)
+
+Evidence:
+- price\_above\_rising\_moving\_averages
+- positive\_20\_and\_60\_day\_returns
+- macd\_line\_above\_signal
+- rsi\_in\_constructive\_range
+Risks:
+- None
+Key levels:
+- support 34\.4700 \(confirmed\_central\_range\)
+- support 31\.8800 \(confirmed\_central\_range\)
+- support 39\.4800 \(confirmed\_central\_range\)
+- support 34\.6000 \(confirmed\_central\_range\)
+- support 33\.5100 \(confirmed\_central\_range\)
+- support 34\.4700 \(confirmed\_bottom\_fractal\)
+- support 32\.6800 \(confirmed\_bottom\_fractal\)
+- support 33\.4400 \(confirmed\_bottom\_fractal\)
+- support 37\.1700 \(confirmed\_bottom\_fractal\)
+- support 36\.3600 \(confirmed\_bottom\_fractal\)
+- support 33\.6400 \(confirmed\_bottom\_fractal\)
+- support 30\.4800 \(confirmed\_bottom\_fractal\)
+- support 29\.6600 \(confirmed\_bottom\_fractal\)
+- support 30\.0600 \(confirmed\_bottom\_fractal\)
+- support 31\.8700 \(confirmed\_bottom\_fractal\)
+- support 31\.8800 \(confirmed\_bottom\_fractal\)
+- support 39\.2900 \(confirmed\_bottom\_fractal\)
+- support 39\.4800 \(confirmed\_bottom\_fractal\)
+- support 36\.6600 \(confirmed\_bottom\_fractal\)
+- support 36\.6900 \(confirmed\_bottom\_fractal\)
+- support 36\.6600 \(confirmed\_bottom\_fractal\)
+- support 35\.4200 \(confirmed\_bottom\_fractal\)
+- support 33\.5500 \(confirmed\_bottom\_fractal\)
+- support 35\.1000 \(confirmed\_bottom\_fractal\)
+- support 32\.4900 \(confirmed\_bottom\_fractal\)
+- support 34\.6000 \(confirmed\_bottom\_fractal\)
+- support 31\.7600 \(confirmed\_bottom\_fractal\)
+- support 32\.9100 \(confirmed\_bottom\_fractal\)
+- support 34\.2000 \(confirmed\_bottom\_fractal\)
+- support 33\.5100 \(confirmed\_bottom\_fractal\)
+- support 32\.5900 \(confirmed\_bottom\_fractal\)
+- support 33\.6200 \(confirmed\_bottom\_fractal\)
+- resistance 35\.2000 \(confirmed\_central\_range\)
+- resistance 32\.5100 \(confirmed\_central\_range\)
+- resistance 39\.5400 \(confirmed\_central\_range\)
+- resistance 37\.0100 \(confirmed\_central\_range\)
+- resistance 33\.8700 \(confirmed\_central\_range\)
+- resistance 35\.9900 \(confirmed\_top\_fractal\)
+- resistance 36\.2500 \(confirmed\_top\_fractal\)
+- resistance 35\.2000 \(confirmed\_top\_fractal\)
+- resistance 37\.8700 \(confirmed\_top\_fractal\)
+- resistance 38\.6300 \(confirmed\_top\_fractal\)
+- resistance 39\.0000 \(confirmed\_top\_fractal\)
+- resistance 34\.3200 \(confirmed\_top\_fractal\)
+- resistance 31\.7000 \(confirmed\_top\_fractal\)
+- resistance 31\.1700 \(confirmed\_top\_fractal\)
+- resistance 32\.5100 \(confirmed\_top\_fractal\)
+- resistance 33\.0200 \(confirmed\_top\_fractal\)
+- resistance 42\.9300 \(confirmed\_top\_fractal\)
+- resistance 41\.4600 \(confirmed\_top\_fractal\)
+- resistance 41\.5700 \(confirmed\_top\_fractal\)
+- resistance 39\.9800 \(confirmed\_top\_fractal\)
+- resistance 39\.5400 \(confirmed\_top\_fractal\)
+- resistance 38\.0300 \(confirmed\_top\_fractal\)
+- resistance 37\.0800 \(confirmed\_top\_fractal\)
+- resistance 37\.0100 \(confirmed\_top\_fractal\)
+- resistance 37\.4900 \(confirmed\_top\_fractal\)
+- resistance 37\.7500 \(confirmed\_top\_fractal\)
+- resistance 37\.8300 \(confirmed\_top\_fractal\)
+- resistance 33\.8700 \(confirmed\_top\_fractal\)
+- resistance 35\.2600 \(confirmed\_top\_fractal\)
+- resistance 35\.3500 \(confirmed\_top\_fractal\)
+- resistance 34\.3000 \(confirmed\_top\_fractal\)
+- resistance 35\.0100 \(confirmed\_top\_fractal\)
+- resistance 41\.1800 \(confirmed\_top\_fractal\)
+- reference 35\.7560 \(technical\_ma20\)
+Next conditions:
+- 继续观察价格、技术指标与结构确认状态
+
+### 600256 — 广汇能源
+
+- Group: 咔咔自选
+- Provider: sina
+- Latest trade date: 2026\-09\-14
+- Source timestamp: 2026\-09\-14T23:46:14\.914919\+00:00
+- Bars: 167
+- Quality: passed
+- Decision: **偏强**
+- Structure: neutral\_consolidation (confirmed)
+
+Evidence:
+- price\_above\_rising\_moving\_averages
+- positive\_20\_and\_60\_day\_returns
+- macd\_line\_above\_signal
+- rsi\_in\_constructive\_range
+Risks:
+- None
+Key levels:
+- support 6\.5600 \(confirmed\_central\_range\)
+- support 5\.9900 \(confirmed\_central\_range\)
+- support 5\.3000 \(confirmed\_central\_range\)
+- support 4\.9100 \(confirmed\_bottom\_fractal\)
+- support 4\.9500 \(confirmed\_bottom\_fractal\)
+- support 5\.2100 \(confirmed\_bottom\_fractal\)
+- support 5\.2900 \(confirmed\_bottom\_fractal\)
+- support 5\.3400 \(confirmed\_bottom\_fractal\)
+- support 5\.6600 \(confirmed\_bottom\_fractal\)
+- support 6\.4800 \(confirmed\_bottom\_fractal\)
+- support 6\.3800 \(confirmed\_bottom\_fractal\)
+- support 6\.5100 \(confirmed\_bottom\_fractal\)
+- support 6\.5600 \(confirmed\_bottom\_fractal\)
+- support 6\.3800 \(confirmed\_bottom\_fractal\)
+- support 6\.2200 \(confirmed\_bottom\_fractal\)
+- support 6\.0200 \(confirmed\_bottom\_fractal\)
+- support 5\.8700 \(confirmed\_bottom\_fractal\)
+- support 6\.0500 \(confirmed\_bottom\_fractal\)
+- support 6\.0300 \(confirmed\_bottom\_fractal\)
+- support 5\.9900 \(confirmed\_bottom\_fractal\)
+- support 6\.2100 \(confirmed\_bottom\_fractal\)
+- support 5\.8300 \(confirmed\_bottom\_fractal\)
+- support 6\.3900 \(confirmed\_bottom\_fractal\)
+- support 5\.8400 \(confirmed\_bottom\_fractal\)
+- support 5\.0300 \(confirmed\_bottom\_fractal\)
+- support 4\.6000 \(confirmed\_bottom\_fractal\)
+- support 4\.8400 \(confirmed\_bottom\_fractal\)
+- support 4\.9300 \(confirmed\_bottom\_fractal\)
+- support 5\.2600 \(confirmed\_bottom\_fractal\)
+- support 5\.1600 \(confirmed\_bottom\_fractal\)
+- support 5\.3000 \(confirmed\_bottom\_fractal\)
+- support 5\.7500 \(confirmed\_bottom\_fractal\)
+- support 5\.9000 \(confirmed\_bottom\_fractal\)
+- support 6\.5600 \(confirmed\_bottom\_fractal\)
+- resistance 6\.5700 \(confirmed\_central\_range\)
+- resistance 6\.5100 \(confirmed\_central\_range\)
+- resistance 5\.3400 \(confirmed\_central\_range\)
+- resistance 4\.9700 \(confirmed\_top\_fractal\)
+- resistance 5\.0200 \(confirmed\_top\_fractal\)
+- resistance 5\.8000 \(confirmed\_top\_fractal\)
+- resistance 5\.6000 \(confirmed\_top\_fractal\)
+- resistance 5\.5000 \(confirmed\_top\_fractal\)
+- resistance 5\.8900 \(confirmed\_top\_fractal\)
+- resistance 7\.1700 \(confirmed\_top\_fractal\)
+- resistance 7\.3900 \(confirmed\_top\_fractal\)
+- resistance 7\.7600 \(confirmed\_top\_fractal\)
+- resistance 7\.2100 \(confirmed\_top\_fractal\)
+- resistance 7\.2200 \(confirmed\_top\_fractal\)
+- resistance 6\.6500 \(confirmed\_top\_fractal\)
+- resistance 6\.7600 \(confirmed\_top\_fractal\)
+- resistance 6\.5700 \(confirmed\_top\_fractal\)
+- resistance 6\.7500 \(confirmed\_top\_fractal\)
+- resistance 6\.2900 \(confirmed\_top\_fractal\)
+- resistance 6\.3000 \(confirmed\_top\_fractal\)
+- resistance 6\.5100 \(confirmed\_top\_fractal\)
+- resistance 6\.4500 \(confirmed\_top\_fractal\)
+- resistance 6\.7200 \(confirmed\_top\_fractal\)
+- resistance 6\.8600 \(confirmed\_top\_fractal\)
+- resistance 6\.5500 \(confirmed\_top\_fractal\)
+- resistance 5\.2700 \(confirmed\_top\_fractal\)
+- resistance 5\.1600 \(confirmed\_top\_fractal\)
+- resistance 5\.3400 \(confirmed\_top\_fractal\)
+- resistance 5\.5700 \(confirmed\_top\_fractal\)
+- resistance 5\.9000 \(confirmed\_top\_fractal\)
+- resistance 5\.5400 \(confirmed\_top\_fractal\)
+- resistance 6\.0000 \(confirmed\_top\_fractal\)
+- resistance 6\.3000 \(confirmed\_top\_fractal\)
+- resistance 6\.9600 \(confirmed\_top\_fractal\)
+- resistance 7\.5300 \(confirmed\_top\_fractal\)
+- reference 6\.5985 \(technical\_ma20\)
+Next conditions:
+- 继续观察价格、技术指标与结构确认状态
+
 ### 600519 — 贵州茅台
 
 - Group: consumer
-- Provider: akshare
+- Provider: sina
 - Latest trade date: 2026\-09\-14
-- Source timestamp: 2026\-09\-14T23:09:49\.503028\+00:00
+- Source timestamp: 2026\-09\-14T23:46:14\.914919\+00:00
 - Bars: 167
 - Quality: passed
 - Decision: **观察**
@@ -662,25 +1330,25 @@ Evidence:
 Risks:
 - None
 Key levels:
-- support 1435\.5800 \(confirmed\_central\_range\)
-- support 1176\.9800 \(confirmed\_central\_range\)
+- support 1429\.7600 \(confirmed\_central\_range\)
+- support 1177\.1400 \(confirmed\_central\_range\)
 - support 1300\.0100 \(confirmed\_central\_range\)
-- support 1297\.1000 \(confirmed\_bottom\_fractal\)
-- support 1293\.9900 \(confirmed\_bottom\_fractal\)
-- support 1435\.5800 \(confirmed\_bottom\_fractal\)
-- support 1355\.1800 \(confirmed\_bottom\_fractal\)
-- support 1362\.9900 \(confirmed\_bottom\_fractal\)
-- support 1372\.0100 \(confirmed\_bottom\_fractal\)
-- support 1368\.6400 \(confirmed\_bottom\_fractal\)
-- support 1424\.0800 \(confirmed\_bottom\_fractal\)
-- support 1404\.9800 \(confirmed\_bottom\_fractal\)
-- support 1371\.8500 \(confirmed\_bottom\_fractal\)
-- support 1376\.9600 \(confirmed\_bottom\_fractal\)
-- support 1372\.0900 \(confirmed\_bottom\_fractal\)
-- support 1332\.0300 \(confirmed\_bottom\_fractal\)
-- support 1222\.0800 \(confirmed\_bottom\_fractal\)
-- support 1222\.1900 \(confirmed\_bottom\_fractal\)
-- support 1176\.9800 \(confirmed\_bottom\_fractal\)
+- support 1294\.4800 \(confirmed\_bottom\_fractal\)
+- support 1291\.4400 \(confirmed\_bottom\_fractal\)
+- support 1429\.7600 \(confirmed\_bottom\_fractal\)
+- support 1351\.2200 \(confirmed\_bottom\_fractal\)
+- support 1358\.8500 \(confirmed\_bottom\_fractal\)
+- support 1367\.6600 \(confirmed\_bottom\_fractal\)
+- support 1364\.3700 \(confirmed\_bottom\_fractal\)
+- support 1418\.5300 \(confirmed\_bottom\_fractal\)
+- support 1399\.8700 \(confirmed\_bottom\_fractal\)
+- support 1367\.5000 \(confirmed\_bottom\_fractal\)
+- support 1372\.5000 \(confirmed\_bottom\_fractal\)
+- support 1367\.7400 \(confirmed\_bottom\_fractal\)
+- support 1328\.6100 \(confirmed\_bottom\_fractal\)
+- support 1221\.2000 \(confirmed\_bottom\_fractal\)
+- support 1221\.3000 \(confirmed\_bottom\_fractal\)
+- support 1177\.1400 \(confirmed\_bottom\_fractal\)
 - support 1151\.0100 \(confirmed\_bottom\_fractal\)
 - support 1170\.2800 \(confirmed\_bottom\_fractal\)
 - support 1283\.2400 \(confirmed\_bottom\_fractal\)
@@ -690,26 +1358,26 @@ Key levels:
 - support 1280\.3400 \(confirmed\_bottom\_fractal\)
 - support 1270\.3300 \(confirmed\_bottom\_fractal\)
 - support 1286\.0000 \(confirmed\_bottom\_fractal\)
-- resistance 1449\.3900 \(confirmed\_central\_range\)
+- resistance 1443\.2500 \(confirmed\_central\_range\)
 - resistance 1215\.5200 \(confirmed\_central\_range\)
 - resistance 1308\.8800 \(confirmed\_central\_range\)
-- resistance 1402\.9800 \(confirmed\_top\_fractal\)
-- resistance 1325\.6800 \(confirmed\_top\_fractal\)
-- resistance 1539\.9800 \(confirmed\_top\_fractal\)
-- resistance 1481\.6400 \(confirmed\_top\_fractal\)
-- resistance 1381\.4700 \(confirmed\_top\_fractal\)
-- resistance 1470\.0500 \(confirmed\_top\_fractal\)
-- resistance 1389\.8500 \(confirmed\_top\_fractal\)
-- resistance 1451\.9100 \(confirmed\_top\_fractal\)
-- resistance 1441\.9800 \(confirmed\_top\_fractal\)
-- resistance 1449\.3900 \(confirmed\_top\_fractal\)
-- resistance 1391\.8800 \(confirmed\_top\_fractal\)
-- resistance 1430\.8600 \(confirmed\_top\_fractal\)
-- resistance 1381\.7300 \(confirmed\_top\_fractal\)
-- resistance 1359\.9800 \(confirmed\_top\_fractal\)
-- resistance 1300\.9800 \(confirmed\_top\_fractal\)
-- resistance 1266\.9800 \(confirmed\_top\_fractal\)
-- resistance 1235\.9800 \(confirmed\_top\_fractal\)
+- resistance 1397\.9100 \(confirmed\_top\_fractal\)
+- resistance 1322\.4000 \(confirmed\_top\_fractal\)
+- resistance 1531\.7500 \(confirmed\_top\_fractal\)
+- resistance 1474\.7600 \(confirmed\_top\_fractal\)
+- resistance 1376\.9000 \(confirmed\_top\_fractal\)
+- resistance 1463\.4300 \(confirmed\_top\_fractal\)
+- resistance 1385\.0900 \(confirmed\_top\_fractal\)
+- resistance 1445\.7100 \(confirmed\_top\_fractal\)
+- resistance 1436\.0100 \(confirmed\_top\_fractal\)
+- resistance 1443\.2500 \(confirmed\_top\_fractal\)
+- resistance 1387\.0700 \(confirmed\_top\_fractal\)
+- resistance 1425\.1500 \(confirmed\_top\_fractal\)
+- resistance 1377\.1600 \(confirmed\_top\_fractal\)
+- resistance 1355\.9100 \(confirmed\_top\_fractal\)
+- resistance 1298\.2700 \(confirmed\_top\_fractal\)
+- resistance 1265\.0600 \(confirmed\_top\_fractal\)
+- resistance 1234\.7800 \(confirmed\_top\_fractal\)
 - resistance 1215\.5200 \(confirmed\_top\_fractal\)
 - resistance 1344\.7000 \(confirmed\_top\_fractal\)
 - resistance 1309\.2100 \(confirmed\_top\_fractal\)
@@ -722,4 +1390,986 @@ Key levels:
 - reference 1297\.5630 \(technical\_ma20\)
 Next conditions:
 - 继续观察价格、技术指标与结构确认状态
+
+### 600609 — 金杯汽车
+
+- Group: 自选股
+- Provider: sina
+- Latest trade date: 2026\-09\-14
+- Source timestamp: 2026\-09\-14T23:46:14\.914919\+00:00
+- Bars: 167
+- Quality: passed
+- Decision: **偏强**
+- Structure: neutral\_consolidation (confirmed)
+
+Evidence:
+- price\_above\_rising\_moving\_averages
+- positive\_20\_and\_60\_day\_returns
+- macd\_line\_above\_signal
+- rsi\_in\_constructive\_range
+Risks:
+- None
+Key levels:
+- support 4\.6300 \(confirmed\_central\_range\)
+- support 3\.8700 \(confirmed\_central\_range\)
+- support 3\.3100 \(confirmed\_central\_range\)
+- support 4\.6300 \(confirmed\_bottom\_fractal\)
+- support 4\.5900 \(confirmed\_bottom\_fractal\)
+- support 4\.2800 \(confirmed\_bottom\_fractal\)
+- support 4\.3400 \(confirmed\_bottom\_fractal\)
+- support 3\.8700 \(confirmed\_bottom\_fractal\)
+- support 3\.9700 \(confirmed\_bottom\_fractal\)
+- support 3\.8700 \(confirmed\_bottom\_fractal\)
+- support 3\.9700 \(confirmed\_bottom\_fractal\)
+- support 4\.0400 \(confirmed\_bottom\_fractal\)
+- support 3\.8600 \(confirmed\_bottom\_fractal\)
+- support 3\.5500 \(confirmed\_bottom\_fractal\)
+- support 3\.4200 \(confirmed\_bottom\_fractal\)
+- support 3\.3000 \(confirmed\_bottom\_fractal\)
+- support 3\.1600 \(confirmed\_bottom\_fractal\)
+- support 3\.0600 \(confirmed\_bottom\_fractal\)
+- support 3\.0300 \(confirmed\_bottom\_fractal\)
+- support 3\.0800 \(confirmed\_bottom\_fractal\)
+- support 3\.1900 \(confirmed\_bottom\_fractal\)
+- support 3\.1300 \(confirmed\_bottom\_fractal\)
+- support 3\.1600 \(confirmed\_bottom\_fractal\)
+- support 3\.3100 \(confirmed\_bottom\_fractal\)
+- support 3\.3000 \(confirmed\_bottom\_fractal\)
+- resistance 4\.7100 \(confirmed\_central\_range\)
+- resistance 4\.1500 \(confirmed\_central\_range\)
+- resistance 3\.3300 \(confirmed\_central\_range\)
+- resistance 5\.1600 \(confirmed\_top\_fractal\)
+- resistance 4\.8000 \(confirmed\_top\_fractal\)
+- resistance 4\.7100 \(confirmed\_top\_fractal\)
+- resistance 4\.4800 \(confirmed\_top\_fractal\)
+- resistance 4\.4900 \(confirmed\_top\_fractal\)
+- resistance 4\.1500 \(confirmed\_top\_fractal\)
+- resistance 4\.1400 \(confirmed\_top\_fractal\)
+- resistance 4\.0700 \(confirmed\_top\_fractal\)
+- resistance 4\.1600 \(confirmed\_top\_fractal\)
+- resistance 4\.1500 \(confirmed\_top\_fractal\)
+- resistance 4\.2000 \(confirmed\_top\_fractal\)
+- resistance 3\.7100 \(confirmed\_top\_fractal\)
+- resistance 3\.6600 \(confirmed\_top\_fractal\)
+- resistance 3\.6000 \(confirmed\_top\_fractal\)
+- resistance 3\.3900 \(confirmed\_top\_fractal\)
+- resistance 3\.3400 \(confirmed\_top\_fractal\)
+- resistance 3\.3300 \(confirmed\_top\_fractal\)
+- resistance 3\.4200 \(confirmed\_top\_fractal\)
+- resistance 3\.3600 \(confirmed\_top\_fractal\)
+- resistance 3\.2500 \(confirmed\_top\_fractal\)
+- resistance 3\.4200 \(confirmed\_top\_fractal\)
+- resistance 3\.3900 \(confirmed\_top\_fractal\)
+- resistance 3\.4500 \(confirmed\_top\_fractal\)
+- reference 3\.3330 \(technical\_ma20\)
+Next conditions:
+- 继续观察价格、技术指标与结构确认状态
+
+### 600674 — 川投能源
+
+- Group: 自选股
+- Provider: sina
+- Latest trade date: 2026\-09\-14
+- Source timestamp: 2026\-09\-14T23:46:14\.914919\+00:00
+- Bars: 167
+- Quality: passed
+- Decision: **偏强**
+- Structure: neutral\_consolidation (confirmed)
+
+Evidence:
+- price\_above\_rising\_moving\_averages
+- positive\_20\_and\_60\_day\_returns
+- macd\_line\_above\_signal
+- rsi\_in\_constructive\_range
+Risks:
+- None
+Key levels:
+- support 13\.4200 \(confirmed\_central\_range\)
+- support 14\.9300 \(confirmed\_central\_range\)
+- support 14\.3500 \(confirmed\_central\_range\)
+- support 13\.8100 \(confirmed\_central\_range\)
+- support 15\.3800 \(confirmed\_central\_range\)
+- support 13\.5200 \(confirmed\_bottom\_fractal\)
+- support 13\.3800 \(confirmed\_bottom\_fractal\)
+- support 13\.1100 \(confirmed\_bottom\_fractal\)
+- support 13\.2400 \(confirmed\_bottom\_fractal\)
+- support 13\.4200 \(confirmed\_bottom\_fractal\)
+- support 14\.9300 \(confirmed\_bottom\_fractal\)
+- support 14\.7100 \(confirmed\_bottom\_fractal\)
+- support 14\.2000 \(confirmed\_bottom\_fractal\)
+- support 13\.8100 \(confirmed\_bottom\_fractal\)
+- support 14\.0300 \(confirmed\_bottom\_fractal\)
+- support 14\.4400 \(confirmed\_bottom\_fractal\)
+- support 14\.3500 \(confirmed\_bottom\_fractal\)
+- support 14\.7200 \(confirmed\_bottom\_fractal\)
+- support 14\.2800 \(confirmed\_bottom\_fractal\)
+- support 14\.1300 \(confirmed\_bottom\_fractal\)
+- support 14\.6400 \(confirmed\_bottom\_fractal\)
+- support 14\.3200 \(confirmed\_bottom\_fractal\)
+- support 13\.6500 \(confirmed\_bottom\_fractal\)
+- support 13\.3700 \(confirmed\_bottom\_fractal\)
+- support 13\.8100 \(confirmed\_bottom\_fractal\)
+- support 15\.3900 \(confirmed\_bottom\_fractal\)
+- support 15\.3800 \(confirmed\_bottom\_fractal\)
+- support 14\.8100 \(confirmed\_bottom\_fractal\)
+- support 14\.9500 \(confirmed\_bottom\_fractal\)
+- support 15\.2300 \(confirmed\_bottom\_fractal\)
+- support 15\.3300 \(confirmed\_bottom\_fractal\)
+- support 15\.4800 \(confirmed\_bottom\_fractal\)
+- resistance 13\.7000 \(confirmed\_central\_range\)
+- resistance 15\.2800 \(confirmed\_central\_range\)
+- resistance 14\.3500 \(confirmed\_central\_range\)
+- resistance 14\.3200 \(confirmed\_central\_range\)
+- resistance 15\.4600 \(confirmed\_central\_range\)
+- resistance 13\.6400 \(confirmed\_top\_fractal\)
+- resistance 13\.7000 \(confirmed\_top\_fractal\)
+- resistance 13\.9500 \(confirmed\_top\_fractal\)
+- resistance 13\.6300 \(confirmed\_top\_fractal\)
+- resistance 13\.7400 \(confirmed\_top\_fractal\)
+- resistance 15\.8600 \(confirmed\_top\_fractal\)
+- resistance 15\.2900 \(confirmed\_top\_fractal\)
+- resistance 15\.2800 \(confirmed\_top\_fractal\)
+- resistance 14\.7500 \(confirmed\_top\_fractal\)
+- resistance 14\.3500 \(confirmed\_top\_fractal\)
+- resistance 15\.0000 \(confirmed\_top\_fractal\)
+- resistance 14\.6700 \(confirmed\_top\_fractal\)
+- resistance 15\.0100 \(confirmed\_top\_fractal\)
+- resistance 15\.1800 \(confirmed\_top\_fractal\)
+- resistance 15\.3000 \(confirmed\_top\_fractal\)
+- resistance 15\.4400 \(confirmed\_top\_fractal\)
+- resistance 15\.2600 \(confirmed\_top\_fractal\)
+- resistance 15\.2700 \(confirmed\_top\_fractal\)
+- resistance 14\.1300 \(confirmed\_top\_fractal\)
+- resistance 14\.3200 \(confirmed\_top\_fractal\)
+- resistance 15\.9800 \(confirmed\_top\_fractal\)
+- resistance 15\.9500 \(confirmed\_top\_fractal\)
+- resistance 15\.9200 \(confirmed\_top\_fractal\)
+- resistance 15\.4600 \(confirmed\_top\_fractal\)
+- resistance 15\.6300 \(confirmed\_top\_fractal\)
+- resistance 15\.7700 \(confirmed\_top\_fractal\)
+- resistance 16\.2000 \(confirmed\_top\_fractal\)
+- reference 15\.6710 \(technical\_ma20\)
+Next conditions:
+- 继续观察价格、技术指标与结构确认状态
+
+### 600926 — 杭州银行
+
+- Group: boo
+- Provider: sina
+- Latest trade date: 2026\-09\-14
+- Source timestamp: 2026\-09\-14T23:46:14\.914919\+00:00
+- Bars: 167
+- Quality: passed
+- Decision: **偏强**
+- Structure: neutral\_consolidation (confirmed)
+
+Evidence:
+- price\_above\_rising\_moving\_averages
+- positive\_20\_and\_60\_day\_returns
+- macd\_line\_above\_signal
+- rsi\_in\_constructive\_range
+Risks:
+- None
+Key levels:
+- support 15\.9800 \(confirmed\_central\_range\)
+- support 16\.6900 \(confirmed\_central\_range\)
+- support 15\.5300 \(confirmed\_central\_range\)
+- support 15\.5000 \(confirmed\_central\_range\)
+- support 16\.4900 \(confirmed\_central\_range\)
+- support 15\.0400 \(confirmed\_bottom\_fractal\)
+- support 14\.7700 \(confirmed\_bottom\_fractal\)
+- support 15\.4900 \(confirmed\_bottom\_fractal\)
+- support 15\.9900 \(confirmed\_bottom\_fractal\)
+- support 15\.8100 \(confirmed\_bottom\_fractal\)
+- support 15\.9400 \(confirmed\_bottom\_fractal\)
+- support 15\.9800 \(confirmed\_bottom\_fractal\)
+- support 15\.7800 \(confirmed\_bottom\_fractal\)
+- support 16\.2200 \(confirmed\_bottom\_fractal\)
+- support 16\.7100 \(confirmed\_bottom\_fractal\)
+- support 16\.6900 \(confirmed\_bottom\_fractal\)
+- support 16\.4500 \(confirmed\_bottom\_fractal\)
+- support 16\.2800 \(confirmed\_bottom\_fractal\)
+- support 15\.9200 \(confirmed\_bottom\_fractal\)
+- support 15\.6400 \(confirmed\_bottom\_fractal\)
+- support 15\.5300 \(confirmed\_bottom\_fractal\)
+- support 15\.3600 \(confirmed\_bottom\_fractal\)
+- support 15\.2800 \(confirmed\_bottom\_fractal\)
+- support 14\.3400 \(confirmed\_bottom\_fractal\)
+- support 15\.0300 \(confirmed\_bottom\_fractal\)
+- support 15\.3300 \(confirmed\_bottom\_fractal\)
+- support 15\.5000 \(confirmed\_bottom\_fractal\)
+- support 16\.0800 \(confirmed\_bottom\_fractal\)
+- support 15\.9000 \(confirmed\_bottom\_fractal\)
+- support 15\.8500 \(confirmed\_bottom\_fractal\)
+- support 16\.4900 \(confirmed\_bottom\_fractal\)
+- support 16\.9000 \(confirmed\_bottom\_fractal\)
+- resistance 16\.0200 \(confirmed\_central\_range\)
+- resistance 16\.9900 \(confirmed\_central\_range\)
+- resistance 16\.1700 \(confirmed\_central\_range\)
+- resistance 15\.5100 \(confirmed\_central\_range\)
+- resistance 16\.5400 \(confirmed\_central\_range\)
+- resistance 15\.7500 \(confirmed\_top\_fractal\)
+- resistance 16\.0200 \(confirmed\_top\_fractal\)
+- resistance 16\.4100 \(confirmed\_top\_fractal\)
+- resistance 16\.2900 \(confirmed\_top\_fractal\)
+- resistance 16\.4700 \(confirmed\_top\_fractal\)
+- resistance 16\.3600 \(confirmed\_top\_fractal\)
+- resistance 17\.1400 \(confirmed\_top\_fractal\)
+- resistance 16\.6000 \(confirmed\_top\_fractal\)
+- resistance 16\.9900 \(confirmed\_top\_fractal\)
+- resistance 17\.0700 \(confirmed\_top\_fractal\)
+- resistance 17\.2800 \(confirmed\_top\_fractal\)
+- resistance 17\.3000 \(confirmed\_top\_fractal\)
+- resistance 16\.5600 \(confirmed\_top\_fractal\)
+- resistance 16\.2200 \(confirmed\_top\_fractal\)
+- resistance 16\.0500 \(confirmed\_top\_fractal\)
+- resistance 16\.1700 \(confirmed\_top\_fractal\)
+- resistance 16\.5200 \(confirmed\_top\_fractal\)
+- resistance 15\.9000 \(confirmed\_top\_fractal\)
+- resistance 15\.5100 \(confirmed\_top\_fractal\)
+- resistance 15\.9700 \(confirmed\_top\_fractal\)
+- resistance 15\.9500 \(confirmed\_top\_fractal\)
+- resistance 16\.5400 \(confirmed\_top\_fractal\)
+- resistance 16\.5300 \(confirmed\_top\_fractal\)
+- resistance 16\.2500 \(confirmed\_top\_fractal\)
+- resistance 16\.9100 \(confirmed\_top\_fractal\)
+- resistance 17\.4600 \(confirmed\_top\_fractal\)
+- reference 17\.0100 \(technical\_ma20\)
+Next conditions:
+- 继续观察价格、技术指标与结构确认状态
+
+### 600967 — 内蒙一机
+
+- Group: 自选股
+- Provider: sina
+- Latest trade date: 2026\-09\-14
+- Source timestamp: 2026\-09\-14T23:46:14\.914919\+00:00
+- Bars: 167
+- Quality: passed
+- Decision: **风险升高**
+- Structure: neutral\_consolidation (confirmed)
+
+Evidence:
+- price\_above\_rising\_moving\_averages
+- positive\_20\_and\_60\_day\_returns
+- macd\_line\_above\_signal
+- rsi\_in\_constructive\_range
+- high\_realized\_volatility20
+Risks:
+- high\_realized\_volatility20
+Key levels:
+- support 16\.5000 \(confirmed\_central\_range\)
+- support 14\.4200 \(confirmed\_central\_range\)
+- support 11\.2700 \(confirmed\_central\_range\)
+- support 11\.2200 \(confirmed\_central\_range\)
+- support 17\.8600 \(confirmed\_bottom\_fractal\)
+- support 16\.2500 \(confirmed\_bottom\_fractal\)
+- support 16\.3800 \(confirmed\_bottom\_fractal\)
+- support 16\.5000 \(confirmed\_bottom\_fractal\)
+- support 17\.0200 \(confirmed\_bottom\_fractal\)
+- support 13\.4900 \(confirmed\_bottom\_fractal\)
+- support 14\.1900 \(confirmed\_bottom\_fractal\)
+- support 14\.0100 \(confirmed\_bottom\_fractal\)
+- support 14\.4200 \(confirmed\_bottom\_fractal\)
+- support 14\.4200 \(confirmed\_bottom\_fractal\)
+- support 13\.6700 \(confirmed\_bottom\_fractal\)
+- support 13\.9400 \(confirmed\_bottom\_fractal\)
+- support 11\.4300 \(confirmed\_bottom\_fractal\)
+- support 11\.4600 \(confirmed\_bottom\_fractal\)
+- support 11\.2700 \(confirmed\_bottom\_fractal\)
+- support 10\.4000 \(confirmed\_bottom\_fractal\)
+- support 10\.2800 \(confirmed\_bottom\_fractal\)
+- support 10\.0200 \(confirmed\_bottom\_fractal\)
+- support 10\.0900 \(confirmed\_bottom\_fractal\)
+- support 10\.3500 \(confirmed\_bottom\_fractal\)
+- support 11\.0100 \(confirmed\_bottom\_fractal\)
+- support 11\.2200 \(confirmed\_bottom\_fractal\)
+- support 10\.6200 \(confirmed\_bottom\_fractal\)
+- support 10\.9600 \(confirmed\_bottom\_fractal\)
+- support 12\.9500 \(confirmed\_bottom\_fractal\)
+- resistance 16\.9200 \(confirmed\_central\_range\)
+- resistance 14\.9300 \(confirmed\_central\_range\)
+- resistance 11\.3400 \(confirmed\_central\_range\)
+- resistance 11\.3000 \(confirmed\_central\_range\)
+- resistance 21\.2000 \(confirmed\_top\_fractal\)
+- resistance 18\.5100 \(confirmed\_top\_fractal\)
+- resistance 16\.9300 \(confirmed\_top\_fractal\)
+- resistance 16\.9200 \(confirmed\_top\_fractal\)
+- resistance 17\.5000 \(confirmed\_top\_fractal\)
+- resistance 18\.2000 \(confirmed\_top\_fractal\)
+- resistance 15\.8700 \(confirmed\_top\_fractal\)
+- resistance 15\.2500 \(confirmed\_top\_fractal\)
+- resistance 15\.2200 \(confirmed\_top\_fractal\)
+- resistance 14\.8100 \(confirmed\_top\_fractal\)
+- resistance 15\.1100 \(confirmed\_top\_fractal\)
+- resistance 14\.2200 \(confirmed\_top\_fractal\)
+- resistance 14\.9300 \(confirmed\_top\_fractal\)
+- resistance 12\.3800 \(confirmed\_top\_fractal\)
+- resistance 12\.0900 \(confirmed\_top\_fractal\)
+- resistance 11\.8500 \(confirmed\_top\_fractal\)
+- resistance 11\.3400 \(confirmed\_top\_fractal\)
+- resistance 11\.1700 \(confirmed\_top\_fractal\)
+- resistance 10\.5300 \(confirmed\_top\_fractal\)
+- resistance 10\.5700 \(confirmed\_top\_fractal\)
+- resistance 12\.2500 \(confirmed\_top\_fractal\)
+- resistance 12\.0600 \(confirmed\_top\_fractal\)
+- resistance 12\.2500 \(confirmed\_top\_fractal\)
+- resistance 11\.3000 \(confirmed\_top\_fractal\)
+- resistance 14\.6000 \(confirmed\_top\_fractal\)
+- resistance 15\.2200 \(confirmed\_top\_fractal\)
+- reference 12\.3650 \(technical\_ma20\)
+Next conditions:
+- 20日实现波动率回落至风险阈值以下
+
+### 601008 — 连云港
+
+- Group: 自选股
+- Provider: sina
+- Latest trade date: 2026\-09\-14
+- Source timestamp: 2026\-09\-14T23:46:14\.914919\+00:00
+- Bars: 167
+- Quality: passed
+- Decision: **偏强**
+- Structure: neutral\_consolidation (confirmed)
+
+Evidence:
+- price\_above\_rising\_moving\_averages
+- positive\_20\_and\_60\_day\_returns
+- macd\_line\_above\_signal
+- rsi\_in\_constructive\_range
+Risks:
+- None
+Key levels:
+- support 5\.2000 \(confirmed\_central\_range\)
+- support 4\.7400 \(confirmed\_central\_range\)
+- support 4\.2700 \(confirmed\_central\_range\)
+- support 5\.1600 \(confirmed\_bottom\_fractal\)
+- support 5\.1700 \(confirmed\_bottom\_fractal\)
+- support 5\.1700 \(confirmed\_bottom\_fractal\)
+- support 5\.2000 \(confirmed\_bottom\_fractal\)
+- support 5\.1000 \(confirmed\_bottom\_fractal\)
+- support 5\.1700 \(confirmed\_bottom\_fractal\)
+- support 5\.0800 \(confirmed\_bottom\_fractal\)
+- support 5\.0700 \(confirmed\_bottom\_fractal\)
+- support 5\.0600 \(confirmed\_bottom\_fractal\)
+- support 4\.5600 \(confirmed\_bottom\_fractal\)
+- support 4\.8300 \(confirmed\_bottom\_fractal\)
+- support 4\.7400 \(confirmed\_bottom\_fractal\)
+- support 4\.7300 \(confirmed\_bottom\_fractal\)
+- support 4\.6200 \(confirmed\_bottom\_fractal\)
+- support 4\.6900 \(confirmed\_bottom\_fractal\)
+- support 4\.2900 \(confirmed\_bottom\_fractal\)
+- support 4\.2800 \(confirmed\_bottom\_fractal\)
+- support 4\.1900 \(confirmed\_bottom\_fractal\)
+- support 3\.9100 \(confirmed\_bottom\_fractal\)
+- support 4\.0600 \(confirmed\_bottom\_fractal\)
+- support 4\.2400 \(confirmed\_bottom\_fractal\)
+- support 4\.2500 \(confirmed\_bottom\_fractal\)
+- support 4\.2700 \(confirmed\_bottom\_fractal\)
+- support 4\.3200 \(confirmed\_bottom\_fractal\)
+- support 4\.2500 \(confirmed\_bottom\_fractal\)
+- support 4\.2600 \(confirmed\_bottom\_fractal\)
+- support 4\.3900 \(confirmed\_bottom\_fractal\)
+- resistance 5\.2400 \(confirmed\_central\_range\)
+- resistance 4\.7500 \(confirmed\_central\_range\)
+- resistance 4\.3300 \(confirmed\_central\_range\)
+- resistance 5\.2600 \(confirmed\_top\_fractal\)
+- resistance 5\.2400 \(confirmed\_top\_fractal\)
+- resistance 5\.3100 \(confirmed\_top\_fractal\)
+- resistance 5\.4600 \(confirmed\_top\_fractal\)
+- resistance 5\.2800 \(confirmed\_top\_fractal\)
+- resistance 5\.2800 \(confirmed\_top\_fractal\)
+- resistance 6\.1600 \(confirmed\_top\_fractal\)
+- resistance 5\.3200 \(confirmed\_top\_fractal\)
+- resistance 5\.1200 \(confirmed\_top\_fractal\)
+- resistance 4\.9900 \(confirmed\_top\_fractal\)
+- resistance 4\.9700 \(confirmed\_top\_fractal\)
+- resistance 4\.9500 \(confirmed\_top\_fractal\)
+- resistance 4\.7800 \(confirmed\_top\_fractal\)
+- resistance 4\.9200 \(confirmed\_top\_fractal\)
+- resistance 4\.8000 \(confirmed\_top\_fractal\)
+- resistance 4\.7500 \(confirmed\_top\_fractal\)
+- resistance 4\.8200 \(confirmed\_top\_fractal\)
+- resistance 4\.4400 \(confirmed\_top\_fractal\)
+- resistance 4\.3300 \(confirmed\_top\_fractal\)
+- resistance 4\.4500 \(confirmed\_top\_fractal\)
+- resistance 4\.3800 \(confirmed\_top\_fractal\)
+- resistance 4\.4900 \(confirmed\_top\_fractal\)
+- resistance 4\.4200 \(confirmed\_top\_fractal\)
+- resistance 4\.3900 \(confirmed\_top\_fractal\)
+- resistance 4\.7500 \(confirmed\_top\_fractal\)
+- resistance 4\.5100 \(confirmed\_top\_fractal\)
+- reference 4\.4980 \(technical\_ma20\)
+Next conditions:
+- 继续观察价格、技术指标与结构确认状态
+
+### 601328 — 交通银行
+
+- Group: 自选股
+- Provider: sina
+- Latest trade date: 2026\-09\-14
+- Source timestamp: 2026\-09\-14T23:46:14\.914919\+00:00
+- Bars: 167
+- Quality: passed
+- Decision: **偏强**
+- Structure: neutral\_consolidation (confirmed)
+
+Evidence:
+- price\_above\_rising\_moving\_averages
+- positive\_20\_and\_60\_day\_returns
+- macd\_line\_above\_signal
+- rsi\_in\_constructive\_range
+Risks:
+- None
+Key levels:
+- support 6\.5900 \(confirmed\_central\_range\)
+- support 7\.2300 \(confirmed\_central\_range\)
+- support 6\.8400 \(confirmed\_bottom\_fractal\)
+- support 6\.3200 \(confirmed\_bottom\_fractal\)
+- support 6\.3800 \(confirmed\_bottom\_fractal\)
+- support 6\.5000 \(confirmed\_bottom\_fractal\)
+- support 6\.3500 \(confirmed\_bottom\_fractal\)
+- support 6\.5200 \(confirmed\_bottom\_fractal\)
+- support 6\.4900 \(confirmed\_bottom\_fractal\)
+- support 6\.7900 \(confirmed\_bottom\_fractal\)
+- support 6\.5900 \(confirmed\_bottom\_fractal\)
+- support 6\.7200 \(confirmed\_bottom\_fractal\)
+- support 6\.4800 \(confirmed\_bottom\_fractal\)
+- support 6\.4900 \(confirmed\_bottom\_fractal\)
+- support 6\.3800 \(confirmed\_bottom\_fractal\)
+- support 6\.3400 \(confirmed\_bottom\_fractal\)
+- support 6\.5400 \(confirmed\_bottom\_fractal\)
+- support 6\.6800 \(confirmed\_bottom\_fractal\)
+- support 6\.4600 \(confirmed\_bottom\_fractal\)
+- support 6\.2100 \(confirmed\_bottom\_fractal\)
+- support 6\.7600 \(confirmed\_bottom\_fractal\)
+- support 6\.9800 \(confirmed\_bottom\_fractal\)
+- support 6\.8500 \(confirmed\_bottom\_fractal\)
+- support 6\.8400 \(confirmed\_bottom\_fractal\)
+- support 6\.8600 \(confirmed\_bottom\_fractal\)
+- support 7\.0100 \(confirmed\_bottom\_fractal\)
+- support 7\.2300 \(confirmed\_bottom\_fractal\)
+- resistance 6\.6000 \(confirmed\_central\_range\)
+- resistance 7\.2500 \(confirmed\_central\_range\)
+- resistance 6\.9800 \(confirmed\_top\_fractal\)
+- resistance 6\.6000 \(confirmed\_top\_fractal\)
+- resistance 6\.6400 \(confirmed\_top\_fractal\)
+- resistance 6\.6800 \(confirmed\_top\_fractal\)
+- resistance 6\.6400 \(confirmed\_top\_fractal\)
+- resistance 6\.7800 \(confirmed\_top\_fractal\)
+- resistance 6\.9500 \(confirmed\_top\_fractal\)
+- resistance 6\.9200 \(confirmed\_top\_fractal\)
+- resistance 6\.8100 \(confirmed\_top\_fractal\)
+- resistance 6\.9300 \(confirmed\_top\_fractal\)
+- resistance 6\.6100 \(confirmed\_top\_fractal\)
+- resistance 6\.5800 \(confirmed\_top\_fractal\)
+- resistance 6\.5600 \(confirmed\_top\_fractal\)
+- resistance 6\.6900 \(confirmed\_top\_fractal\)
+- resistance 6\.8100 \(confirmed\_top\_fractal\)
+- resistance 6\.9900 \(confirmed\_top\_fractal\)
+- resistance 6\.7400 \(confirmed\_top\_fractal\)
+- resistance 7\.0800 \(confirmed\_top\_fractal\)
+- resistance 7\.3200 \(confirmed\_top\_fractal\)
+- resistance 7\.2500 \(confirmed\_top\_fractal\)
+- resistance 6\.9700 \(confirmed\_top\_fractal\)
+- resistance 6\.9600 \(confirmed\_top\_fractal\)
+- resistance 7\.2500 \(confirmed\_top\_fractal\)
+- resistance 7\.5100 \(confirmed\_top\_fractal\)
+- reference 7\.2645 \(technical\_ma20\)
+Next conditions:
+- 继续观察价格、技术指标与结构确认状态
+
+### 601333 — 广深铁路
+
+- Group: boo
+- Provider: sina
+- Latest trade date: 2026\-09\-14
+- Source timestamp: 2026\-09\-14T23:46:14\.914919\+00:00
+- Bars: 167
+- Quality: passed
+- Decision: **偏强**
+- Structure: neutral\_consolidation (confirmed)
+
+Evidence:
+- price\_above\_rising\_moving\_averages
+- positive\_20\_and\_60\_day\_returns
+- macd\_line\_above\_signal
+- rsi\_in\_constructive\_range
+Risks:
+- None
+Key levels:
+- support 2\.9600 \(confirmed\_central\_range\)
+- support 2\.9200 \(confirmed\_bottom\_fractal\)
+- support 2\.9900 \(confirmed\_bottom\_fractal\)
+- support 2\.9600 \(confirmed\_bottom\_fractal\)
+- support 2\.9600 \(confirmed\_bottom\_fractal\)
+- support 2\.9800 \(confirmed\_bottom\_fractal\)
+- support 2\.9500 \(confirmed\_bottom\_fractal\)
+- support 2\.8100 \(confirmed\_bottom\_fractal\)
+- support 2\.9500 \(confirmed\_bottom\_fractal\)
+- support 2\.9500 \(confirmed\_bottom\_fractal\)
+- support 2\.9400 \(confirmed\_bottom\_fractal\)
+- support 2\.9400 \(confirmed\_bottom\_fractal\)
+- support 2\.9000 \(confirmed\_bottom\_fractal\)
+- support 3\.0000 \(confirmed\_bottom\_fractal\)
+- support 2\.9500 \(confirmed\_bottom\_fractal\)
+- support 2\.9000 \(confirmed\_bottom\_fractal\)
+- support 2\.9100 \(confirmed\_bottom\_fractal\)
+- support 2\.8500 \(confirmed\_bottom\_fractal\)
+- support 2\.7300 \(confirmed\_bottom\_fractal\)
+- support 2\.9100 \(confirmed\_bottom\_fractal\)
+- support 2\.9100 \(confirmed\_bottom\_fractal\)
+- support 2\.9300 \(confirmed\_bottom\_fractal\)
+- support 2\.8800 \(confirmed\_bottom\_fractal\)
+- support 2\.8800 \(confirmed\_bottom\_fractal\)
+- resistance 2\.9700 \(confirmed\_central\_range\)
+- resistance 3\.0000 \(confirmed\_top\_fractal\)
+- resistance 3\.0500 \(confirmed\_top\_fractal\)
+- resistance 3\.1000 \(confirmed\_top\_fractal\)
+- resistance 3\.0500 \(confirmed\_top\_fractal\)
+- resistance 3\.0500 \(confirmed\_top\_fractal\)
+- resistance 3\.0700 \(confirmed\_top\_fractal\)
+- resistance 3\.1000 \(confirmed\_top\_fractal\)
+- resistance 3\.0800 \(confirmed\_top\_fractal\)
+- resistance 3\.1300 \(confirmed\_top\_fractal\)
+- resistance 3\.0600 \(confirmed\_top\_fractal\)
+- resistance 3\.0000 \(confirmed\_top\_fractal\)
+- resistance 2\.9800 \(confirmed\_top\_fractal\)
+- resistance 3\.1700 \(confirmed\_top\_fractal\)
+- resistance 3\.1500 \(confirmed\_top\_fractal\)
+- resistance 3\.0100 \(confirmed\_top\_fractal\)
+- resistance 3\.0900 \(confirmed\_top\_fractal\)
+- resistance 2\.9800 \(confirmed\_top\_fractal\)
+- resistance 2\.9700 \(confirmed\_top\_fractal\)
+- resistance 2\.9900 \(confirmed\_top\_fractal\)
+- resistance 3\.0500 \(confirmed\_top\_fractal\)
+- resistance 3\.0100 \(confirmed\_top\_fractal\)
+- resistance 3\.1200 \(confirmed\_top\_fractal\)
+- resistance 2\.9700 \(confirmed\_top\_fractal\)
+- resistance 3\.1800 \(confirmed\_top\_fractal\)
+- reference 3\.0430 \(technical\_ma20\)
+Next conditions:
+- 继续观察价格、技术指标与结构确认状态
+
+### 601963 — 重庆银行
+
+- Group: 自选股
+- Provider: sina
+- Latest trade date: 2026\-09\-14
+- Source timestamp: 2026\-09\-14T23:46:14\.914919\+00:00
+- Bars: 167
+- Quality: passed
+- Decision: **偏强**
+- Structure: neutral\_consolidation (confirmed)
+
+Evidence:
+- price\_above\_rising\_moving\_averages
+- positive\_20\_and\_60\_day\_returns
+- macd\_line\_above\_signal
+- rsi\_in\_constructive\_range
+Risks:
+- None
+Key levels:
+- support 9\.9300 \(confirmed\_central\_range\)
+- support 10\.5800 \(confirmed\_central\_range\)
+- support 10\.2800 \(confirmed\_central\_range\)
+- support 11\.0100 \(confirmed\_central\_range\)
+- support 9\.9200 \(confirmed\_bottom\_fractal\)
+- support 9\.7900 \(confirmed\_bottom\_fractal\)
+- support 9\.9200 \(confirmed\_bottom\_fractal\)
+- support 9\.9300 \(confirmed\_bottom\_fractal\)
+- support 9\.8400 \(confirmed\_bottom\_fractal\)
+- support 9\.3900 \(confirmed\_bottom\_fractal\)
+- support 10\.5800 \(confirmed\_bottom\_fractal\)
+- support 9\.9200 \(confirmed\_bottom\_fractal\)
+- support 9\.4900 \(confirmed\_bottom\_fractal\)
+- support 10\.1100 \(confirmed\_bottom\_fractal\)
+- support 10\.4900 \(confirmed\_bottom\_fractal\)
+- support 10\.0000 \(confirmed\_bottom\_fractal\)
+- support 10\.1600 \(confirmed\_bottom\_fractal\)
+- support 11\.1000 \(confirmed\_bottom\_fractal\)
+- support 11\.5300 \(confirmed\_bottom\_fractal\)
+- support 10\.2800 \(confirmed\_bottom\_fractal\)
+- support 9\.6500 \(confirmed\_bottom\_fractal\)
+- support 9\.5300 \(confirmed\_bottom\_fractal\)
+- support 9\.7000 \(confirmed\_bottom\_fractal\)
+- support 10\.7300 \(confirmed\_bottom\_fractal\)
+- support 10\.8500 \(confirmed\_bottom\_fractal\)
+- support 11\.0200 \(confirmed\_bottom\_fractal\)
+- support 10\.6800 \(confirmed\_bottom\_fractal\)
+- support 10\.7200 \(confirmed\_bottom\_fractal\)
+- support 11\.0200 \(confirmed\_bottom\_fractal\)
+- support 10\.8800 \(confirmed\_bottom\_fractal\)
+- support 11\.0100 \(confirmed\_bottom\_fractal\)
+- resistance 10\.2300 \(confirmed\_central\_range\)
+- resistance 10\.9600 \(confirmed\_central\_range\)
+- resistance 10\.5200 \(confirmed\_central\_range\)
+- resistance 11\.1100 \(confirmed\_central\_range\)
+- resistance 10\.3500 \(confirmed\_top\_fractal\)
+- resistance 10\.2300 \(confirmed\_top\_fractal\)
+- resistance 10\.1600 \(confirmed\_top\_fractal\)
+- resistance 10\.4000 \(confirmed\_top\_fractal\)
+- resistance 10\.7700 \(confirmed\_top\_fractal\)
+- resistance 10\.9600 \(confirmed\_top\_fractal\)
+- resistance 11\.4700 \(confirmed\_top\_fractal\)
+- resistance 10\.2900 \(confirmed\_top\_fractal\)
+- resistance 10\.5200 \(confirmed\_top\_fractal\)
+- resistance 10\.8000 \(confirmed\_top\_fractal\)
+- resistance 10\.8000 \(confirmed\_top\_fractal\)
+- resistance 10\.6800 \(confirmed\_top\_fractal\)
+- resistance 11\.7700 \(confirmed\_top\_fractal\)
+- resistance 11\.8700 \(confirmed\_top\_fractal\)
+- resistance 12\.0800 \(confirmed\_top\_fractal\)
+- resistance 10\.8700 \(confirmed\_top\_fractal\)
+- resistance 10\.1000 \(confirmed\_top\_fractal\)
+- resistance 10\.1500 \(confirmed\_top\_fractal\)
+- resistance 11\.3500 \(confirmed\_top\_fractal\)
+- resistance 11\.1500 \(confirmed\_top\_fractal\)
+- resistance 11\.6000 \(confirmed\_top\_fractal\)
+- resistance 11\.5100 \(confirmed\_top\_fractal\)
+- resistance 11\.1100 \(confirmed\_top\_fractal\)
+- resistance 11\.2800 \(confirmed\_top\_fractal\)
+- resistance 11\.3100 \(confirmed\_top\_fractal\)
+- resistance 11\.5800 \(confirmed\_top\_fractal\)
+- reference 11\.1830 \(technical\_ma20\)
+Next conditions:
+- 继续观察价格、技术指标与结构确认状态
+
+### 603162 — 海通发展
+
+- Group: 自选股
+- Provider: sina
+- Latest trade date: 2026\-09\-14
+- Source timestamp: 2026\-09\-14T23:46:14\.914919\+00:00
+- Bars: 167
+- Quality: passed
+- Decision: **风险升高**
+- Structure: neutral\_consolidation (confirmed)
+
+Evidence:
+- price\_above\_rising\_moving\_averages
+- positive\_20\_and\_60\_day\_returns
+- macd\_line\_above\_signal
+- rsi\_in\_constructive\_range
+- high\_realized\_volatility20
+Risks:
+- high\_realized\_volatility20
+Key levels:
+- support 8\.2200 \(confirmed\_central\_range\)
+- support 9\.4600 \(confirmed\_central\_range\)
+- support 11\.6000 \(confirmed\_central\_range\)
+- support 9\.3800 \(confirmed\_central\_range\)
+- support 10\.9300 \(confirmed\_central\_range\)
+- support 8\.0600 \(confirmed\_bottom\_fractal\)
+- support 8\.1800 \(confirmed\_bottom\_fractal\)
+- support 8\.1500 \(confirmed\_bottom\_fractal\)
+- support 8\.2200 \(confirmed\_bottom\_fractal\)
+- support 8\.8100 \(confirmed\_bottom\_fractal\)
+- support 9\.6400 \(confirmed\_bottom\_fractal\)
+- support 9\.4300 \(confirmed\_bottom\_fractal\)
+- support 8\.9500 \(confirmed\_bottom\_fractal\)
+- support 8\.4400 \(confirmed\_bottom\_fractal\)
+- support 8\.4200 \(confirmed\_bottom\_fractal\)
+- support 9\.1700 \(confirmed\_bottom\_fractal\)
+- support 9\.2300 \(confirmed\_bottom\_fractal\)
+- support 9\.3300 \(confirmed\_bottom\_fractal\)
+- support 9\.4600 \(confirmed\_bottom\_fractal\)
+- support 11\.6000 \(confirmed\_bottom\_fractal\)
+- support 11\.1500 \(confirmed\_bottom\_fractal\)
+- support 9\.3800 \(confirmed\_bottom\_fractal\)
+- support 9\.6500 \(confirmed\_bottom\_fractal\)
+- support 9\.1800 \(confirmed\_bottom\_fractal\)
+- support 8\.6900 \(confirmed\_bottom\_fractal\)
+- support 8\.7300 \(confirmed\_bottom\_fractal\)
+- support 9\.8800 \(confirmed\_bottom\_fractal\)
+- support 10\.3200 \(confirmed\_bottom\_fractal\)
+- support 10\.4500 \(confirmed\_bottom\_fractal\)
+- support 10\.9300 \(confirmed\_bottom\_fractal\)
+- support 11\.7100 \(confirmed\_bottom\_fractal\)
+- support 11\.6500 \(confirmed\_bottom\_fractal\)
+- support 13\.5100 \(confirmed\_bottom\_fractal\)
+- resistance 8\.6300 \(confirmed\_central\_range\)
+- resistance 9\.7900 \(confirmed\_central\_range\)
+- resistance 12\.0800 \(confirmed\_central\_range\)
+- resistance 9\.8700 \(confirmed\_central\_range\)
+- resistance 11\.3600 \(confirmed\_central\_range\)
+- resistance 8\.6000 \(confirmed\_top\_fractal\)
+- resistance 8\.6300 \(confirmed\_top\_fractal\)
+- resistance 8\.5600 \(confirmed\_top\_fractal\)
+- resistance 10\.5400 \(confirmed\_top\_fractal\)
+- resistance 10\.3900 \(confirmed\_top\_fractal\)
+- resistance 11\.2100 \(confirmed\_top\_fractal\)
+- resistance 10\.1400 \(confirmed\_top\_fractal\)
+- resistance 9\.7900 \(confirmed\_top\_fractal\)
+- resistance 9\.3100 \(confirmed\_top\_fractal\)
+- resistance 10\.0900 \(confirmed\_top\_fractal\)
+- resistance 9\.6500 \(confirmed\_top\_fractal\)
+- resistance 10\.1800 \(confirmed\_top\_fractal\)
+- resistance 9\.9100 \(confirmed\_top\_fractal\)
+- resistance 13\.3000 \(confirmed\_top\_fractal\)
+- resistance 12\.1700 \(confirmed\_top\_fractal\)
+- resistance 12\.0800 \(confirmed\_top\_fractal\)
+- resistance 10\.3500 \(confirmed\_top\_fractal\)
+- resistance 10\.6300 \(confirmed\_top\_fractal\)
+- resistance 9\.8700 \(confirmed\_top\_fractal\)
+- resistance 10\.1000 \(confirmed\_top\_fractal\)
+- resistance 11\.3600 \(confirmed\_top\_fractal\)
+- resistance 12\.1800 \(confirmed\_top\_fractal\)
+- resistance 11\.1000 \(confirmed\_top\_fractal\)
+- resistance 12\.9000 \(confirmed\_top\_fractal\)
+- resistance 12\.6800 \(confirmed\_top\_fractal\)
+- resistance 12\.9700 \(confirmed\_top\_fractal\)
+- resistance 15\.4700 \(confirmed\_top\_fractal\)
+- resistance 16\.9700 \(confirmed\_top\_fractal\)
+- reference 13\.0520 \(technical\_ma20\)
+Next conditions:
+- 20日实现波动率回落至风险阈值以下
+
+### 603336 — 宏辉果蔬
+
+- Group: 自选股
+- Provider: sina
+- Latest trade date: 2026\-09\-14
+- Source timestamp: 2026\-09\-14T23:46:14\.914919\+00:00
+- Bars: 167
+- Quality: passed
+- Decision: **风险升高**
+- Structure: neutral\_consolidation (confirmed)
+
+Evidence:
+- price\_above\_rising\_moving\_averages
+- positive\_20\_and\_60\_day\_returns
+- macd\_line\_above\_signal
+- rsi\_in\_constructive\_range
+- high\_realized\_volatility20
+Risks:
+- high\_realized\_volatility20
+Key levels:
+- support 9\.0100 \(confirmed\_central\_range\)
+- support 11\.1500 \(confirmed\_central\_range\)
+- support 8\.4600 \(confirmed\_central\_range\)
+- support 7\.2500 \(confirmed\_central\_range\)
+- support 9\.0400 \(confirmed\_central\_range\)
+- support 8\.4200 \(confirmed\_bottom\_fractal\)
+- support 9\.4400 \(confirmed\_bottom\_fractal\)
+- support 9\.0100 \(confirmed\_bottom\_fractal\)
+- support 9\.4000 \(confirmed\_bottom\_fractal\)
+- support 9\.4000 \(confirmed\_bottom\_fractal\)
+- support 8\.0800 \(confirmed\_bottom\_fractal\)
+- support 8\.5300 \(confirmed\_bottom\_fractal\)
+- support 8\.7200 \(confirmed\_bottom\_fractal\)
+- support 9\.1100 \(confirmed\_bottom\_fractal\)
+- support 9\.0500 \(confirmed\_bottom\_fractal\)
+- support 9\.1900 \(confirmed\_bottom\_fractal\)
+- support 11\.1500 \(confirmed\_bottom\_fractal\)
+- support 11\.9700 \(confirmed\_bottom\_fractal\)
+- support 11\.9900 \(confirmed\_bottom\_fractal\)
+- support 8\.4600 \(confirmed\_bottom\_fractal\)
+- support 8\.6900 \(confirmed\_bottom\_fractal\)
+- support 7\.6700 \(confirmed\_bottom\_fractal\)
+- support 7\.1500 \(confirmed\_bottom\_fractal\)
+- support 7\.2200 \(confirmed\_bottom\_fractal\)
+- support 7\.3400 \(confirmed\_bottom\_fractal\)
+- support 7\.2500 \(confirmed\_bottom\_fractal\)
+- support 8\.0500 \(confirmed\_bottom\_fractal\)
+- support 9\.4200 \(confirmed\_bottom\_fractal\)
+- support 8\.9400 \(confirmed\_bottom\_fractal\)
+- support 8\.6500 \(confirmed\_bottom\_fractal\)
+- support 8\.8400 \(confirmed\_bottom\_fractal\)
+- support 9\.0400 \(confirmed\_bottom\_fractal\)
+- resistance 9\.1800 \(confirmed\_central\_range\)
+- resistance 12\.7400 \(confirmed\_central\_range\)
+- resistance 8\.4700 \(confirmed\_central\_range\)
+- resistance 8\.2100 \(confirmed\_central\_range\)
+- resistance 9\.7800 \(confirmed\_central\_range\)
+- resistance 9\.1800 \(confirmed\_top\_fractal\)
+- resistance 9\.9900 \(confirmed\_top\_fractal\)
+- resistance 9\.9600 \(confirmed\_top\_fractal\)
+- resistance 10\.1400 \(confirmed\_top\_fractal\)
+- resistance 10\.5400 \(confirmed\_top\_fractal\)
+- resistance 10\.0400 \(confirmed\_top\_fractal\)
+- resistance 8\.8300 \(confirmed\_top\_fractal\)
+- resistance 9\.3100 \(confirmed\_top\_fractal\)
+- resistance 9\.4400 \(confirmed\_top\_fractal\)
+- resistance 9\.6400 \(confirmed\_top\_fractal\)
+- resistance 9\.5400 \(confirmed\_top\_fractal\)
+- resistance 13\.2500 \(confirmed\_top\_fractal\)
+- resistance 12\.7400 \(confirmed\_top\_fractal\)
+- resistance 12\.9200 \(confirmed\_top\_fractal\)
+- resistance 13\.0900 \(confirmed\_top\_fractal\)
+- resistance 9\.5200 \(confirmed\_top\_fractal\)
+- resistance 9\.1900 \(confirmed\_top\_fractal\)
+- resistance 8\.1600 \(confirmed\_top\_fractal\)
+- resistance 8\.4700 \(confirmed\_top\_fractal\)
+- resistance 8\.2100 \(confirmed\_top\_fractal\)
+- resistance 8\.8800 \(confirmed\_top\_fractal\)
+- resistance 9\.1300 \(confirmed\_top\_fractal\)
+- resistance 10\.3500 \(confirmed\_top\_fractal\)
+- resistance 10\.5300 \(confirmed\_top\_fractal\)
+- resistance 9\.8800 \(confirmed\_top\_fractal\)
+- resistance 9\.5900 \(confirmed\_top\_fractal\)
+- resistance 9\.7800 \(confirmed\_top\_fractal\)
+- resistance 10\.0800 \(confirmed\_top\_fractal\)
+- reference 9\.4300 \(technical\_ma20\)
+Next conditions:
+- 20日实现波动率回落至风险阈值以下
+
+### 603466 — 风语筑
+
+- Group: 脑机接口
+- Provider: sina
+- Latest trade date: 2026\-09\-14
+- Source timestamp: 2026\-09\-14T23:46:14\.914919\+00:00
+- Bars: 167
+- Quality: passed
+- Decision: **风险升高**
+- Structure: neutral\_consolidation (confirmed)
+
+Evidence:
+- price\_above\_rising\_moving\_averages
+- positive\_20\_and\_60\_day\_returns
+- macd\_line\_above\_signal
+- rsi\_in\_constructive\_range
+- high\_realized\_volatility20
+- large\_drawdown60
+Risks:
+- high\_realized\_volatility20
+- large\_drawdown60
+Key levels:
+- support 10\.1900 \(confirmed\_central\_range\)
+- support 9\.4700 \(confirmed\_central\_range\)
+- support 10\.7600 \(confirmed\_central\_range\)
+- support 9\.1700 \(confirmed\_bottom\_fractal\)
+- support 8\.8300 \(confirmed\_bottom\_fractal\)
+- support 10\.4900 \(confirmed\_bottom\_fractal\)
+- support 10\.1900 \(confirmed\_bottom\_fractal\)
+- support 10\.3400 \(confirmed\_bottom\_fractal\)
+- support 8\.7600 \(confirmed\_bottom\_fractal\)
+- support 8\.9900 \(confirmed\_bottom\_fractal\)
+- support 8\.8900 \(confirmed\_bottom\_fractal\)
+- support 9\.3300 \(confirmed\_bottom\_fractal\)
+- support 9\.4700 \(confirmed\_bottom\_fractal\)
+- support 9\.8000 \(confirmed\_bottom\_fractal\)
+- support 10\.5900 \(confirmed\_bottom\_fractal\)
+- support 10\.2500 \(confirmed\_bottom\_fractal\)
+- support 10\.6000 \(confirmed\_bottom\_fractal\)
+- support 9\.4100 \(confirmed\_bottom\_fractal\)
+- support 9\.6000 \(confirmed\_bottom\_fractal\)
+- support 10\.7100 \(confirmed\_bottom\_fractal\)
+- support 10\.3100 \(confirmed\_bottom\_fractal\)
+- support 9\.2200 \(confirmed\_bottom\_fractal\)
+- support 9\.2500 \(confirmed\_bottom\_fractal\)
+- support 10\.9400 \(confirmed\_bottom\_fractal\)
+- support 10\.7600 \(confirmed\_bottom\_fractal\)
+- support 11\.6800 \(confirmed\_bottom\_fractal\)
+- resistance 11\.0300 \(confirmed\_central\_range\)
+- resistance 9\.4800 \(confirmed\_central\_range\)
+- resistance 10\.9700 \(confirmed\_central\_range\)
+- resistance 11\.2500 \(confirmed\_top\_fractal\)
+- resistance 9\.7900 \(confirmed\_top\_fractal\)
+- resistance 12\.0400 \(confirmed\_top\_fractal\)
+- resistance 13\.9800 \(confirmed\_top\_fractal\)
+- resistance 11\.3300 \(confirmed\_top\_fractal\)
+- resistance 11\.0300 \(confirmed\_top\_fractal\)
+- resistance 9\.4300 \(confirmed\_top\_fractal\)
+- resistance 9\.4800 \(confirmed\_top\_fractal\)
+- resistance 9\.7200 \(confirmed\_top\_fractal\)
+- resistance 10\.5500 \(confirmed\_top\_fractal\)
+- resistance 10\.5500 \(confirmed\_top\_fractal\)
+- resistance 11\.1500 \(confirmed\_top\_fractal\)
+- resistance 11\.2800 \(confirmed\_top\_fractal\)
+- resistance 11\.4800 \(confirmed\_top\_fractal\)
+- resistance 12\.6500 \(confirmed\_top\_fractal\)
+- resistance 10\.9700 \(confirmed\_top\_fractal\)
+- resistance 12\.7900 \(confirmed\_top\_fractal\)
+- resistance 12\.0500 \(confirmed\_top\_fractal\)
+- resistance 12\.7000 \(confirmed\_top\_fractal\)
+- resistance 9\.9500 \(confirmed\_top\_fractal\)
+- resistance 11\.5900 \(confirmed\_top\_fractal\)
+- resistance 14\.2000 \(confirmed\_top\_fractal\)
+- resistance 13\.4000 \(confirmed\_top\_fractal\)
+- reference 11\.9140 \(technical\_ma20\)
+Next conditions:
+- 20日实现波动率回落至风险阈值以下
+- 60日回撤收窄至风险阈值以内
+
+### 688543 — 国科军工
+
+- Group: 2025动荡
+- Provider: sina
+- Latest trade date: 2026\-09\-14
+- Source timestamp: 2026\-09\-14T23:46:14\.914919\+00:00
+- Bars: 167
+- Quality: passed
+- Decision: **风险升高**
+- Structure: neutral\_consolidation (confirmed)
+
+Evidence:
+- price\_above\_rising\_moving\_averages
+- positive\_20\_and\_60\_day\_returns
+- macd\_line\_above\_signal
+- rsi\_in\_constructive\_range
+- high\_realized\_volatility20
+Risks:
+- high\_realized\_volatility20
+Key levels:
+- support 55\.0700 \(confirmed\_central\_range\)
+- support 57\.3600 \(confirmed\_central\_range\)
+- support 38\.9300 \(confirmed\_central\_range\)
+- support 55\.0700 \(confirmed\_bottom\_fractal\)
+- support 55\.0600 \(confirmed\_bottom\_fractal\)
+- support 52\.3000 \(confirmed\_bottom\_fractal\)
+- support 51\.1500 \(confirmed\_bottom\_fractal\)
+- support 53\.9800 \(confirmed\_bottom\_fractal\)
+- support 54\.3900 \(confirmed\_bottom\_fractal\)
+- support 50\.7700 \(confirmed\_bottom\_fractal\)
+- support 52\.5300 \(confirmed\_bottom\_fractal\)
+- support 53\.2600 \(confirmed\_bottom\_fractal\)
+- support 57\.3600 \(confirmed\_bottom\_fractal\)
+- support 51\.0500 \(confirmed\_bottom\_fractal\)
+- support 50\.7700 \(confirmed\_bottom\_fractal\)
+- support 48\.3300 \(confirmed\_bottom\_fractal\)
+- support 38\.9300 \(confirmed\_bottom\_fractal\)
+- support 36\.9500 \(confirmed\_bottom\_fractal\)
+- support 38\.9700 \(confirmed\_bottom\_fractal\)
+- support 36\.8900 \(confirmed\_bottom\_fractal\)
+- support 35\.3000 \(confirmed\_bottom\_fractal\)
+- support 33\.2000 \(confirmed\_bottom\_fractal\)
+- support 35\.6100 \(confirmed\_bottom\_fractal\)
+- support 37\.4900 \(confirmed\_bottom\_fractal\)
+- support 38\.9900 \(confirmed\_bottom\_fractal\)
+- support 37\.3200 \(confirmed\_bottom\_fractal\)
+- support 37\.2500 \(confirmed\_bottom\_fractal\)
+- support 40\.0400 \(confirmed\_bottom\_fractal\)
+- resistance 56\.0900 \(confirmed\_central\_range\)
+- resistance 59\.8900 \(confirmed\_central\_range\)
+- resistance 38\.9500 \(confirmed\_central\_range\)
+- resistance 71\.4600 \(confirmed\_top\_fractal\)
+- resistance 60\.2200 \(confirmed\_top\_fractal\)
+- resistance 59\.3700 \(confirmed\_top\_fractal\)
+- resistance 54\.6200 \(confirmed\_top\_fractal\)
+- resistance 56\.0900 \(confirmed\_top\_fractal\)
+- resistance 56\.7300 \(confirmed\_top\_fractal\)
+- resistance 70\.9600 \(confirmed\_top\_fractal\)
+- resistance 56\.3300 \(confirmed\_top\_fractal\)
+- resistance 56\.4300 \(confirmed\_top\_fractal\)
+- resistance 59\.8900 \(confirmed\_top\_fractal\)
+- resistance 60\.3500 \(confirmed\_top\_fractal\)
+- resistance 52\.9600 \(confirmed\_top\_fractal\)
+- resistance 54\.3900 \(confirmed\_top\_fractal\)
+- resistance 49\.8800 \(confirmed\_top\_fractal\)
+- resistance 42\.4300 \(confirmed\_top\_fractal\)
+- resistance 40\.7200 \(confirmed\_top\_fractal\)
+- resistance 41\.1000 \(confirmed\_top\_fractal\)
+- resistance 41\.4900 \(confirmed\_top\_fractal\)
+- resistance 36\.8300 \(confirmed\_top\_fractal\)
+- resistance 38\.9500 \(confirmed\_top\_fractal\)
+- resistance 39\.0000 \(confirmed\_top\_fractal\)
+- resistance 41\.3900 \(confirmed\_top\_fractal\)
+- resistance 40\.8900 \(confirmed\_top\_fractal\)
+- resistance 39\.0500 \(confirmed\_top\_fractal\)
+- resistance 46\.8800 \(confirmed\_top\_fractal\)
+- reference 41\.1520 \(technical\_ma20\)
+Next conditions:
+- 20日实现波动率回落至风险阈值以下
 
