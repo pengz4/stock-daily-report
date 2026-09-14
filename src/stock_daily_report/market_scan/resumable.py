@@ -54,6 +54,7 @@ def run_resumable_scan(
     source_revision: str = "",
     max_batches: int | None = None,
     batch_size: int | None = None,
+    directory: str | Path = "market-scans",
 ) -> Path | None:
     """Run one resumable scan, returning the artifact path once complete.
 
@@ -66,11 +67,11 @@ def run_resumable_scan(
     per_batch = batch_size or settings.max_candidates
     execution_date = _current_shanghai_date()
 
-    checkpoint = load_checkpoint(output_root, report_date)
+    checkpoint = load_checkpoint(output_root, report_date, directory=directory)
     if checkpoint is not None:
         manifest_hash = manifest_hash_for(checkpoint_quotes(checkpoint))
         if _is_stale(checkpoint, report_date, execution_date, semantic_hash):
-            archive_checkpoint(output_root, checkpoint)
+            archive_checkpoint(output_root, checkpoint, directory=directory)
             checkpoint = None
 
     if checkpoint is not None:
@@ -89,6 +90,7 @@ def run_resumable_scan(
                 output_root,
                 generated_at,
                 configuration_hash,
+                directory=directory,
             )
     else:
         quotes = tuple(
@@ -125,6 +127,7 @@ def run_resumable_scan(
                     source_revision,
                     batch_number,
                 ),
+                directory=directory,
             )
             return None
 
@@ -149,6 +152,7 @@ def run_resumable_scan(
                 source_revision,
                 batch_number,
             ),
+            directory=directory,
         )
 
     if pending or _current_shanghai_date() != execution_date:
@@ -170,6 +174,7 @@ def run_resumable_scan(
             source_revision,
             batch_number,
         ),
+        directory=directory,
     )
 
     artifact_path = _finalize(
@@ -182,6 +187,7 @@ def run_resumable_scan(
         output_root,
         generated_at,
         configuration_hash,
+        directory=directory,
     )
 
     save_checkpoint(
@@ -198,6 +204,7 @@ def run_resumable_scan(
             source_revision,
             batch_number,
         ),
+        directory=directory,
     )
     return artifact_path
 
@@ -289,6 +296,7 @@ def _finalize(
     output_root: str | Path,
     generated_at: datetime | None,
     configuration_hash: str | None,
+    directory: str | Path = "market-scans",
 ) -> Path:
     """Rebuild the immutable artifact from completed results via ``scan_market``."""
 
@@ -304,7 +312,7 @@ def _finalize(
         universe_quotes=quotes,
         resume_from=completed,
     )
-    return write_scan_artifact(output_root, artifact)
+    return write_scan_artifact(output_root, artifact, directory=directory)
 
 
 def _current_shanghai_date() -> date:

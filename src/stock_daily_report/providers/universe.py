@@ -1,7 +1,7 @@
 """AkShare adapter for discovering the supported full A-share universe."""
 
 import math
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Literal
@@ -46,6 +46,24 @@ class UniverseQuote:
         """Expose the normalized market as an exchange identifier."""
 
         return self.market
+
+
+class WatchlistUniverseProvider:
+    """Restrict a bulk universe snapshot to one watchlist's codes.
+
+    The scan algorithm and its checkpoint/resume lifecycle are unchanged; only
+    the universe shrinks, which keeps a watchlist-scoped scan cheap enough to
+    run alongside the full-market scan.
+    """
+
+    def __init__(self, codes: Iterable[str], delegate: object) -> None:
+        self.codes = frozenset(codes)
+        self.delegate = delegate
+
+    def get_quotes(self) -> list[UniverseQuote]:
+        return [
+            quote for quote in self.delegate.get_quotes() if quote.code in self.codes
+        ]
 
 
 class AkShareUniverseProvider:
@@ -580,4 +598,4 @@ def _row_context(record: Mapping[str, object], index: int) -> str:
     return f"row={index}, code={code}" if code is not None else f"row={index}"
 
 
-__all__ = ["AkShareUniverseProvider", "UniverseQuote"]
+__all__ = ["AkShareUniverseProvider", "UniverseQuote", "WatchlistUniverseProvider"]

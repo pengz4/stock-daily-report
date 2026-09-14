@@ -71,14 +71,19 @@ class ScanCheckpoint(BaseModel):
         return value.astimezone(UTC)
 
 
-def load_checkpoint(root: str | Path, report_date: date) -> ScanCheckpoint | None:
+def load_checkpoint(
+    root: str | Path,
+    report_date: date,
+    *,
+    directory: str | Path = "market-scans",
+) -> ScanCheckpoint | None:
     """Load a persisted checkpoint, or return ``None`` if none exists yet.
 
     Raises ``CheckpointIntegrityError`` when the file exists but is unparsable,
     has an unsupported schema, or fails model validation.
     """
 
-    path = _checkpoint_path(root, report_date)
+    path = _checkpoint_path(root, report_date, directory)
     if not path.exists():
         return None
     try:
@@ -102,10 +107,15 @@ def load_checkpoint(root: str | Path, report_date: date) -> ScanCheckpoint | Non
     return checkpoint
 
 
-def save_checkpoint(root: str | Path, checkpoint: ScanCheckpoint) -> Path:
+def save_checkpoint(
+    root: str | Path,
+    checkpoint: ScanCheckpoint,
+    *,
+    directory: str | Path = "market-scans",
+) -> Path:
     """Atomically persist a checkpoint."""
 
-    path = _checkpoint_path(root, checkpoint.report_date)
+    path = _checkpoint_path(root, checkpoint.report_date, directory)
     content = _canonical_json(checkpoint)
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -115,19 +125,24 @@ def save_checkpoint(root: str | Path, checkpoint: ScanCheckpoint) -> Path:
     return path
 
 
-def archive_checkpoint(root: str | Path, checkpoint: ScanCheckpoint) -> Path:
+def archive_checkpoint(
+    root: str | Path,
+    checkpoint: ScanCheckpoint,
+    *,
+    directory: str | Path = "market-scans",
+) -> Path:
     """Atomically move a stale checkpoint into the per-date archive directory.
 
     The archive filename encodes the checkpoint's ``execution_date`` and its
     ``updated_at`` (as ``YYYYMMDDTHHMMSSZ``) so later runs never collide.
     """
 
-    source = _checkpoint_path(root, checkpoint.report_date)
-    directory = source.parent / "progress-archive"
-    directory.mkdir(parents=True, exist_ok=True)
+    source = _checkpoint_path(root, checkpoint.report_date, directory)
+    directory_path = source.parent / "progress-archive"
+    directory_path.mkdir(parents=True, exist_ok=True)
     updated = checkpoint.updated_at.astimezone(UTC).strftime("%Y%m%dT%H%M%SZ")
     execution = checkpoint.execution_date.isoformat()
-    destination = directory / f"{execution}-{updated}.json"
+    destination = directory_path / f"{execution}-{updated}.json"
     try:
         os.replace(source, destination)
     except OSError as error:
@@ -239,8 +254,10 @@ def _result_code(document: Mapping[str, object]) -> str:
     raise CheckpointIntegrityError("completed candidate is missing its code")
 
 
-def _checkpoint_path(root: str | Path, report_date: date) -> Path:
-    return Path(root) / "market-scans" / report_date.isoformat() / "progress.json"
+def _checkpoint_path(
+    root: str | Path, report_date: date, directory: str | Path = "market-scans"
+) -> Path:
+    return Path(root) / directory / report_date.isoformat() / "progress.json"
 
 
 def _canonical_json(checkpoint: ScanCheckpoint) -> str:

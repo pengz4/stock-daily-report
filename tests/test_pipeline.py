@@ -3714,3 +3714,179 @@ def test_legacy_watchlist_without_priority_keeps_full_analysis(
 
     assert outputs.report.pool_overview is None
     assert [stock.code for stock in outputs.report.stocks] == ["600519"]
+
+
+def _ranking_record(code, name, rank, score, report_date):
+    return RankingRecord(
+        code=code,
+        name=name,
+        profile="trend",
+        rank=rank,
+        score=score,
+        components={
+            "trend": score,
+            "momentum": 60.0,
+            "volume": 50.0,
+            "structure": 40.0,
+            "risk": 30.0,
+        },
+        evidence_codes=("close_above_ma20",),
+        risk_codes=(),
+        latest_trade_date=report_date,
+        provider_name="fixture",
+    )
+
+
+def _watchlist_scan_artifact(*ranked, report_date=date(2026, 9, 4), incomplete=False):
+    records = tuple(
+        _ranking_record(code, name, index, score, report_date)
+        for index, (code, name, score) in enumerate(ranked, start=1)
+    )
+    statuses = tuple(
+        ScanStatus(
+            code=code,
+            name=name,
+            status="not_processed" if incomplete else "valid",
+            reason_codes=(),
+            provider_name="fixture",
+        )
+        for code, name, _score in ranked
+    )
+    return MarketScanArtifact(
+        rule_version="market-scan-v1",
+        report_date=report_date,
+        generated_at=datetime(2026, 9, 4, 8, 30, tzinfo=UTC),
+        universe_count=len(ranked),
+        eligible_count=len(ranked),
+        valid_count=len(ranked),
+        coverage=1.0,
+        exclusion_counts={},
+        failure_counts={},
+        rankings=ProfileRankings(trend=records),
+        consensus=(),
+        statuses=statuses,
+        config_hash="c" * 64,
+        input_hash="d" * 64,
+        provider_names=("fake-universe", "fixture"),
+    )
+
+
+def test_watchlist_scan_selects_top_ranked_stocks_for_deep_analysis(
+    tmp_path, fixture_settings
+):
+    write_scan_artifact(
+        tmp_path,
+        _watchlist_scan_artifact(
+            ("000002", "万科A", 90.0), ("000001", "平安银行", 80.0)
+        ),
+        directory="watchlist-scans",
+    )
+    watchlist = Watchlist(
+        stocks=[
+            {"code": "600519", "name": "贵州茅台"},
+            {"code": "000001", "name": "平安银行"},
+            {"code": "000002", "name": "万科A"},
+        ]
+    )
+    provider = RecordingProvider(
+        {
+            "600519": make_bars("600519"),
+            "000001": make_bars("000001"),
+            "000002": make_bars("000002"),
+        }
+    )
+    universe = FakeUniverseProvider(
+        quotes=[_light_quote("600519", "贵州茅台", 1500.0, 1.23, 3_000_000.0)]
+    )
+
+    outputs = run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=provider,
+        universe_provider=universe,
+        report_date=date(2026, 9, 4),
+        now=lambda: datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
+    )
+
+    # Only the two ranked stocks are analysed; 茅台 stays in the pool overview.
+    assert sorted(provider.calls) == ["000001", "000002"]
+    assert [stock.code for stock in outputs.report.stocks] == ["000002", "000001"]
+    pool = outputs.report.pool_overview
+    assert pool is not None
+    ranks = {row.code: row.scan_rank for row in pool.rows}
+    assert ranks == {"000002": 1, "000001": 2, "600519": None}
+    assert [row.code for row in pool.rows] == ["000001", "000002", "600519"]
+    markdown = outputs.markdown_path.read_text(encoding="utf-8")
+    html = outputs.html_path.read_text(encoding="utf-8")
+    assert "排名" in markdown and "排名" in html
+    # Rendered rows lead with the scan ranking: 万科A before 平安银行.
+    assert markdown.index("万科A") < markdown.index("平安银行")
+    assert html.index("万科A") < html.index("平安银行")
+
+
+def test_watchlist_scan_top_ranking_is_augmented_with_manual_core_stocks(
+    tmp_path, fixture_settings
+):
+    write_scan_artifact(
+        tmp_path,
+        _watchlist_scan_artifact(("000001", "平安银行", 70.0)),
+        directory="watchlist-scans",
+    )
+    watchlist = Watchlist(
+        stocks=[
+            {"code": "600519", "name": "贵州茅台", "priority": "core"},
+            {"code": "000001", "name": "平安银行"},
+        ]
+    )
+    provider = RecordingProvider(
+        {"600519": make_bars("600519"), "000001": make_bars("000001")}
+    )
+
+    outputs = run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=provider,
+        universe_provider=FakeUniverseProvider(),
+        report_date=date(2026, 9, 4),
+        now=lambda: datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
+    )
+
+    assert sorted(provider.calls) == ["000001", "600519"]
+    assert [stock.code for stock in outputs.report.stocks] == ["000001", "600519"]
+
+
+def test_incomplete_watchlist_scan_falls_back_to_manual_priorities(
+    tmp_path, fixture_settings
+):
+    write_scan_artifact(
+        tmp_path,
+        _watchlist_scan_artifact(("000001", "平安银行", 70.0), incomplete=True),
+        directory="watchlist-scans",
+    )
+    watchlist = Watchlist(
+        stocks=[
+            {"code": "600519", "name": "贵州茅台", "priority": "core"},
+            {"code": "000001", "name": "平安银行", "priority": "extended"},
+        ]
+    )
+    provider = RecordingProvider(
+        {"600519": make_bars("600519"), "000001": make_bars("000001")}
+    )
+
+    outputs = run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=provider,
+        universe_provider=FakeUniverseProvider(
+            quotes=[_light_quote("000001", "平安银行", 10.5, 0.5, 900_000.0)]
+        ),
+        report_date=date(2026, 9, 4),
+        now=lambda: datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
+    )
+
+    assert [stock.code for stock in outputs.report.stocks] == ["600519"]
+    assert outputs.report.pool_overview is not None
+    assert all(row.scan_rank is None for row in outputs.report.pool_overview.rows)

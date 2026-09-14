@@ -38,7 +38,10 @@ from stock_daily_report.pipeline import (
 from stock_daily_report.providers.base import ProviderError
 from stock_daily_report.providers.fixture import FixtureMarketDataProvider
 from stock_daily_report.providers.service import CacheRollbackError
-from stock_daily_report.providers.universe import AkShareUniverseProvider
+from stock_daily_report.providers.universe import (
+    AkShareUniverseProvider,
+    WatchlistUniverseProvider,
+)
 from stock_daily_report.report.models import ReportDocument
 from stock_daily_report.snapshots import SnapshotError
 
@@ -120,6 +123,18 @@ def main(argv: list[str] | None = None) -> int:
         type=int,
         default=None,
         help="stop after this many batches, leaving the rest for a later run",
+    )
+    market_scan.add_argument(
+        "--scope",
+        choices=("market", "watchlist"),
+        default="market",
+        help="scan the full market, or only the watchlist (watchlist-scans/)",
+    )
+    market_scan.add_argument(
+        "--watchlist",
+        type=Path,
+        default=_project_root() / "config/watchlist.yaml",
+        help="watchlist used when --scope watchlist is selected",
     )
     args = parser.parse_args(argv)
 
@@ -210,7 +225,17 @@ def main(argv: list[str] | None = None) -> int:
                 settings,
                 data_settings.market_data,
             )
-            artifact_path = _scan_artifact_path(args.output_root, args.date)
+            directory = (
+                "watchlist-scans" if args.scope == "watchlist" else "market-scans"
+            )
+            if args.scope == "watchlist":
+                universe_provider: object = WatchlistUniverseProvider(
+                    (stock.code for stock in load_watchlist(args.watchlist).stocks),
+                    AkShareUniverseProvider(),
+                )
+            else:
+                universe_provider = AkShareUniverseProvider()
+            artifact_path = _scan_artifact_path(args.output_root, args.date, directory)
             if artifact_path.exists():
                 artifact_path = _existing_scan_artifact(
                     artifact_path,
@@ -232,7 +257,7 @@ def main(argv: list[str] | None = None) -> int:
 
                 artifact_path = run_resumable_scan(
                     settings,
-                    AkShareUniverseProvider(),
+                    universe_provider,
                     build_market_data_service(
                         data_settings,
                         output_root=args.output_root,
@@ -241,6 +266,7 @@ def main(argv: list[str] | None = None) -> int:
                     output_root=args.output_root,
                     configuration_hash=configuration_hash,
                     max_batches=args.max_batches,
+                    directory=directory,
                 )
                 if artifact_path is None:
                     print(
@@ -258,7 +284,7 @@ def main(argv: list[str] | None = None) -> int:
                     )
                 artifact_path = run_market_scan(
                     settings,
-                    AkShareUniverseProvider(),
+                    universe_provider,
                     build_market_data_service(
                         data_settings,
                         output_root=args.output_root,
@@ -266,6 +292,7 @@ def main(argv: list[str] | None = None) -> int:
                     report_date=args.date,
                     output_root=args.output_root,
                     configuration_hash=configuration_hash,
+                    directory=directory,
                 )
         except (
             ConfigurationError,
@@ -289,8 +316,10 @@ def _current_market_date() -> date:
     return datetime.now(ZoneInfo("Asia/Shanghai")).date()
 
 
-def _scan_artifact_path(output_root: Path, report_date: date) -> Path:
-    return output_root / "market-scans" / report_date.isoformat() / "scan.json"
+def _scan_artifact_path(
+    output_root: Path, report_date: date, directory: str = "market-scans"
+) -> Path:
+    return output_root / directory / report_date.isoformat() / "scan.json"
 
 
 def _existing_scan_artifact(

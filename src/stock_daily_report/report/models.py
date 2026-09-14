@@ -301,6 +301,9 @@ class PoolOverviewRow(BaseModel):
     latest_price: float | None = None
     change_pct: float | None = None
     amount: float | None = None
+    # Watchlist-scanned rank (1-based) and score, when the scan covered it.
+    scan_rank: int | None = None
+    scan_score: float | None = None
 
 
 class PoolOverview(BaseModel):

@@ -234,6 +234,7 @@ def run_market_scan(
     output_root: str | Path,
     generated_at: datetime | None = None,
     configuration_hash: str | None = None,
+    directory: str | Path = "market-scans",
 ) -> Path:
     """Run one scan and persist its immutable date-partitioned artifact."""
 
@@ -245,7 +246,7 @@ def run_market_scan(
         generated_at=generated_at,
         configuration_hash=configuration_hash,
     )
-    return write_scan_artifact(output_root, artifact)
+    return write_scan_artifact(output_root, artifact, directory=directory)
 
 
 def _process_candidate(

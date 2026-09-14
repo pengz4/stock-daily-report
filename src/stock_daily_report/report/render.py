@@ -250,46 +250,49 @@ def _render_pool_overview_markdown(pool: PoolOverview | None) -> list[str]:
     ]
     if pool.unavailable_reason:
         lines.append(f"- 行情快照不可用: {_md(pool.unavailable_reason)}")
-    lines.extend(
-        [
-            "",
-            "| 代码 | 名称 | 分组 | 层级 | 最新价 | 涨跌幅% | 成交额(元) |",
-            "| ---: | --- | --- | --- | ---: | ---: | ---: |",
-        ]
-    )
+    ranked = _pool_has_scan_ranking(pool)
+    header = "| 代码 | 名称 | 分组 | 层级 | 最新价 | 涨跌幅% | 成交额(元) |"
+    divider = "| ---: | --- | --- | --- | ---: | ---: | ---: |"
+    if ranked:
+        header = "| 排名 | 评分 | 代码 | 名称 | 分组 | 层级 | 最新价 | 涨跌幅% | 成交额(元) |"
+        divider = "| ---: | ---: | ---: | --- | --- | --- | ---: | ---: | ---: |"
+    lines.extend(["", header, divider])
     for row in _pool_rows_for_display(pool):
-        lines.append(
-            "| "
-            + " | ".join(
-                (
-                    _md(row.code),
-                    _md(row.name),
-                    _md(row.group),
-                    _md(row.priority),
-                    _EM_DASH
-                    if row.latest_price is None
-                    else f"{row.latest_price:.2f}",
-                    _EM_DASH
-                    if row.change_pct is None
-                    else f"{row.change_pct:+.2f}",
-                    _EM_DASH if row.amount is None else f"{row.amount:.0f}",
-                )
-            )
-            + " |"
-        )
+        cells = [
+            _md(row.code),
+            _md(row.name),
+            _md(row.group),
+            _md(row.priority),
+            _EM_DASH if row.latest_price is None else f"{row.latest_price:.2f}",
+            _EM_DASH if row.change_pct is None else f"{row.change_pct:+.2f}",
+            _EM_DASH if row.amount is None else f"{row.amount:.0f}",
+        ]
+        if ranked:
+            cells = [
+                _EM_DASH if row.scan_rank is None else str(row.scan_rank),
+                _EM_DASH if row.scan_score is None else f"{row.scan_score:.2f}",
+                *cells,
+            ]
+        lines.append("| " + " | ".join(cells) + " |")
     return lines
 
 
 def _pool_rows_for_display(pool: PoolOverview) -> Sequence[PoolOverviewRow]:
-    """Order rows by change percent descending, missing values last."""
+    """Order rows by scan rank when present, then by change percent desc."""
     return sorted(
         pool.rows,
         key=lambda row: (
+            row.scan_rank is None,
+            row.scan_rank if row.scan_rank is not None else 0,
             row.change_pct is None,
             -(row.change_pct if row.change_pct is not None else 0.0),
             row.code,
         ),
     )
+
+
+def _pool_has_scan_ranking(pool: PoolOverview) -> bool:
+    return any(row.scan_rank is not None for row in pool.rows)
 
 
 def _render_pool_overview_html(pool: PoolOverview | None) -> str:
@@ -302,24 +305,38 @@ def _render_pool_overview_html(pool: PoolOverview | None) -> str:
         if pool.unavailable_reason
         else ""
     )
-    rows = "\n".join(
-        f"""<tr class="pool-row" data-priority="{_html(row.priority)}">
-        <td>{_html(row.code)}</td>
-        <td>{_html(row.name)}</td>
-        <td>{_html(row.group)}</td>
-        <td>{_html(row.priority)}</td>
-        <td class="numeric">{_format_html_float(row.latest_price)}</td>
-        <td class="numeric {_pool_change_class(row.change_pct)}">{_format_html_float(row.change_pct)}</td>
-        <td class="numeric">{_format_html_amount(row.amount)}</td>
-      </tr>"""
-        for row in _pool_rows_for_display(pool)
-    )
+    ranked = _pool_has_scan_ranking(pool)
+    header_cells = "<th>排名</th><th>评分</th>" if ranked else ""
+    row_html: list[str] = []
+    for row in _pool_rows_for_display(pool):
+        rank_cells = ""
+        if ranked:
+            rank_text = _EM_DASH if row.scan_rank is None else str(row.scan_rank)
+            score_text = _EM_DASH if row.scan_score is None else f"{row.scan_score:.2f}"
+            rank_cells = (
+                f'<td class="numeric">{_html(rank_text)}</td>'
+                f'<td class="numeric">{_html(score_text)}</td>'
+            )
+        row_html.append(
+            f'<tr class="pool-row" data-priority="{_html(row.priority)}">\n'
+            f"        {rank_cells}"
+            f"<td>{_html(row.code)}</td>"
+            f"<td>{_html(row.name)}</td>"
+            f"<td>{_html(row.group)}</td>"
+            f"<td>{_html(row.priority)}</td>"
+            f'<td class="numeric">{_format_html_float(row.latest_price)}</td>'
+            f'<td class="numeric {_pool_change_class(row.change_pct)}">'
+            f"{_format_html_float(row.change_pct)}</td>"
+            f'<td class="numeric">{_format_html_amount(row.amount)}</td>'
+            f"\n      </tr>"
+        )
+    rows = "\n".join(row_html)
     return f"""<section class="pool-overview">
       <h2>全池速览</h2>{unavailable_html}
       <p>行情快照日期：{_html(pool.quote_date.isoformat())}</p>
       <table class="pool-table">
         <thead>
-          <tr><th>代码</th><th>名称</th><th>分组</th><th>层级</th><th>最新价</th><th>涨跌幅%</th><th>成交额(元)</th></tr>
+          <tr>{header_cells}<th>代码</th><th>名称</th><th>分组</th><th>层级</th><th>最新价</th><th>涨跌幅%</th><th>成交额(元)</th></tr>
         </thead>
         <tbody>
 {rows}
@@ -340,6 +357,7 @@ def _pool_change_class(change_pct: float | None) -> str:
 
 def _format_html_amount(amount: float | None) -> str:
     return _EM_DASH if amount is None else f"{amount:.0f}"
+
 
 
 def _render_market_rankings_html(rankings: MarketRankings) -> str:

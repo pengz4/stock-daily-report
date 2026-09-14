@@ -12,6 +12,7 @@ from stock_daily_report.providers.base import (
 from stock_daily_report.providers.universe import (
     AkShareUniverseProvider,
     UniverseQuote,
+    WatchlistUniverseProvider,
 )
 
 
@@ -764,3 +765,40 @@ def test_universe_quote_change_pct_defaults_to_none_without_column():
     ).get_quotes()[0]
 
     assert quote.change_pct is None
+
+
+def test_watchlist_universe_provider_restricts_quotes_to_watchlist_codes():
+    class Delegate:
+        def get_quotes(self):
+            return [
+                UniverseQuote(
+                    code="600519",
+                    name="贵州茅台",
+                    market="SH",
+                    latest_price=1500.0,
+                    volume=1.0,
+                    amount=2.0,
+                    quote_date=date(2026, 9, 11),
+                ),
+                UniverseQuote(
+                    code="000001",
+                    name="平安银行",
+                    market="SZ",
+                    latest_price=10.5,
+                    volume=1.0,
+                    amount=2.0,
+                    quote_date=date(2026, 9, 11),
+                ),
+            ]
+
+    quotes = WatchlistUniverseProvider({"000001"}, Delegate()).get_quotes()
+
+    assert [quote.code for quote in quotes] == ["000001"]
+
+
+def test_watchlist_universe_provider_returns_empty_without_matching_codes():
+    class Delegate:
+        def get_quotes(self):
+            return []
+
+    assert WatchlistUniverseProvider(set(), Delegate()).get_quotes() == []

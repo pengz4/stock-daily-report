@@ -87,6 +87,10 @@ from stock_daily_report.snapshots import (
 
 _MAX_PUBLICATION_TRANSACTIONS = 32
 _MAX_PUBLICATION_MANIFEST_BYTES = 1024 * 1024
+# Deep analysis covers the top-ranked watchlist stocks; the rest get the
+# lightweight pool overview backed by one bulk quote snapshot.
+_DEEP_ANALYSIS_LIMIT = 20
+_WATCHLIST_SCAN_DIRECTORY = "watchlist-scans"
 _PUBLICATION_QUARANTINE_NAME = "quarantine.json"
 _MANIFESTLESS_PAYLOAD_ROOTS = frozenset({"reports", "snapshots", "site"})
 _PUBLICATION_EVIDENCE_NAMES = frozenset(
@@ -207,10 +211,66 @@ def _fetch_light_quotes(
     provider = universe_provider or AkShareUniverseProvider()
     try:
         quotes = provider.get_quotes()
-    except ProviderError as error:
+    except (ProviderError, ImportError, OSError) as error:
         return {}, str(error)
     wanted = {stock.code for stock in extended_stocks}
     return {quote.code: quote for quote in quotes if quote.code in wanted}, None
+
+
+def _load_watchlist_scan_ranking(
+    root: Path, report_date: date, limit: int = _DEEP_ANALYSIS_LIMIT
+) -> list[tuple[str, float]] | None:
+    """Return (code, score) for the top watchlist-scanned codes.
+
+    Returns ``None`` when no complete, same-day watchlist scan artifact exists
+    so the caller can fall back to manual priorities or legacy behaviour.
+    """
+    scan_path = root / _WATCHLIST_SCAN_DIRECTORY / report_date.isoformat() / "scan.json"
+    if not scan_path.exists():
+        return None
+    try:
+        artifact = load_scan_artifact(scan_path)
+    except MarketScanArtifactError:
+        return None
+    if artifact.report_date != report_date:
+        return None
+    if any(status.status == "not_processed" for status in artifact.statuses):
+        return None
+    best_scores: dict[str, float] = {}
+    for record in (*artifact.rankings.trend, *artifact.rankings.balanced):
+        if record.score > best_scores.get(record.code, -1.0):
+            best_scores[record.code] = record.score
+    if not best_scores:
+        return None
+    ordered = sorted(best_scores.items(), key=lambda item: (-item[1], item[0]))
+    return ordered[:limit]
+
+
+def _select_deep_stocks(
+    watchlist: Watchlist,
+    scan_ranking: Sequence[tuple[str, float]] | None,
+) -> tuple[list[WatchlistStock], list[WatchlistStock]]:
+    """Split into (deep-analysis, lightweight) stocks.
+
+    A watchlist scan, when available, decides the deep set: its top-ranked
+    codes plus any stock manually marked ``priority: core``. Without a scan,
+    the existing priority-only rules apply.
+    """
+    if scan_ranking is None:
+        return _split_watchlist_by_priority(watchlist)
+    rank_index = {code: index for index, (code, _score) in enumerate(scan_ranking)}
+    selected = [
+        stock for stock in watchlist.stocks if stock.code in rank_index
+    ]
+    selected.sort(key=lambda stock: (rank_index[stock.code], stock.code))
+    for stock in watchlist.stocks:
+        if stock.priority == "core" and stock.code not in rank_index:
+            selected.append(stock)
+    if not selected:
+        return _split_watchlist_by_priority(watchlist)
+    selected_codes = {stock.code for stock in selected}
+    extended = [stock for stock in watchlist.stocks if stock.code not in selected_codes]
+    return selected, extended
 
 
 def run_daily_report(
@@ -240,7 +300,6 @@ def run_daily_report(
         load_settings(settings) if isinstance(settings, (str, Path)) else settings
     )
     active_watchlist = watchlist or _load_default_watchlist()
-    core_stocks, extended_stocks = _split_watchlist_by_priority(active_watchlist)
     generated_at = _normalise_now(now)
     active_report_date = report_date or generated_at.date()
     if not isinstance(active_report_date, date) or isinstance(
@@ -249,6 +308,10 @@ def run_daily_report(
         raise TypeError("report_date must be a date, not a datetime")
     root = Path(output_root).expanduser().resolve()
     root.mkdir(parents=True, exist_ok=True)
+    watchlist_scan_ranking = _load_watchlist_scan_ranking(root, active_report_date)
+    core_stocks, extended_stocks = _select_deep_stocks(
+        active_watchlist, watchlist_scan_ranking
+    )
     failures: list[PipelineFailure] = []
     fetched: dict[str, FetchedBars] = {}
     light_quotes: dict[str, UniverseQuote] = {}
@@ -412,6 +475,7 @@ def run_daily_report(
                         bars_by_code=bars_by_code,
                         light_quotes=light_quotes,
                         light_quote_error=light_quote_error,
+                        scan_ranking=watchlist_scan_ranking,
                         service=active_service,
                         json_path=json_path,
                         markdown_path=markdown_path,
@@ -1375,6 +1439,7 @@ def _publish_report_transaction(
     bars_by_code: Mapping[str, Sequence[DailyBar]],
     light_quotes: Mapping[str, UniverseQuote],
     light_quote_error: str | None,
+    scan_ranking: Sequence[tuple[str, float]] | None,
     service: MarketDataService | None,
     json_path: Path,
     markdown_path: Path,
@@ -1405,6 +1470,7 @@ def _publish_report_transaction(
             market_rankings=market_rankings,
             light_quotes=light_quotes,
             light_quote_error=light_quote_error,
+            scan_ranking=scan_ranking,
         )
 
         staged_report_dir = transaction_root / "reports" / report_date.isoformat()
@@ -2117,6 +2183,7 @@ def _build_report(
     market_rankings: MarketRankings,
     light_quotes: Mapping[str, UniverseQuote],
     light_quote_error: str | None,
+    scan_ranking: Sequence[tuple[str, float]] | None = None,
 ) -> ReportDocument:
     rule_hash = configuration_hash(resolve_risk_rules(settings))
     stocks: list[StockReport] = []
@@ -2210,6 +2277,7 @@ def _build_report(
             light_quotes,
             light_quote_error,
             report_date=report_date,
+            scan_ranking=scan_ranking,
         ),
     )
 
@@ -2220,13 +2288,20 @@ def _build_pool_overview(
     light_quote_error: str | None,
     *,
     report_date: date,
+    scan_ranking: Sequence[tuple[str, float]] | None = None,
 ) -> PoolOverview | None:
     """Build the lightweight full-pool overview, or None in legacy mode."""
     if not light_quotes and light_quote_error is None:
         return None
+    rank_by_code = (
+        {code: (index + 1, score) for index, (code, score) in enumerate(scan_ranking)}
+        if scan_ranking
+        else {}
+    )
     rows: list[PoolOverviewRow] = []
     for stock in sorted(watchlist.stocks, key=lambda item: item.code):
         quote = light_quotes.get(stock.code)
+        rank, score = rank_by_code.get(stock.code, (None, None))
         rows.append(
             PoolOverviewRow(
                 code=stock.code,
@@ -2236,6 +2311,8 @@ def _build_pool_overview(
                 latest_price=quote.latest_price if quote else None,
                 change_pct=quote.change_pct if quote else None,
                 amount=quote.amount if quote else None,
+                scan_rank=rank,
+                scan_score=score,
             )
         )
     quote_dates = {quote.quote_date for quote in light_quotes.values()}
