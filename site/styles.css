@@ -76,3 +76,526 @@ a {
   background: #ecfdf5;
   box-shadow: inset 0.25rem 0 #059669;
 }
+
+.report-page {
+  --report-bg: #fcfdff;
+  --report-panel: #ffffff;
+  --report-panel-muted: #f8fafc;
+  --report-panel-strong: #eef4ff;
+  --report-border: #d9e2ec;
+  --report-border-strong: #b8c8dc;
+  --report-text: #102a43;
+  --report-text-muted: #486581;
+  --report-accent: #0f4c81;
+  --report-accent-soft: #dbeafe;
+  --report-positive: #166534;
+  --report-positive-soft: #ecfdf3;
+  --report-risk: #b45309;
+  --report-risk-soft: #fff7ed;
+  --report-warning: #9a3412;
+  --report-warning-soft: #fff1f2;
+  background: var(--report-bg);
+  color: var(--report-text);
+  display: grid;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  gap: 1.5rem;
+  max-width: 72rem;
+  padding: 2rem;
+}
+
+.report-page,
+.report-page * {
+  box-sizing: border-box;
+}
+
+.report-page > * {
+  min-width: 0;
+}
+
+.report-page h1,
+.report-page h2,
+.report-page h3,
+.report-page h4,
+.report-page h5,
+.report-page p {
+  margin-top: 0;
+}
+
+.report-page h1 {
+  font-size: clamp(2rem, 3.2vw, 2.7rem);
+  line-height: 1.15;
+  margin-bottom: 0;
+}
+
+.report-page h2 {
+  font-size: clamp(1.45rem, 2.2vw, 1.85rem);
+  margin-bottom: 0.9rem;
+}
+
+.report-page h3 {
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+}
+
+.report-page > section,
+.report-page .report-header {
+  background: var(--report-panel);
+  border: 1px solid var(--report-border);
+  border-radius: 1rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+  margin-top: 0;
+  padding: 1.25rem;
+}
+
+.report-page a {
+  color: var(--report-accent);
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.15em;
+}
+
+.report-page a:focus-visible {
+  border-radius: 0.3rem;
+  box-shadow: 0 0 0 2px #f8fafc;
+  outline: 3px solid #0f172a;
+  outline-offset: 2px;
+}
+
+.report-page .report-header {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.report-page .report-header p:last-child {
+  margin-bottom: 0;
+}
+
+.report-page .quality-badge {
+  align-items: center;
+  background: var(--report-positive-soft);
+  border: 1px solid rgba(22, 101, 52, 0.18);
+  border-radius: 999px;
+  color: var(--report-positive);
+  display: inline-flex;
+  font-weight: 700;
+  margin: 0;
+  max-width: fit-content;
+  padding: 0.45rem 0.85rem;
+}
+
+.report-page .runtime-metadata,
+.report-page .ranking-detail,
+.report-page .full-ranking,
+.report-page .stock-detail,
+.report-page .consensus-detail {
+  background: var(--report-panel-muted);
+  border: 1px solid var(--report-border);
+  border-radius: 0.9rem;
+  margin-top: 0.85rem;
+  overflow: hidden;
+}
+
+.report-page summary {
+  align-items: center;
+  color: var(--report-text);
+  cursor: pointer;
+  display: flex;
+  font-weight: 700;
+  gap: 0.75rem;
+  justify-content: space-between;
+  list-style: none;
+  padding: 0.9rem 1rem;
+}
+
+.report-page summary::-webkit-details-marker {
+  display: none;
+}
+
+.report-page summary::after {
+  color: var(--report-text-muted);
+  content: "▸";
+  flex: 0 0 auto;
+  font-size: 0.9rem;
+  transition: transform 160ms ease;
+}
+
+.report-page details[open] {
+  background: var(--report-panel);
+  border-color: var(--report-border-strong);
+}
+
+.report-page details[open] > summary {
+  background: var(--report-panel-strong);
+  border-bottom: 1px solid var(--report-border);
+  margin-bottom: 0;
+}
+
+.report-page details[open] > summary::after {
+  transform: rotate(90deg);
+}
+
+.report-page summary:focus-visible {
+  border-radius: 0.5rem;
+  box-shadow: 0 0 0 2px #f8fafc;
+  outline: 3px solid #0f172a;
+  outline-offset: -1px;
+}
+
+.report-page .runtime-metadata__section,
+.report-page .component-group {
+  padding: 1rem;
+}
+
+.report-page .runtime-metadata__section + .runtime-metadata__section,
+.report-page .component-group + .component-group {
+  border-top: 1px solid var(--report-border);
+}
+
+.report-page .runtime-metadata__section h3,
+.report-page .component-group h5 {
+  margin-bottom: 0.9rem;
+}
+
+.report-page .market-summary {
+  display: grid;
+  gap: 1rem;
+}
+
+.report-page .summary-metrics {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.report-page .metric-card {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  border: 1px solid var(--report-border);
+  border-radius: 0.95rem;
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+  padding: 1rem;
+}
+
+.report-page .metric-card h3 {
+  color: var(--report-text-muted);
+  font-size: 0.95rem;
+  margin-bottom: 0;
+}
+
+.report-page .metric-card p {
+  color: var(--report-text);
+  font-size: clamp(1.35rem, 2vw, 1.8rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  margin-bottom: 0;
+  overflow-wrap: anywhere;
+}
+
+.report-page .consensus-section {
+  display: grid;
+  gap: 1rem;
+}
+
+.report-page .consensus-note,
+.report-page .empty-state {
+  color: var(--report-text-muted);
+  margin-bottom: 0;
+}
+
+.report-page .consensus-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+}
+
+.report-page .consensus-card,
+.report-page .ranking-profile,
+.report-page .stock-card {
+  background: var(--report-panel);
+  border: 1px solid var(--report-border);
+  border-radius: 1rem;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
+}
+
+.report-page .consensus-card,
+.report-page .ranking-profile,
+.report-page .stock-card,
+.report-page .market-rankings {
+  overflow: hidden;
+}
+
+.report-page .consensus-row {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1rem;
+}
+
+.report-page .consensus-row h4 {
+  font-size: 1.05rem;
+  margin-bottom: 0;
+  overflow-wrap: anywhere;
+}
+
+.report-page .consensus-trend,
+.report-page .consensus-balanced {
+  color: var(--report-text);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  margin-bottom: 0;
+}
+
+.report-page .ranking-warning,
+.report-page .market-rankings.unavailable {
+  background: var(--report-risk-soft);
+  border: 1px solid rgba(180, 83, 9, 0.28);
+  border-radius: 0.9rem;
+  color: var(--report-warning);
+  padding: 0.9rem 1rem;
+}
+
+.report-page .empty-state {
+  background: var(--report-panel-muted);
+  border: 1px dashed var(--report-border-strong);
+  border-radius: 0.9rem;
+  padding: 0.9rem 1rem;
+}
+
+.report-page .market-rankings.unavailable {
+  padding: 1.25rem;
+}
+
+.report-page .market-rankings {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.report-page .ranking-profile {
+  padding: 1rem;
+}
+
+.report-page .ranking-profile h3 {
+  margin-bottom: 0.85rem;
+}
+
+.report-page .ranking-visible {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.report-page .ranking-row {
+  background: var(--report-panel-muted);
+  border: 1px solid var(--report-border);
+  border-radius: 0.9rem;
+  min-width: 0;
+  padding: 0.9rem;
+}
+
+.report-page .ranking-row__summary {
+  align-items: center;
+  column-gap: 0.75rem;
+  display: grid;
+  grid-template-areas:
+    "rank code name score"
+    ". consensus consensus risk";
+  grid-template-columns: max-content max-content minmax(0, 1fr) max-content;
+  row-gap: 0.45rem;
+}
+
+.report-page .ranking-rank {
+  background: var(--report-accent-soft);
+  border-radius: 999px;
+  color: var(--report-accent);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  grid-area: rank;
+  padding: 0.25rem 0.55rem;
+}
+
+.report-page .ranking-code {
+  color: var(--report-text-muted);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+  grid-area: code;
+}
+
+.report-page .ranking-name {
+  font-weight: 700;
+  grid-area: name;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.report-page .ranking-score {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  grid-area: score;
+  justify-self: end;
+  white-space: nowrap;
+}
+
+.report-page .ranking-consensus,
+.report-page .ranking-risk {
+  color: var(--report-text-muted);
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+
+.report-page .ranking-consensus {
+  grid-area: consensus;
+}
+
+.report-page .ranking-risk {
+  grid-area: risk;
+  justify-self: end;
+  text-align: right;
+}
+
+.report-page .detail-field {
+  align-items: flex-start;
+  border-top: 1px solid var(--report-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.45rem;
+  padding: 0.55rem 1rem;
+}
+
+.report-page .detail-field:first-of-type {
+  border-top: 0;
+}
+
+.report-page .detail-field__label {
+  color: var(--report-text-muted);
+  flex: 0 0 clamp(7.5rem, 22vw, 11rem);
+  font-weight: 700;
+}
+
+.report-page .detail-field__value {
+  flex: 1 1 16rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.report-page .detail-field ul {
+  flex: 1 1 16rem;
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  padding-left: 1.2rem;
+}
+
+.report-page .tag {
+  background: #eef2f7;
+  border: 1px solid #d9e2ec;
+  border-radius: 999px;
+  color: var(--report-text);
+  display: inline-block;
+  margin: 0.12rem 0.28rem 0.12rem 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  padding: 0.18rem 0.6rem;
+  vertical-align: top;
+}
+
+.report-page .tag--evidence {
+  background: var(--report-positive-soft);
+  border-color: rgba(22, 101, 52, 0.18);
+  color: var(--report-positive);
+}
+
+.report-page .tag--risk {
+  background: var(--report-risk-soft);
+  border-color: rgba(180, 83, 9, 0.2);
+  color: var(--report-risk);
+}
+
+.report-page .stock-card {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1.4fr) minmax(16rem, 0.9fr);
+  padding: 1rem;
+}
+
+.report-page .stock-card > details {
+  grid-column: 1 / -1;
+}
+
+.report-page .stock-card__identity,
+.report-page .stock-card__metrics {
+  min-width: 0;
+}
+
+.report-page .stock-card__identity {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.report-page .stock-card__identity h3 {
+  margin-bottom: 0.15rem;
+  overflow-wrap: anywhere;
+}
+
+.report-page .stock-card__identity p,
+.report-page .consensus-row p {
+  margin-bottom: 0;
+  overflow-wrap: anywhere;
+}
+
+.report-page .stock-card__metrics {
+  background: var(--report-panel-muted);
+  border: 1px solid var(--report-border);
+  border-radius: 0.9rem;
+  padding: 0.35rem 0;
+}
+
+.report-page .stock-card__metrics .detail-field {
+  padding-left: 0.9rem;
+  padding-right: 0.9rem;
+}
+
+@media (max-width: 640px) {
+  .report-page {
+    margin: 1rem auto;
+    padding: 1rem;
+  }
+
+  .report-page > section,
+  .report-page .report-header,
+  .report-page .market-rankings,
+  .report-page .ranking-profile,
+  .report-page .stock-card {
+    padding: 1rem;
+  }
+
+  .report-page .summary-metrics,
+  .report-page .consensus-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .report-page .stock-card {
+    grid-template-columns: 1fr;
+  }
+
+  .report-page .ranking-row__summary {
+    align-items: start;
+    grid-template-areas:
+      "rank code score"
+      "name name name"
+      "consensus consensus risk";
+    grid-template-columns: max-content minmax(0, 1fr) max-content;
+  }
+
+  .report-page .ranking-risk {
+    max-width: 100%;
+  }
+
+  .report-page .detail-field__label {
+    flex-basis: 8.5rem;
+  }
+
+  .report-page .runtime-metadata__section,
+  .report-page .component-group {
+    padding: 0.9rem;
+  }
+}
