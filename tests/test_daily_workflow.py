@@ -70,6 +70,20 @@ def test_daily_workflow_regenerates_when_a_new_scan_is_available():
     assert "Report already exists with current scan; reusing immutable artifacts" in command
 
 
+def test_daily_workflow_reuse_requires_matching_market_state_fingerprint():
+    workflow = _workflow()
+    steps = workflow["jobs"]["generate"]["steps"]
+    command = next(
+        step["run"]
+        for step in steps
+        if step["name"] == "Generate report artifacts"
+    )
+
+    assert "report.market_state is not None" in command
+    assert "scan.market_state is not None" in command
+    assert "report.market_state.rule_version == scan.market_state.rule_version" in command
+
+
 def test_daily_workflow_compares_exact_deep_selection_metadata():
     workflow = _workflow()
     steps = workflow["jobs"]["generate"]["steps"]

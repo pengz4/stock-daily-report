@@ -1042,6 +1042,10 @@ def test_missing_market_state_is_explicitly_unavailable_in_markdown_and_html():
     assert "市场状态不可用" in html
 
 
+def test_market_state_layout_uses_a_new_renderer_version():
+    assert report_models.REPORT_RENDER_VERSION == "cn-v3"
+
+
 def test_missing_pool_overview_is_explicitly_unavailable_in_html():
     document = _document(name="visible", market_rankings=_market_rankings())
 

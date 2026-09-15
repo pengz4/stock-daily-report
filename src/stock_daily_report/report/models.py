@@ -11,7 +11,7 @@ from stock_daily_report.decision import DecisionLabel
 from stock_daily_report.market_scan.models import MarketState
 
 REPORT_SCHEMA_VERSION = 2
-REPORT_RENDER_VERSION = "cn-v2"
+REPORT_RENDER_VERSION = "cn-v3"
 
 
 class AnalyzerMetadata(BaseModel):

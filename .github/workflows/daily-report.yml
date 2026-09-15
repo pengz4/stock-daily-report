@@ -130,6 +130,9 @@ jobs:
               0
               if (
                   report.metadata.render_version == REPORT_RENDER_VERSION
+                  and report.market_state is not None
+                  and scan.market_state is not None
+                  and report.market_state.rule_version == scan.market_state.rule_version
                   and
                   rankings.scan_date == scan.report_date
                   and rankings.rule_version == scan.rule_version
