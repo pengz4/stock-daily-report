@@ -330,6 +330,8 @@ class StockReport(BaseModel):
     code: str = Field(pattern=r"^\d{6}$")
     name: str = Field(min_length=1)
     group: str = Field(min_length=1)
+    scan_rank: int | None = Field(default=None, ge=1)
+    scan_score: float | None = Field(default=None, ge=0.0, le=100.0)
     provider_name: str = Field(min_length=1)
     latest_trade_date: date
     latest_source_timestamp: datetime

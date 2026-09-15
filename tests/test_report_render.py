@@ -7,9 +7,17 @@ from typing import ClassVar
 import pytest
 
 import stock_daily_report.report.models as report_models
+from stock_daily_report.report.labels import (
+    metric_label,
+    reason_label,
+    status_label,
+    structure_label,
+)
 from stock_daily_report.report.models import (
     AnalyzerMetadata,
     MarketSummary,
+    PoolOverview,
+    PoolOverviewRow,
     ReportDocument,
     ReportMetadata,
     ReportMetrics,
@@ -601,7 +609,7 @@ def _assert_text_contains_number(text: str, value: float) -> None:
 
 
 def _assert_code_count_pair(text: str, *, code: str, count: int) -> None:
-    assert re.search(rf"{re.escape(code)}\D+{count}\b", text), (
+    assert re.search(rf"{re.escape(code)}\D+{count}", text), (
         f"expected {code!r} paired with {count} in {text!r}"
     )
 
@@ -970,19 +978,78 @@ def test_market_scan_rankings_render_consistently_without_confidence_claims():
         assert "75.00" in rendered
         assert "90.00%" in rendered
         assert "high confidence" not in rendered.lower()
-    assert "Trend Top 30" in markdown
-    assert "Balanced Top 30" in markdown
-    assert "shared technical inputs" in markdown
-    assert "not independently validated predictive evidence" in markdown
+    assert "趋势策略 Top 30" in markdown
+    assert "均衡策略 Top 30" in markdown
+    assert "相同技术输入" in markdown
+    assert "不代表经过独立回测验证的预测结论" in markdown
     assert "趋势策略 Top 30" in html
     assert "均衡策略 Top 30" in html
-    assert r"close\_above\_ma20" in markdown
-    assert r"elevated\_volatility" in markdown
-    assert "close_above_ma20" in html
-    assert "elevated_volatility" in html
-    assert "Trend rank 1 / 82.00" in markdown
-    assert "Balanced rank 2 / 75.00" in markdown
+    assert r"收盘价高于20日均线" in markdown
+    assert r"风险（elevated\_volatility）" in markdown
+    assert "close_above_ma20" not in html
+    assert "风险（elevated_volatility）" in html
+    assert "趋势第 1 名 / 82.00" in markdown
+    assert "均衡第 2 名 / 75.00" in markdown
     assert 'class="consensus-row"' in html
+
+
+def test_report_uses_readable_labels_and_renders_pool_last():
+    document = _document()
+    primary = document.stocks[0].model_copy(
+        update={
+            "metrics": ReportMetrics(
+                close=100.0,
+                ma20=98.5,
+                ma60=95.0,
+                return20=0.12,
+                realized_volatility20=0.2,
+            ),
+            "evidence": ("close_above_ma20",),
+            "risks": ("elevated_volatility",),
+            "scan_rank": 2,
+            "scan_score": 76.5,
+        }
+    )
+    ranked_first = primary.model_copy(
+        update={
+            "code": "000001",
+            "name": "平安银行",
+            "scan_rank": 1,
+            "scan_score": 82.0,
+        }
+    )
+    pool = PoolOverview(
+        quote_date=date(2026, 9, 4),
+        rows=(
+            PoolOverviewRow(
+                code="000001",
+                name="平安银行",
+                group="金融",
+                priority="core",
+                latest_price=10.0,
+            ),
+        ),
+    )
+    document = document.model_copy(
+        update={
+            "stocks": (primary, ranked_first),
+            "pool_overview": pool,
+        }
+    )
+
+    markdown = render_markdown(document)
+    html = render_html(document)
+
+    assert "最新收盘价" in markdown
+    assert "20日均线" in markdown
+    assert "收盘价高于20日均线" in markdown
+    assert "realized_volatility20" not in markdown
+    assert markdown.index("### #1") < markdown.index("### #2")
+    assert markdown.index("## 自选股追踪") < markdown.index("## 全池速览")
+    assert "最新收盘价" in html
+    assert "20日均线" in html
+    assert "realized_volatility20" not in html
+    assert html.index("<h2>自选股跟踪</h2>") < html.index("<h2>全池速览</h2>")
 
 
 def test_market_scan_html_contract_renders_header_metrics_and_runtime_metadata():
@@ -1000,7 +1067,7 @@ def test_market_scan_html_contract_renders_header_metrics_and_runtime_metadata()
     universe_card = _require_one(root, '.metric-card[data-metric="universe"]')
     consensus_card = _require_one(root, '.metric-card[data-metric="consensus"]')
 
-    assert document.metadata.quality_status in quality_badge.normalized_text()
+    assert status_label(document.metadata.quality_status) in quality_badge.normalized_text()
     header_text = header.normalized_visible_text(
         exclude_selectors=("details.runtime-metadata",)
     )
@@ -1047,10 +1114,10 @@ def test_market_scan_html_contract_renders_header_metrics_and_runtime_metadata()
         *document.market_rankings.exclusion_counts,
         *document.market_rankings.failure_counts,
     ):
-        assert reason_count.code in runtime_text
+        assert reason_label(reason_count.code) in runtime_text
         _assert_code_count_pair(
             runtime_text,
-            code=reason_count.code,
+            code=reason_label(reason_count.code),
             count=reason_count.count,
         )
 
@@ -1300,13 +1367,13 @@ def test_market_scan_html_contract_keeps_detail_fields_and_failure_warning():
     for expected in (
         document.market_rankings.trend[0].code,
         document.market_rankings.trend[0].name,
-        "trend",
-        "momentum",
-        "volume",
-        "structure",
-        "risk",
-        "close_above_ma20",
-        "elevated_volatility",
+        "趋势",
+        "动量",
+        "成交量",
+        "结构",
+        "风险",
+        "收盘价高于20日均线",
+        "风险（elevated_volatility）",
         document.market_rankings.trend[0].latest_trade_date.isoformat(),
         document.market_rankings.trend[0].provider_name,
         "趋势排名 1",
@@ -1325,7 +1392,7 @@ def test_market_scan_html_contract_keeps_detail_fields_and_failure_warning():
     ):
         assert f"{value:.2f}" in detail_text
     runtime_text = runtime_metadata.normalized_text()
-    _assert_code_count_pair(runtime_text, code="network_error", count=8)
+    _assert_code_count_pair(runtime_text, code="网络错误", count=8)
 
 
 def test_market_scan_html_contract_handles_unavailable_and_no_consensus_states():
@@ -1336,7 +1403,7 @@ def test_market_scan_html_contract_handles_unavailable_and_no_consensus_states()
     )
 
     assert "全市场排名不可用" in unavailable_root.normalized_text()
-    assert "scan_rankings_unavailable" in unavailable_root.normalized_text()
+    assert "扫描排名不可用" in unavailable_root.normalized_text()
     _require_one(unavailable_root, ".ranking-warning")
     assert unavailable_root.select(".ranking-profile") == []
     assert unavailable_root.select(".consensus-card") == []
@@ -1376,16 +1443,17 @@ def test_market_scan_html_contract_retains_watchlist_fields_and_none_states():
         primary_stock.latest_trade_date.isoformat(),
         primary_stock.latest_source_timestamp.isoformat(),
         str(primary_stock.bar_count),
-        primary_stock.quality_status,
-        *primary_stock.quality_issues,
-        primary_stock.structure.state_label,
-        primary_stock.structure.status,
+        status_label(primary_stock.quality_status),
+        *(reason_label(item) for item in primary_stock.quality_issues),
+        "结构（breakout_ready）",
+        "候选",
         primary_stock.structure.rule_version,
         *primary_stock.structure.observations,
         primary_stock.decision_label,
-        *primary_stock.evidence,
-        *primary_stock.risks,
-        *primary_stock.key_levels,
+        "证据（breakout <pending>）",
+        "风险（overbought & extended）",
+        "支撑位 95",
+        "压力位 110",
         *primary_stock.next_conditions,
     ):
         assert expected in primary_text
@@ -1394,14 +1462,14 @@ def test_market_scan_html_contract_retains_watchlist_fields_and_none_states():
         primary_stock.name,
         primary_stock.group,
         primary_stock.decision_label,
-        primary_stock.structure.state_label,
-        primary_stock.structure.status,
+        "结构（breakout_ready）",
+        "候选",
         primary_stock.latest_trade_date.isoformat(),
         primary_stock.latest_source_timestamp.isoformat(),
         primary_stock.provider_name,
-        "close",
-        "ma20",
-        "ma60",
+        "最新收盘价",
+        "20日均线",
+        "60日均线",
     ):
         assert expected in primary_summary_text
     for value in (
@@ -1413,13 +1481,14 @@ def test_market_scan_html_contract_retains_watchlist_fields_and_none_states():
         _assert_text_contains_number(primary_summary_text, value)
     for detail_only in (
         str(primary_stock.bar_count),
-        primary_stock.quality_status,
+        status_label(primary_stock.quality_status),
         *primary_stock.quality_issues,
         primary_stock.structure.rule_version,
         *primary_stock.structure.observations,
         *primary_stock.evidence,
         *primary_stock.risks,
-        *primary_stock.key_levels,
+        "支撑位 95",
+        "压力位 110",
         *primary_stock.next_conditions,
         "return20",
         "return60",
@@ -1431,12 +1500,20 @@ def test_market_scan_html_contract_retains_watchlist_fields_and_none_states():
     ):
         assert detail_only not in primary_summary_text
     for field_name, value in primary_stock.metrics.model_dump().items():
-        assert field_name in primary_text
+        assert metric_label(field_name) in primary_text
         if value is not None:
-            _assert_text_contains_number(primary_text, value)
+            if field_name in {
+                "return20",
+                "return60",
+                "realized_volatility20",
+                "drawdown60",
+            }:
+                assert f"{value:.2%}" in primary_text
+            else:
+                _assert_text_contains_number(primary_text, value)
     for level in primary_stock.structure.levels:
-        assert level.kind in primary_text
-        assert level.source in primary_text
+        assert ("支撑位" if level.kind == "support" else "压力位") in primary_text
+        assert structure_label(level.source) in primary_text
         _assert_text_contains_number(primary_text, level.price)
     assert primary_card.select("details summary")
 
@@ -1471,7 +1548,7 @@ def test_market_scan_html_contract_escapes_static_controls_and_legacy_fallback()
     assert "support <img src=x onerror=alert(13)>" not in html
     assert "Trend &lt;script&gt;alert(10)&lt;/script&gt;" in html
     assert "signal &lt;script&gt;alert(11)&lt;/script&gt;" in html
-    assert "support &lt;img src=x onerror=alert(13)&gt;" in html
+    assert "支撑位 &lt;img src=x onerror=alert（13）&gt;" in html
     details = root.select("details")
     summaries = root.select("summary")
     assert details
@@ -1487,7 +1564,7 @@ def test_market_scan_html_contract_escapes_static_controls_and_legacy_fallback()
     legacy.pop("market_rankings")
     legacy_root = _html_tree(render_html(ReportDocument.model_validate(legacy)))
 
-    assert "not_provided" in legacy_root.normalized_text()
+    assert "未提供" in legacy_root.normalized_text()
     _require_one(legacy_root, ".ranking-warning")
     assert legacy_root.select(".ranking-profile") == []
 
@@ -1502,11 +1579,11 @@ def test_market_scan_unavailable_state_is_explicit_in_markdown_and_html():
     markdown = render_markdown(document)
     html = render_html(document)
 
-    assert "Full-market rankings unavailable" in markdown
-    assert "scan_artifact_missing" in markdown
+    assert "全市场排名不可用" in markdown
+    assert "扫描产物缺失" in markdown
     assert "high confidence" not in markdown.lower()
     assert "全市场排名不可用" in html
-    assert "scan_artifact_missing" in html
+    assert "扫描产物缺失" in html
     assert "high confidence" not in html.lower()
 
 
@@ -1543,7 +1620,7 @@ def test_market_scan_renderers_safely_handle_partial_unavailable_metadata():
     markdown = render_markdown(document)
     html = render_html(document)
 
-    assert "Full-market rankings unavailable" in markdown
+    assert "全市场排名不可用" in markdown
     assert "—" in markdown
     assert "全市场排名不可用" in html
     assert "—" in html

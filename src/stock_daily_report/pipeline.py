@@ -2241,11 +2241,25 @@ def _build_report(
     stocks: list[StockReport] = []
     latest_source_timestamp: datetime | None = None
     provider_names: set[str] = set()
+    scan_rank_by_code = (
+        {
+            code: (index + 1, score)
+            for index, (code, score) in enumerate(scan_ranking)
+        }
+        if scan_ranking
+        else {}
+    )
     # Only core stocks receive full analysis; extended stocks appear in the
     # lightweight pool overview instead of consuming history and indicators.
     analyzed = [
         stock
-        for stock in sorted(watchlist.stocks, key=lambda item: item.code)
+        for stock in sorted(
+            watchlist.stocks,
+            key=lambda item: (
+                scan_rank_by_code.get(item.code, (float("inf"), 0.0))[0],
+                item.code,
+            ),
+        )
         if stock.code in fetched
     ]
     for stock in analyzed:
@@ -2273,6 +2287,12 @@ def _build_report(
                 code=stock.code,
                 name=stock.name,
                 group=stock.group,
+                scan_rank=(
+                    scan_rank_by_code.get(stock.code, (None, None))[0]
+                ),
+                scan_score=(
+                    scan_rank_by_code.get(stock.code, (None, None))[1]
+                ),
                 provider_name=item.provider_name,
                 latest_trade_date=bars[-1].trade_date,
                 latest_source_timestamp=item_latest_timestamp,

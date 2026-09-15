@@ -5,6 +5,15 @@ from __future__ import annotations
 import html
 from collections.abc import Sequence
 
+from stock_daily_report.report.labels import (
+    component_label,
+    evidence_label,
+    metric_label,
+    reason_label,
+    risk_label,
+    status_label,
+    structure_label,
+)
 from stock_daily_report.report.models import (
     MarketConsensusRanking,
     MarketRanking,
@@ -38,38 +47,38 @@ def render_markdown(report: ReportDocument) -> str:
 
     metadata = report.metadata
     lines = [
-        f"# A-share daily report — {_md(metadata.report_date.isoformat())}",
+        f"# A股每日研报 — {_md(metadata.report_date.isoformat())}",
         "",
-        f"- Generated: {_md(metadata.generated_at.isoformat())}",
-        f"- Latest source timestamp: {_md(metadata.latest_source_timestamp.isoformat())}",
-        f"- Quality: {_md(metadata.quality_status)}",
-        f"- Stock count: {metadata.stock_count}",
+        f"- 生成时间: {_md(metadata.generated_at.isoformat())}",
+        f"- 最新数据时间: {_md(metadata.latest_source_timestamp.isoformat())}",
+        f"- 数据质量: {_md(status_label(metadata.quality_status))}",
+        f"- 自选股数量: {metadata.stock_count}",
         *(
-            [f"- Deep-analysis count: {metadata.analyzed_stock_count}"]
+            [f"- 深度分析数量: {metadata.analyzed_stock_count}"]
             if metadata.analyzed_stock_count is not None
             else []
         ),
-        f"- Providers: {_md(', '.join(metadata.provider_names))}",
-        f"- Snapshot: `{_md(metadata.snapshot_path)}`",
-        f"- Snapshot hash: `{metadata.snapshot_hash}`",
-        f"- Config hash: `{metadata.config_hash}`",
-        f"- Analyzer: {_md(metadata.analyzer_versions.structural)}",
+        f"- 数据源: {_md(', '.join(metadata.provider_names))}",
+        f"- 输入快照: `{_md(metadata.snapshot_path)}`",
+        f"- 快照哈希: `{metadata.snapshot_hash}`",
+        f"- 配置哈希: `{metadata.config_hash}`",
+        f"- 分析器版本: {_md(metadata.analyzer_versions.structural)}",
         "",
-        "## Market summary",
+        "## 市场摘要",
         "",
         _md(report.market_summary.text),
         "",
     ]
     lines.extend(_render_market_rankings_markdown(report.market_rankings))
-    lines.extend(_render_pool_overview_markdown(report.pool_overview))
     lines.extend(
         [
-        "## Watchlist",
-        ""
+            "## 自选股追踪",
+            "",
         ]
     )
-    for stock in report.stocks:
+    for stock in _stocks_for_display(report.stocks):
         lines.extend(_render_stock_markdown(stock))
+    lines.extend(_render_pool_overview_markdown(report.pool_overview))
     return "\n".join(lines) + "\n"
 
 
@@ -82,7 +91,9 @@ def render_html(report: ReportDocument) -> str:
     market_summary = _render_market_summary_html(report)
     market_rankings = _render_market_rankings_html(report.market_rankings)
     pool_overview = _render_pool_overview_html(report.pool_overview)
-    stock_sections = "\n".join(_render_watchlist_card(stock) for stock in report.stocks)
+    stock_sections = "\n".join(
+        _render_watchlist_card(stock) for stock in _stocks_for_display(report.stocks)
+    )
     return f"""<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -97,11 +108,11 @@ def render_html(report: ReportDocument) -> str:
     {header}
     {market_summary}
     {market_rankings}
-    {pool_overview}
     <section>
       <h2>自选股跟踪</h2>
       {stock_sections}
     </section>
+    {pool_overview}
   </main>
 </body>
 </html>
@@ -109,13 +120,13 @@ def render_html(report: ReportDocument) -> str:
 
 
 def _render_market_rankings_markdown(rankings: MarketRankings) -> list[str]:
-    lines = ["## Full-market rankings", ""]
+    lines = ["## 全市场排名", ""]
     if rankings.status == "unavailable":
         lines.extend(
             [
-                "Full-market rankings unavailable.",
+                "全市场排名不可用。",
                 "",
-                f"- Reason: `{rankings.unavailable_reason}`",
+                f"- 原因: {_md(reason_label(rankings.unavailable_reason or 'not_provided'))}",
             ]
         )
         if _has_market_ranking_metadata(rankings):
@@ -127,24 +138,23 @@ def _render_market_rankings_markdown(rankings: MarketRankings) -> list[str]:
     lines.extend(
         [
             "",
-            "### 多策略共识 / Consensus",
+            "### 多策略共识",
             "",
             (
-                "Consensus is the exact intersection of rankings built from shared "
-                "technical inputs; it is not independently validated predictive "
-                "evidence."
+                "多策略共识是基于相同技术输入得到的排名交集，"
+                "不代表经过独立回测验证的预测结论。"
             ),
             "",
-            "| Code | Name | Trend | Balanced | Components | Evidence | Risks | Date | Provider |",
+            "| 代码 | 名称 | 趋势排名 | 均衡排名 | 评分构成 | 证据 | 风险 | 日期 | 数据源 |",
             "| --- | --- | ---: | ---: | --- | --- | --- | --- | --- |",
         ]
     )
     lines.extend(_render_consensus_markdown(row) for row in rankings.consensus)
     if not rankings.consensus:
-        lines.append("| — | No exact intersection | — | — | — | — | — | — | — |")
-    lines.extend(["", "### Trend Top 30", ""])
+        lines.append("| — | 无精确交集 | — | — | — | — | — | — | — |")
+    lines.extend(["", "### 趋势策略 Top 30", ""])
     lines.extend(_ranking_markdown_table(rankings.trend, rankings.consensus))
-    lines.extend(["", "### Balanced Top 30", ""])
+    lines.extend(["", "### 均衡策略 Top 30", ""])
     lines.extend(_ranking_markdown_table(rankings.balanced, rankings.consensus))
     lines.append("")
     return lines
@@ -158,21 +168,21 @@ def _market_ranking_metadata_markdown(rankings: MarketRankings) -> list[str]:
     )
     coverage = f"{rankings.coverage:.2%}" if rankings.coverage is not None else "—"
     return [
-        f"- Scan date: {_md(_optional_market_metadata(rankings.scan_date))}",
-        f"- Generated: {_md(generated_at)}",
-        f"- Rule: {_md(_optional_market_metadata(rankings.rule_version))}",
+        f"- 扫描日期: {_md(_optional_market_metadata(rankings.scan_date))}",
+        f"- 生成时间: {_md(generated_at)}",
+        f"- 规则版本: {_md(_optional_market_metadata(rankings.rule_version))}",
         (
-            "- Providers: "
+            "- 数据源: "
             f"{_md(', '.join(rankings.provider_names) or '—')}"
         ),
         (
-            f"- Coverage: {coverage} "
-            f"({_optional_market_metadata(rankings.valid_count)}/"
-            f"{_optional_market_metadata(rankings.eligible_count)} valid; "
-            f"{_optional_market_metadata(rankings.universe_count)} universe)"
+            f"- 扫描覆盖率: {coverage} "
+            f"（有效 {_optional_market_metadata(rankings.valid_count)} / "
+            f"候选 {_optional_market_metadata(rankings.eligible_count)}；"
+            f"股票池 {_optional_market_metadata(rankings.universe_count)}）"
         ),
-        f"- Exclusions: {_md(_format_reason_counts(rankings.exclusion_counts))}",
-        f"- Failures: {_md(_format_reason_counts(rankings.failure_counts))}",
+        f"- 排除统计: {_md(_format_reason_counts(rankings.exclusion_counts))}",
+        f"- 失败统计: {_md(_format_reason_counts(rankings.failure_counts))}",
     ]
 
 
@@ -182,7 +192,7 @@ def _ranking_markdown_table(
 ) -> list[str]:
     consensus_by_code = {record.code: record for record in consensus}
     lines = [
-        "| Rank | Code | Name | Score | Consensus | Components | Evidence | Risks | Date | Provider |",
+        "| 排名 | 代码 | 名称 | 评分 | 共识 | 评分构成 | 证据 | 风险 | 日期 | 数据源 |",
         "| ---: | --- | --- | ---: | --- | --- | --- | --- | --- | --- |",
     ]
     for record in records:
@@ -191,10 +201,10 @@ def _ranking_markdown_table(
             "—"
             if consensus_record is None
             else (
-                "多策略共识 / consensus — "
-                f"Trend rank {consensus_record.trend_rank} / "
-                f"{consensus_record.trend_score:.2f}; "
-                f"Balanced rank {consensus_record.balanced_rank} / "
+                "多策略共识 — "
+                f"趋势第 {consensus_record.trend_rank} 名 / "
+                f"{consensus_record.trend_score:.2f}；"
+                f"均衡第 {consensus_record.balanced_rank} 名 / "
                 f"{consensus_record.balanced_score:.2f}"
             )
         )
@@ -208,8 +218,8 @@ def _ranking_markdown_table(
                     f"{record.score:.2f}",
                     _md(consensus_text),
                     _md(_format_components(record.components)),
-                    _md(_format_codes(record.evidence_codes)),
-                    _md(_format_codes(record.risk_codes)),
+                    _md(_format_codes(record.evidence_codes, kind="evidence")),
+                    _md(_format_codes(record.risk_codes, kind="risk")),
                     _md(record.latest_trade_date.isoformat()),
                     _md(record.provider_name),
                 )
@@ -221,8 +231,8 @@ def _ranking_markdown_table(
 
 def _render_consensus_markdown(record: MarketConsensusRanking) -> str:
     component_text = (
-        f"trend profile: {_format_components(record.trend_components)}; "
-        f"balanced profile: {_format_components(record.balanced_components)}"
+        f"趋势策略：{_format_components(record.trend_components)}；"
+        f"均衡策略：{_format_components(record.balanced_components)}"
     )
     return (
         "| "
@@ -230,11 +240,11 @@ def _render_consensus_markdown(record: MarketConsensusRanking) -> str:
             (
                 _md(record.code),
                 _md(record.name),
-                f"Trend rank {record.trend_rank} / {record.trend_score:.2f}",
-                f"Balanced rank {record.balanced_rank} / {record.balanced_score:.2f}",
+                f"趋势第 {record.trend_rank} 名 / {record.trend_score:.2f}",
+                f"均衡第 {record.balanced_rank} 名 / {record.balanced_score:.2f}",
                 _md(component_text),
-                _md(_format_codes(record.evidence_codes)),
-                _md(_format_codes(record.risk_codes)),
+                _md(_format_codes(record.evidence_codes, kind="evidence")),
+                _md(_format_codes(record.risk_codes, kind="risk")),
                 _md(record.latest_trade_date.isoformat()),
                 _md(record.provider_name),
             )
@@ -254,7 +264,9 @@ def _render_pool_overview_markdown(pool: PoolOverview | None) -> list[str]:
         f"- 行情快照日期: {_md(pool.quote_date.isoformat())}",
     ]
     if pool.unavailable_reason:
-        lines.append(f"- 行情快照不可用: {_md(pool.unavailable_reason)}")
+        lines.append(
+            f"- 行情快照不可用: {_md(reason_label(pool.unavailable_reason))}"
+        )
     ranked = _pool_has_scan_ranking(pool)
     header = "| 代码 | 名称 | 分组 | 层级 | 最新价 | 涨跌幅% | 成交额(元) |"
     divider = "| ---: | --- | --- | --- | ---: | ---: | ---: |"
@@ -306,7 +318,7 @@ def _render_pool_overview_html(pool: PoolOverview | None) -> str:
         return ""
     unavailable_html = (
         f'\n      <p class="pool-overview-warning">行情快照不可用：'
-        f"{_html(pool.unavailable_reason)}</p>"
+        f"{_html(reason_label(pool.unavailable_reason))}</p>"
         if pool.unavailable_reason
         else ""
     )
@@ -372,7 +384,7 @@ def _render_market_rankings_html(rankings: MarketRankings) -> str:
         return f"""<section class="market-rankings unavailable">
       <h2>全市场排名</h2>{warning_html}
       <p>全市场排名不可用。</p>
-      <p><strong>原因：</strong> <code>{_format_html_optional(rankings.unavailable_reason)}</code></p>
+      <p><strong>原因：</strong> {_html(reason_label(rankings.unavailable_reason or "not_provided"))}</p>
     </section>"""
 
     consensus_by_code = {record.code: record for record in rankings.consensus}
@@ -391,7 +403,7 @@ def _render_report_header(report: ReportDocument, rankings: MarketRankings) -> s
       <p><a href="../../site/index.html">返回报告列表</a></p>
       <p><strong>报告日期：</strong> {_html(metadata.report_date.strftime("%Y/%m/%d"))}</p>
       <p><strong>最新交易日：</strong> {_render_latest_trading_text(report, rankings)}</p>
-      <p class="quality-badge">数据质量：{_html(metadata.quality_status)}</p>
+      <p class="quality-badge">数据质量：{_html(status_label(metadata.quality_status))}</p>
       {_render_runtime_metadata(report, rankings)}
     </header>"""
 
@@ -435,12 +447,15 @@ def _render_runtime_metadata(report: ReportDocument, rankings: MarketRankings) -
             (
                 ""
                 if has_ranking_metadata
-                else _render_html_field("排名状态", rankings.status)
+                else _render_html_field("排名状态", status_label(rankings.status))
             ),
             (
                 ""
                 if has_ranking_metadata
-                else _render_html_field("排名原因", rankings.unavailable_reason)
+                else _render_html_field(
+                    "排名原因",
+                    reason_label(rankings.unavailable_reason or "not_provided"),
+                )
             ),
         )
     )
@@ -448,8 +463,11 @@ def _render_runtime_metadata(report: ReportDocument, rankings: MarketRankings) -
     if has_ranking_metadata:
         ranking_fields = "".join(
             (
-                _render_html_field("排名状态", rankings.status),
-                _render_html_field("排名原因", rankings.unavailable_reason),
+                _render_html_field("排名状态", status_label(rankings.status)),
+                _render_html_field(
+                    "排名原因",
+                    reason_label(rankings.unavailable_reason or "not_provided"),
+                ),
                 _render_html_field(
                     "排名扫描日期",
                     rankings.scan_date.isoformat()
@@ -573,7 +591,7 @@ def _render_ranking_warning(rankings: MarketRankings) -> str:
     if rankings.status == "unavailable":
         return (
             '<p class="ranking-warning">全市场排名不可用：'
-            f"{_format_html_optional(rankings.unavailable_reason)}</p>"
+            f"{_html(reason_label(rankings.unavailable_reason or 'not_provided'))}</p>"
         )
     if rankings.failure_counts:
         return (
@@ -712,7 +730,7 @@ def _render_ranking_row(
         if consensus is not None
         else "无共识"
     )
-    short_risk = record.risk_codes[0] if record.risk_codes else "无"
+    short_risk = risk_label(record.risk_codes[0]) if record.risk_codes else "无"
     return f"""<div class="ranking-row">
       <div class="ranking-row__summary">
         <span class="ranking-rank">#{record.rank}</span>
@@ -751,7 +769,7 @@ def _render_ranking_detail(
         )
     fields.extend(
         _render_html_field(
-            component_name,
+            component_label(component_name),
             f"{getattr(record.components, component_name):.2f}",
         )
         for component_name in _COMPONENT_FIELDS
@@ -780,7 +798,7 @@ def _render_component_group(
 ) -> str:
     fields = "".join(
         _render_html_field(
-            component_name,
+            component_label(component_name),
             f"{getattr(components, component_name):.2f}",
         )
         for component_name in _COMPONENT_FIELDS
@@ -793,20 +811,28 @@ def _render_component_group(
 
 def _format_components(components: MarketRankingComponents) -> str:
     return (
-        f"trend={components.trend:.2f}, momentum={components.momentum:.2f}, "
-        f"volume={components.volume:.2f}, structure={components.structure:.2f}, "
-        f"risk={components.risk:.2f}"
+        f"{component_label('trend')} {components.trend:.2f}，"
+        f"{component_label('momentum')} {components.momentum:.2f}，"
+        f"{component_label('volume')} {components.volume:.2f}，"
+        f"{component_label('structure')} {components.structure:.2f}，"
+        f"{component_label('risk')} {components.risk:.2f}"
     )
 
 
-def _format_codes(codes: Sequence[str]) -> str:
-    return ", ".join(codes) if codes else "None"
+def _format_codes(codes: Sequence[str], *, kind: str = "generic") -> str:
+    if not codes:
+        return "无"
+    if kind == "evidence":
+        return "、".join(evidence_label(code) for code in codes)
+    if kind == "risk":
+        return "、".join(risk_label(code) for code in codes)
+    return "、".join(codes)
 
 
 def _format_reason_counts(counts: Sequence[object]) -> str:
     if not counts:
-        return "None"
-    return ", ".join(f"{item.code}={item.count}" for item in counts)
+        return "无"
+    return "、".join(f"{reason_label(item.code)} {item.count}项" for item in counts)
 
 
 def _has_market_ranking_metadata(rankings: MarketRankings) -> bool:
@@ -851,10 +877,16 @@ def _render_html_tags(values: Sequence[str], *, kind: str) -> str:
     elif kind == "risk":
         tag_class = "tag tag--risk"
     if not values:
-        return f'<span class="{tag_class}">None</span>'
+        return f'<span class="{tag_class}">无</span>'
+    labels = (
+        [evidence_label(value) for value in values]
+        if kind == "evidence"
+        else [risk_label(value) for value in values]
+        if kind == "risk"
+        else list(values)
+    )
     return " ".join(
-        f'<span class="{tag_class}">{_html(value)}</span>'
-        for value in values
+        f'<span class="{tag_class}">{_html(value)}</span>' for value in labels
     )
 
 
@@ -946,27 +978,51 @@ def render_site_index(report_dates: Sequence[str]) -> str:
 
 
 def _render_stock_markdown(stock: StockReport) -> list[str]:
+    rank_line = (
+        f"- 计算排名: 第 {stock.scan_rank} 名（评分 {stock.scan_score:.2f}）"
+        if stock.scan_rank is not None and stock.scan_score is not None
+        else "- 计算排名: 未纳入本次排名"
+    )
     lines = [
-        f"### {_md(stock.code)} — {_md(stock.name)}",
+        (
+            f"### #{stock.scan_rank} — {_md(stock.code)} — {_md(stock.name)}"
+            if stock.scan_rank is not None
+            else f"### {_md(stock.code)} — {_md(stock.name)}"
+        ),
         "",
-        f"- Group: {_md(stock.group)}",
-        f"- Provider: {_md(stock.provider_name)}",
-        f"- Latest trade date: {_md(stock.latest_trade_date.isoformat())}",
-        f"- Source timestamp: {_md(stock.latest_source_timestamp.isoformat())}",
-        f"- Bars: {stock.bar_count}",
-        f"- Quality: {_md(stock.quality_status)}",
-        f"- Decision: **{_md(stock.decision_label)}**",
-        f"- Structure: {_md(stock.structure.state_label)} ({_md(stock.structure.status)})",
+        f"- 分组: {_md(stock.group)}",
+        rank_line,
+        f"- 数据源: {_md(stock.provider_name)}",
+        f"- 最新交易日: {_md(stock.latest_trade_date.isoformat())}",
+        f"- 最新数据时间: {_md(stock.latest_source_timestamp.isoformat())}",
+        f"- K线数量: {stock.bar_count}",
+        f"- 数据质量: {_md(status_label(stock.quality_status))}",
+        f"- 决策: **{_md(stock.decision_label)}**",
+        (
+            f"- 结构: {_md(structure_label(stock.structure.state_label))} "
+            f"（{_md(structure_label(stock.structure.status))}）"
+        ),
         "",
-        "Evidence:",
+        "### 技术指标",
     ]
-    lines.extend(f"- {_md(item)}" for item in stock.evidence or ("None",))
-    lines.append("Risks:")
-    lines.extend(f"- {_md(item)}" for item in stock.risks or ("None",))
-    lines.append("Key levels:")
-    lines.extend(f"- {_md(item)}" for item in stock.key_levels or ("None",))
-    lines.append("Next conditions:")
-    lines.extend(f"- {_md(item)}" for item in stock.next_conditions or ("None",))
+    for field_name, value in stock.metrics.model_dump().items():
+        formatted = _format_metric_value(field_name, value)
+        lines.append(f"- {metric_label(field_name)}: {formatted}")
+    lines.append("")
+    lines.append("### 证据与风险")
+    lines.extend(
+        f"- 证据: {_md(evidence_label(item))}"
+        for item in stock.evidence or ("无",)
+    )
+    lines.extend(
+        f"- 风险: {_md(risk_label(item))}" for item in stock.risks or ("无",)
+    )
+    lines.append("### 关键价位")
+    lines.extend(
+        f"- {_md(_readable_key_level(item))}" for item in stock.key_levels or ("无",)
+    )
+    lines.append("### 后续条件")
+    lines.extend(f"- {_md(item)}" for item in stock.next_conditions or ("无",))
     lines.append("")
     return lines
 
@@ -978,8 +1034,8 @@ def _render_stock_html(stock: StockReport) -> str:
 def _render_watchlist_card(stock: StockReport) -> str:
     primary_metrics = "".join(
         _render_html_field(
-            field_name,
-            f"{value:.2f}" if value is not None else None,
+            metric_label(field_name),
+            _format_metric_value(field_name, value),
         )
         for field_name in _PRIMARY_METRIC_FIELDS
         for value in (getattr(stock.metrics, field_name),)
@@ -987,20 +1043,23 @@ def _render_watchlist_card(stock: StockReport) -> str:
     quality_body = "".join(
         (
             _render_html_field("K线数量", stock.bar_count),
-            _render_html_field("质量状态", stock.quality_status),
-            _render_html_list_field("质量问题", stock.quality_issues),
+            _render_html_field("质量状态", status_label(stock.quality_status)),
+            _render_html_list_field(
+                "质量问题",
+                tuple(reason_label(item) for item in stock.quality_issues),
+            ),
         )
     )
     metrics_body = "".join(
         _render_html_field(
-            field_name,
-            f"{value:.2f}" if value is not None else None,
+            metric_label(field_name),
+            _format_metric_value(field_name, value),
         )
         for field_name in _ALL_METRIC_FIELDS
         for value in (getattr(stock.metrics, field_name),)
     )
     structure_levels = [
-        f"{level.kind} {level.price:.2f} ({level.source})"
+        f"{structure_label(level.kind)} {level.price:.2f}（{structure_label(level.source)}）"
         for level in stock.structure.levels
     ]
     structure_body = "".join(
@@ -1009,24 +1068,32 @@ def _render_watchlist_card(stock: StockReport) -> str:
             _render_html_list_field("结构价位", structure_levels),
             _render_html_list_field(
                 "结构观察",
-                stock.structure.observations,
+                tuple(structure_label(item) for item in stock.structure.observations),
             ),
         )
     )
     signals_body = "".join(
         (
-            _render_html_list_field("证据", stock.evidence),
-            _render_html_list_field("风险", stock.risks),
-            _render_html_list_field("关键价位", stock.key_levels),
+            _render_html_list_field(
+                "证据", tuple(evidence_label(item) for item in stock.evidence)
+            ),
+            _render_html_list_field(
+                "风险", tuple(risk_label(item) for item in stock.risks)
+            ),
+            _render_html_list_field(
+                "关键价位",
+                tuple(_readable_key_level(item) for item in stock.key_levels),
+            ),
             _render_html_list_field("后续条件", stock.next_conditions),
         )
     )
     return f"""<article class="stock-card">
       <div class="stock-card__identity">
-        <h3>{_html(stock.code)} — {_html(stock.name)}</h3>
+        <h3>{_html(_stock_heading(stock))}</h3>
         <p><strong>分组：</strong> {_html(stock.group)}</p>
+        <p><strong>计算排名：</strong> {_html(_stock_rank_text(stock))}</p>
         <p><strong>决策：</strong> {_html(stock.decision_label)}</p>
-        <p><strong>结构：</strong> {_html(stock.structure.state_label)} ({_html(stock.structure.status)})</p>
+        <p><strong>结构：</strong> {_html(structure_label(stock.structure.state_label))}（{_html(structure_label(stock.structure.status))}）</p>
         <p><strong>最新交易日：</strong> {_html(stock.latest_trade_date.isoformat())}</p>
         <p><strong>最新数据时间：</strong> {_html(stock.latest_source_timestamp.isoformat())}</p>
         <p><strong>数据源：</strong> {_html(stock.provider_name)}</p>
@@ -1039,6 +1106,52 @@ def _render_watchlist_card(stock: StockReport) -> str:
       {_render_html_details("结构分析详情", structure_body, class_name="stock-detail")}
       {_render_html_details("信号、风险与关键价位", signals_body, class_name="stock-detail")}
     </article>"""
+
+
+def _stocks_for_display(stocks: Sequence[StockReport]) -> list[StockReport]:
+    """Display ranked stocks first, then unranked core stocks by code."""
+
+    return sorted(
+        stocks,
+        key=lambda stock: (
+            stock.scan_rank is None,
+            stock.scan_rank if stock.scan_rank is not None else 0,
+            stock.code,
+        ),
+    )
+
+
+def _stock_rank_text(stock: StockReport) -> str:
+    if stock.scan_rank is None or stock.scan_score is None:
+        return "未纳入本次排名"
+    return f"第 {stock.scan_rank} 名（评分 {stock.scan_score:.2f}）"
+
+
+def _stock_heading(stock: StockReport) -> str:
+    prefix = f"#{stock.scan_rank} — " if stock.scan_rank is not None else ""
+    return f"{prefix}{stock.code} — {stock.name}"
+
+
+def _format_metric_value(name: str, value: float | None) -> str:
+    if value is None:
+        return "—"
+    if name in {"return20", "return60", "return120", "drawdown60"}:
+        return f"{value:.2%}"
+    if name == "realized_volatility20":
+        return f"{value:.2%}"
+    if name == "volume_ratio20":
+        return f"{value:.2f} 倍"
+    return f"{value:.2f}"
+
+
+def _readable_key_level(value: str) -> str:
+    main, separator, source = value.partition(" (")
+    kind, _, detail = main.partition(" ")
+    readable_detail = detail.replace("(", "（").replace(")", "）")
+    readable = f"{structure_label(kind)}{(' ' + readable_detail) if detail else ''}"
+    if separator:
+        readable += f"（{structure_label(source.rstrip(')'))}）"
+    return readable
 
 
 def _md(value: object) -> str:

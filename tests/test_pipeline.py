@@ -283,14 +283,14 @@ def test_market_scan_is_published_in_json_markdown_and_html(
     assert rankings["consensus"][0]["trend_rank"] == 1
     assert rankings["consensus"][0]["balanced_rank"] == 1
     for rendered in (markdown, html):
-        assert "Trend Top 30" in rendered
-        assert "Balanced Top 30" in rendered
+        assert "趋势策略 Top 30" in rendered
+        assert "均衡策略 Top 30" in rendered
         assert "多策略共识" in rendered
         assert "high confidence" not in rendered.lower()
-    assert r"close\_above\_ma20" in markdown
-    assert r"elevated\_volatility" in markdown
-    assert "close_above_ma20" in html
-    assert "elevated_volatility" in html
+    assert r"收盘价高于20日均线" in markdown
+    assert r"风险（elevated\_volatility）" in markdown
+    assert "close_above_ma20" not in html
+    assert "风险（elevated_volatility）" in html
     assert 'class="consensus-row"' in html
 
 
@@ -380,14 +380,14 @@ def test_market_scan_invalid_or_missing_is_explicit_and_does_not_block_report(
     assert outputs.json_path.exists()
     markdown = outputs.markdown_path.read_text(encoding="utf-8")
     html = outputs.html_path.read_text(encoding="utf-8")
-    assert "Full-market rankings unavailable" in markdown
-    assert "Full-market rankings unavailable" in html
+    assert "全市场排名不可用" in markdown
+    assert "全市场排名不可用" in html
     if artifact_kind in {"incomplete", "below_coverage"}:
         rankings = outputs.report.market_rankings
         assert rankings.scan_date == date(2026, 9, 4)
         assert rankings.coverage == (0.0 if artifact_kind == "incomplete" else 0.5)
-        assert "Coverage:" in markdown
-        assert "Coverage" in html
+        assert "扫描覆盖率:" in markdown
+        assert "扫描覆盖率" in html
 
 
 def test_successful_publication_commits_cache_after_all_outputs_exist(
@@ -3650,7 +3650,7 @@ def test_priority_watchlist_analyzes_core_only_and_renders_pool_overview(
     assert "## 全池速览" in markdown
     assert "平安银行" in markdown
     assert 'class="pool-overview"' in html
-    assert 'class="down"' in html
+    assert 'class="numeric down"' in html
 
 
 def test_light_quote_failure_degrades_to_unavailable_pool_overview(
@@ -3751,10 +3751,10 @@ def _watchlist_scan_artifact(*ranked, report_date=date(2026, 9, 4), incomplete=F
             code=code,
             name=name,
             status="not_processed" if incomplete else "valid",
-            reason_codes=(),
+            reason_codes=("not_processed",) if incomplete else (),
             provider_name="fixture",
         )
-        for code, name, _score in ranked
+        for code, name, _score in sorted(ranked)
     )
     return MarketScanArtifact(
         rule_version="market-scan-v1",
@@ -3762,11 +3762,11 @@ def _watchlist_scan_artifact(*ranked, report_date=date(2026, 9, 4), incomplete=F
         generated_at=datetime(2026, 9, 4, 8, 30, tzinfo=UTC),
         universe_count=len(ranked),
         eligible_count=len(ranked),
-        valid_count=len(ranked),
-        coverage=1.0,
+        valid_count=0 if incomplete else len(ranked),
+        coverage=0.0 if incomplete else 1.0,
         exclusion_counts={},
-        failure_counts={},
-        rankings=ProfileRankings(trend=records),
+        failure_counts={"not_processed": 1} if incomplete else {},
+        rankings=ProfileRankings() if incomplete else ProfileRankings(trend=records),
         consensus=(),
         statuses=statuses,
         config_hash="c" * 64,
@@ -3816,6 +3816,13 @@ def test_watchlist_scan_selects_top_ranked_stocks_for_deep_analysis(
     # Only the two ranked stocks are analysed; 茅台 stays in the pool overview.
     assert sorted(provider.calls) == ["000001", "000002"]
     assert [stock.code for stock in outputs.report.stocks] == ["000002", "000001"]
+    assert [
+        (stock.code, stock.scan_rank, stock.scan_score)
+        for stock in outputs.report.stocks
+    ] == [
+        ("000002", 1, 90.0),
+        ("000001", 2, 80.0),
+    ]
     pool = outputs.report.pool_overview
     assert pool is not None
     # The pool overview records the watchlist scan fingerprint for change detection.
@@ -3863,6 +3870,10 @@ def test_watchlist_scan_top_ranking_is_augmented_with_manual_core_stocks(
 
     assert sorted(provider.calls) == ["000001", "600519"]
     assert [stock.code for stock in outputs.report.stocks] == ["000001", "600519"]
+    assert outputs.report.stocks[0].scan_rank == 1
+    assert outputs.report.stocks[0].scan_score == 70.0
+    assert outputs.report.stocks[1].scan_rank is None
+    assert outputs.report.stocks[1].scan_score is None
 
 
 def test_report_metadata_stock_count_includes_lightweight_watchlist_entries(
