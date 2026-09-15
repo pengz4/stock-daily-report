@@ -2,7 +2,7 @@ import threading
 import time
 from datetime import UTC, date, datetime, timedelta
 
-from stock_daily_report.models import DailyBar, MarketScanSettings, MarketStateSettings
+from stock_daily_report.models import DailyBar, MarketScanSettings
 from stock_daily_report.providers.base import ProviderAvailabilityError
 from stock_daily_report.providers.service import (
     AllProvidersFailedError,
@@ -562,18 +562,14 @@ def test_market_state_inputs_contribute_to_artifact_identity():
         index_provider=FakeIndexProvider(index_bars),
         universe_quotes=[_quote(code, 1.0)],
     )
-    changed_settings = _settings(
-        market_state=MarketStateSettings(lookback_periods=(10, 30))
-    )
     changed = _scan(
         [code],
         history,
         index_provider=FakeIndexProvider(index_bars),
         universe_quotes=[_quote(code, -1.0)],
-        **changed_settings.model_dump(),
     )
 
-    assert first.config_hash != changed.config_hash
+    assert first.config_hash == changed.config_hash
     assert first.input_hash != changed.input_hash
     assert first.market_state_identity is not None
     assert changed.market_state_identity is not None

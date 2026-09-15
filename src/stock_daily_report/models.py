@@ -262,6 +262,7 @@ MARKET_STATE_INDEX_CODES = (
     "000300",
     "000852",
 )
+MARKET_STATE_LOOKBACK_PERIODS = (20, 60)
 
 
 class MarketStateSettings(BaseModel):
@@ -271,7 +272,7 @@ class MarketStateSettings(BaseModel):
 
     rule_version: Literal["market-state-v1"] = "market-state-v1"
     index_codes: tuple[str, ...] = MARKET_STATE_INDEX_CODES
-    lookback_periods: tuple[StrictInt, ...] = (20, 60)
+    lookback_periods: tuple[StrictInt, ...] = MARKET_STATE_LOOKBACK_PERIODS
 
     @field_validator("index_codes")
     @classmethod
@@ -288,14 +289,10 @@ class MarketStateSettings(BaseModel):
     def validate_lookback_periods(
         cls, value: tuple[StrictInt, ...]
     ) -> tuple[StrictInt, ...]:
-        if (
-            len(value) != 2
-            or any(period < 1 for period in value)
-            or len(set(value)) != len(value)
-            or value[0] >= value[1]
-        ):
+        if value != MARKET_STATE_LOOKBACK_PERIODS:
             raise ValueError(
-                "lookback_periods must contain two distinct ascending periods"
+                "lookback_periods must be exactly (20, 60); "
+                "other windows are not supported"
             )
         return value
 

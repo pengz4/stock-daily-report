@@ -628,25 +628,19 @@ def test_market_state_settings_reject_invalid_index_configuration(tmp_path):
         load_market_scan_settings(path)
 
 
-def test_market_state_settings_contribute_to_scan_configuration_hash(tmp_path):
-    from stock_daily_report.market_scan.runner import market_scan_config_hash
-
+def test_market_state_settings_reject_unsupported_lookback_periods(tmp_path):
     path = tmp_path / "market_scan.yaml"
     path.write_text(
         VALID_MARKET_SCAN_YAML
         + "market_state:\n"
         "  rule_version: market-state-v1\n"
         '  index_codes: ["000001", "399001", "399006", "000300", "000852"]\n'
-        "  lookback_periods: [20, 60]\n",
+        "  lookback_periods: [10, 30]\n",
         encoding="utf-8",
     )
-    settings = load_market_scan_settings(path)
-    changed_state = settings.market_state.model_copy(
-        update={"lookback_periods": (10, 30)}
-    )
-    changed = settings.model_copy(update={"market_state": changed_state})
 
-    assert market_scan_config_hash(settings) != market_scan_config_hash(changed)
+    with pytest.raises(ConfigurationError, match=r"exactly \(20, 60\)"):
+        load_market_scan_settings(path)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]

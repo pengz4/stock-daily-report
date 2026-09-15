@@ -7,7 +7,10 @@ import json
 import re
 
 from stock_daily_report.market_scan.models import MarketState
-from stock_daily_report.models import MarketStateSettings
+from stock_daily_report.models import (
+    MARKET_STATE_LOOKBACK_PERIODS,
+    MarketStateSettings,
+)
 
 _IDENTITY_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
@@ -30,6 +33,10 @@ def build_market_state_identity(
 ) -> str:
     """Hash the market-state configuration and semantic observation payload."""
 
+    if settings.lookback_periods != MARKET_STATE_LOOKBACK_PERIODS:
+        raise MarketStateIdentityError(
+            "unsupported market-state lookback_periods cannot be hashed"
+        )
     identity_payload = {
         "configuration": settings.model_dump(mode="json"),
         "state": canonical_market_state_payload(state),

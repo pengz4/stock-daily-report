@@ -257,7 +257,7 @@ def test_market_scan_artifact_loads_without_optional_market_state():
     assert loaded.market_state is None
 
 
-def test_market_state_identity_ignores_only_generated_at_and_tracks_config_and_state():
+def test_market_state_identity_ignores_generated_at_and_tracks_state():
     settings = MarketStateSettings()
     state = _state()
     identity = build_market_state_identity(settings, state)
@@ -265,11 +265,9 @@ def test_market_state_identity_ignores_only_generated_at_and_tracks_config_and_s
     regenerated = state.model_copy(
         update={"generated_at": datetime(2026, 9, 11, 9, 0, tzinfo=UTC)}
     )
-    changed_configuration = settings.model_copy(update={"lookback_periods": (10, 30)})
     changed_state = state.model_copy(update={"conclusion": "状态已变化"})
 
     assert identity == build_market_state_identity(settings, regenerated)
-    assert identity != build_market_state_identity(changed_configuration, state)
     assert identity != build_market_state_identity(settings, changed_state)
 
 

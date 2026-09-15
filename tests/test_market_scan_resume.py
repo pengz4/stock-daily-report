@@ -479,10 +479,10 @@ def test_concurrent_resumable_scans_serialize_checkpoint_lifecycle(tmp_path):
     assert len(checkpoint.completed) == 2
 
 
-def test_resumable_scan_archives_checkpoint_when_market_state_configuration_changes(
+def test_resumable_scan_archives_checkpoint_when_scoring_configuration_changes(
     tmp_path,
 ):
-    from stock_daily_report.models import MARKET_STATE_INDEX_CODES, MarketStateSettings
+    from stock_daily_report.models import MARKET_STATE_INDEX_CODES
 
     codes = _codes(2)
     quotes = [_quote(code) for code in codes]
@@ -506,7 +506,7 @@ def test_resumable_scan_archives_checkpoint_when_market_state_configuration_chan
 
     changed = settings.model_copy(
         update={
-            "market_state": MarketStateSettings(lookback_periods=(10, 30)),
+            "trend_limit": 29,
         }
     )
     path = run_resumable_scan(

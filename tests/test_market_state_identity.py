@@ -54,13 +54,19 @@ def test_missing_identity_is_migrated_from_valid_market_state_payload():
 def test_stored_identity_must_match_canonical_payload_and_configuration():
     settings = MarketStateSettings()
     state = _state()
-    mismatched = build_market_state_identity(
-        settings.model_copy(update={"lookback_periods": (10, 30)}),
-        state,
-    )
+    mismatched = build_market_state_identity(settings, state.model_copy(update={
+        "conclusion": "其他结论",
+    }))
 
     with pytest.raises(MarketStateIdentityError, match="does not match"):
         resolve_market_state_identity(settings, state, mismatched)
+
+
+def test_market_state_identity_rejects_unsupported_lookbacks():
+    settings = MarketStateSettings.model_construct(lookback_periods=(10, 30))
+
+    with pytest.raises(MarketStateIdentityError, match="unsupported"):
+        build_market_state_identity(settings, _state())
 
 
 def test_invalid_stored_identity_is_rejected():
