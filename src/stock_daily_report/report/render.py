@@ -186,7 +186,7 @@ def _render_market_state_markdown(state: MarketState | None) -> list[str]:
                 f"下跌 {_md(_format_market_count(breadth.declining_count))} "
                 f"（{_md(_format_market_ratio(breadth.declining_ratio))}），"
                 f"平盘 {_md(_format_market_count(breadth.unchanged_count))}；"
-                f"涨跌比 {_md(_format_market_ratio(breadth.advance_decline_ratio, digits=2))}。"
+                f"涨跌比 {_md(_format_market_number(breadth.advance_decline_ratio))}。"
             ),
             (
                 f"有效样本 {_md(_format_market_count(breadth.valid_count))} / "
@@ -238,7 +238,7 @@ def _render_market_state_html(state: MarketState | None) -> str:
           上涨 {_html(_format_market_count(breadth.advancing_count))}（{_html(_format_market_ratio(breadth.advancing_ratio))}），
           下跌 {_html(_format_market_count(breadth.declining_count))}（{_html(_format_market_ratio(breadth.declining_ratio))}），
           平盘 {_html(_format_market_count(breadth.unchanged_count))}；
-          涨跌比 {_html(_format_market_ratio(breadth.advance_decline_ratio, digits=2))}。
+          涨跌比 {_html(_format_market_number(breadth.advance_decline_ratio))}。
         </p>
         <p>有效样本 {_html(_format_market_count(breadth.valid_count))} / {_html(_format_market_count(breadth.total_count))}；数据源 {_html(breadth.provider or "未提供")}。</p>
       </section>

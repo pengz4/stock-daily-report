@@ -983,6 +983,23 @@ def test_market_state_precedes_rankings_and_watchlist_in_markdown():
     assert markdown.index("## 全市场排名") < markdown.index("## 自选股追踪")
 
 
+def test_market_breadth_renders_percentages_and_plain_advance_decline_ratio():
+    document = _document_with_market_state()
+
+    markdown = render_markdown(document)
+    html = render_html(document)
+
+    assert (
+        r"上涨 60 （60\.00%），下跌 30 （30\.00%），平盘 10；涨跌比 2\.00。"
+        in markdown
+    )
+    assert r"涨跌比 200\.00%" not in markdown
+    assert "上涨 60（60.00%），" in html
+    assert "下跌 30（30.00%），" in html
+    assert "涨跌比 2.00。" in html
+    assert "涨跌比 200.00%" not in html
+
+
 def test_html_renders_six_ordered_mobile_panels_with_only_market_open():
     document = _document_with_market_state()
 
