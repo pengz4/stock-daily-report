@@ -494,6 +494,14 @@ def _document(
     return ReportDocument.model_validate(document)
 
 
+def test_report_model_loads_legacy_documents_without_market_state_identity():
+    document = _document().model_dump(mode="python")
+
+    loaded = ReportDocument.model_validate(document)
+
+    assert loaded.market_state_identity is None
+
+
 @dataclass
 class _HtmlElement:
     tag: str

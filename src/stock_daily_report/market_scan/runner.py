@@ -21,6 +21,7 @@ from stock_daily_report.market_scan.filters import (
     filter_history,
     filter_universe_quote,
 )
+from stock_daily_report.market_scan.identity import build_market_state_identity
 from stock_daily_report.market_scan.models import (
     ConsensusRecord,
     MarketScanArtifact,
@@ -316,6 +317,11 @@ def scan_market(
         if market_state.breadth.provider is not None:
             provider_names.add(market_state.breadth.provider)
     normalized_statuses = tuple(statuses[code] for code in sorted(statuses))
+    market_state_identity = (
+        build_market_state_identity(settings.market_state, market_state)
+        if market_state is not None
+        else None
+    )
     return MarketScanArtifact(
         rule_version=settings.rule_version,
         report_date=report_date,
@@ -333,6 +339,7 @@ def scan_market(
         input_hash=_input_hash(quotes, results, report_date, market_state),
         provider_names=tuple(sorted(name for name in provider_names if name)),
         market_state=market_state,
+        market_state_identity=market_state_identity,
     )
 
 

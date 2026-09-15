@@ -368,9 +368,21 @@ class ReportDocument(BaseModel):
     metadata: ReportMetadata
     market_summary: MarketSummary
     market_state: MarketState | None = None
+    market_state_identity: str | None = Field(
+        default=None,
+        pattern=r"^[0-9a-f]{64}$",
+    )
     market_rankings: MarketRankings
     stocks: tuple[StockReport, ...]
     pool_overview: PoolOverview | None = None
+
+    @model_validator(mode="after")
+    def validate_market_state_identity(self) -> ReportDocument:
+        if self.market_state_identity is not None and self.market_state is None:
+            raise ValueError(
+                "market_state_identity requires a market_state payload"
+            )
+        return self
 
 
 __all__ = [

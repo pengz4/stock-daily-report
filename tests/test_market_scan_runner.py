@@ -575,3 +575,6 @@ def test_market_state_inputs_contribute_to_artifact_identity():
 
     assert first.config_hash != changed.config_hash
     assert first.input_hash != changed.input_hash
+    assert first.market_state_identity is not None
+    assert changed.market_state_identity is not None
+    assert first.market_state_identity != changed.market_state_identity

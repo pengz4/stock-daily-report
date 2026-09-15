@@ -85,6 +85,42 @@ def test_daily_workflow_reuse_requires_matching_market_state_fingerprint():
     assert "rankings.config_hash == scan.config_hash" in command
 
 
+def test_daily_workflow_reuse_requires_matching_market_state_identity_and_payload():
+    workflow = _workflow()
+    steps = workflow["jobs"]["generate"]["steps"]
+    command = next(
+        step["run"]
+        for step in steps
+        if step["name"] == "Generate report artifacts"
+    )
+
+    assert "report.market_state_identity is not None" in command
+    assert "scan.market_state_identity is not None" in command
+    assert (
+        "report.market_state_identity == scan.market_state_identity" in command
+    )
+    assert "report.metadata.report_date == scan.report_date" in command
+    assert "report_state.report_date == scan.report_date" in command
+    assert "load_market_scan_settings" in command
+    assert "build_market_state_identity" in command
+    assert "canonical_market_state_payload(report.market_state)" in command
+    assert "canonical_market_state_payload(scan.market_state)" in command
+
+
+def test_daily_workflow_no_scan_reuse_requires_current_market_state_identity():
+    workflow = _workflow()
+    steps = workflow["jobs"]["generate"]["steps"]
+    command = next(
+        step["run"]
+        for step in steps
+        if step["name"] == "Generate report artifacts"
+    )
+
+    assert "report.market_state is not None" in command
+    assert "report.market_state_identity is not None" in command
+    assert "report.market_state.report_date == report.metadata.report_date" in command
+
+
 def test_daily_workflow_compares_exact_deep_selection_metadata():
     workflow = _workflow()
     steps = workflow["jobs"]["generate"]["steps"]

@@ -479,6 +479,10 @@ class MarketScanArtifact(BaseModel):
     input_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
     provider_names: tuple[str, ...]
     market_state: MarketState | None = None
+    market_state_identity: str | None = Field(
+        default=None,
+        pattern=r"^[0-9a-f]{64}$",
+    )
 
     @field_validator("generated_at")
     @classmethod
@@ -530,6 +534,10 @@ class MarketScanArtifact(BaseModel):
         ):
             raise ValueError(
                 "market_state report_date must match artifact report_date"
+            )
+        if self.market_state_identity is not None and self.market_state is None:
+            raise ValueError(
+                "market_state_identity requires a market_state payload"
             )
         if not self.valid_count <= self.eligible_count <= self.universe_count:
             raise ValueError("scan counts must satisfy valid <= eligible <= universe")

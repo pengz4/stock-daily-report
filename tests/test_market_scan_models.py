@@ -3,6 +3,7 @@ from datetime import UTC, date, datetime
 import pytest
 from pydantic import ValidationError
 
+from stock_daily_report.market_scan.identity import build_market_state_identity
 from stock_daily_report.market_scan.models import (
     MarketBreadth,
     MarketIndexState,
@@ -10,6 +11,7 @@ from stock_daily_report.market_scan.models import (
     MarketState,
     ProfileRankings,
 )
+from stock_daily_report.models import MarketStateSettings
 
 REPORT_DATE = date(2026, 9, 11)
 GENERATED_AT = datetime(2026, 9, 11, 8, 0, tzinfo=UTC)
@@ -77,7 +79,11 @@ def _state(**changes: object) -> MarketState:
     return MarketState(**values)
 
 
-def _artifact(*, market_state: MarketState | None = None) -> MarketScanArtifact:
+def _artifact(
+    *,
+    market_state: MarketState | None = None,
+    market_state_identity: str | None = None,
+) -> MarketScanArtifact:
     return MarketScanArtifact(
         rule_version="market-scan-v1",
         report_date=REPORT_DATE,
@@ -95,6 +101,7 @@ def _artifact(*, market_state: MarketState | None = None) -> MarketScanArtifact:
         input_hash="1" * 64,
         provider_names=("fixture",),
         market_state=market_state,
+        market_state_identity=market_state_identity,
     )
 
 
@@ -248,3 +255,37 @@ def test_market_scan_artifact_loads_without_optional_market_state():
     loaded = MarketScanArtifact.model_validate(document)
 
     assert loaded.market_state is None
+
+
+def test_market_state_identity_ignores_only_generated_at_and_tracks_config_and_state():
+    settings = MarketStateSettings()
+    state = _state()
+    identity = build_market_state_identity(settings, state)
+
+    regenerated = state.model_copy(
+        update={"generated_at": datetime(2026, 9, 11, 9, 0, tzinfo=UTC)}
+    )
+    changed_configuration = settings.model_copy(update={"lookback_periods": (10, 30)})
+    changed_state = state.model_copy(update={"conclusion": "状态已变化"})
+
+    assert identity == build_market_state_identity(settings, regenerated)
+    assert identity != build_market_state_identity(changed_configuration, state)
+    assert identity != build_market_state_identity(settings, changed_state)
+
+
+def test_market_scan_artifact_preserves_optional_market_state_identity():
+    state = _state()
+    identity = build_market_state_identity(MarketStateSettings(), state)
+    artifact = _artifact(
+        market_state=state,
+        market_state_identity=identity,
+    )
+
+    document = artifact.model_dump(mode="json")
+    loaded = MarketScanArtifact.model_validate(document)
+
+    assert loaded.market_state_identity == identity
+
+    document.pop("market_state_identity")
+    legacy = MarketScanArtifact.model_validate(document)
+    assert legacy.market_state_identity is None
