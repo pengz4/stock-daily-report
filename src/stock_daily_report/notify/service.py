@@ -18,6 +18,7 @@ from stock_daily_report.notify.wecom import WeComNotifier
 from stock_daily_report.report.models import ReportDocument
 
 _ENVIRONMENT_URLS = {"wecom": "WECOM_WEBHOOK_URL", "feishu": "FEISHU_WEBHOOK_URL"}
+_FEISHU_WEBHOOK_SECRET = "FEISHU_WEBHOOK_SECRET"
 
 
 class NotificationService:
@@ -108,6 +109,13 @@ class NotificationService:
         if not webhook_url:
             raise ValueError(f"{environment_name} is required for {channel}")
         notifier_type = WeComNotifier if channel == "wecom" else FeishuNotifier
+        if channel == "feishu":
+            return FeishuNotifier(
+                webhook_url,
+                secret=os.environ.get(_FEISHU_WEBHOOK_SECRET, "").strip() or None,
+                timeout_seconds=self.settings.timeout_seconds,
+                max_attempts=self.settings.max_attempts,
+            )
         return notifier_type(
             webhook_url,
             timeout_seconds=self.settings.timeout_seconds,
@@ -124,7 +132,7 @@ def _decision_counts(report: ReportDocument) -> dict[str, int]:
 
 def _safe_error_message(error: Exception) -> str:
     message = str(error)
-    for environment_name in _ENVIRONMENT_URLS.values():
+    for environment_name in (*_ENVIRONMENT_URLS.values(), _FEISHU_WEBHOOK_SECRET):
         raw_secret = os.environ.get(environment_name, "")
         for secret in {raw_secret, raw_secret.strip()}:
             if secret:

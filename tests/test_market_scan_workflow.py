@@ -27,7 +27,7 @@ def test_market_scan_workflow_is_scheduled_before_daily_and_dispatchable():
 
 def test_market_scan_workflow_is_bounded_and_uses_locked_python():
     _, workflow = _workflow()
-    job = workflow["jobs"]["scan"]
+    job = workflow["jobs"]["market-scan"]
     steps = job["steps"]
     python_step = next(step for step in steps if step["name"] == "Set up Python")
     install_step = next(step for step in steps if step["name"] == "Install project")
@@ -41,6 +41,8 @@ def test_market_scan_workflow_is_bounded_and_uses_locked_python():
     assert daily["concurrency"]["group"] != job["concurrency"]["group"]
     assert daily["jobs"]["generate"]["concurrency"] == job["concurrency"]
     assert "needs" not in job
+    watchlist_job = workflow["jobs"]["watchlist-scan"]
+    assert watchlist_job["concurrency"] == job["concurrency"]
     assert job["timeout-minutes"] > 0
     assert python_step["with"]["python-version"] == "3.11"
     assert "-r requirements.lock" in install_step["run"]
@@ -48,7 +50,7 @@ def test_market_scan_workflow_is_bounded_and_uses_locked_python():
 
 def test_market_scan_workflow_reuses_and_persists_independent_artifacts():
     _, workflow = _workflow()
-    steps = workflow["jobs"]["scan"]["steps"]
+    steps = workflow["jobs"]["market-scan"]["steps"]
     generate = next(
         step["run"] for step in steps if step["name"] == "Generate market scan"
     )
@@ -66,6 +68,23 @@ def test_market_scan_workflow_reuses_and_persists_independent_artifacts():
     assert "reports-history" in persist
     assert "reports " not in persist
     assert "snapshots" not in persist
+
+
+def test_watchlist_scan_merges_history_and_serializes_history_writers():
+    _, workflow = _workflow()
+    watchlist_job = workflow["jobs"]["watchlist-scan"]
+    persist = next(
+        step["run"]
+        for step in watchlist_job["steps"]
+        if step["name"] == "Persist watchlist scan history"
+    )
+
+    assert "rm -rf .report-history/watchlist-scans" not in persist
+    assert "cp -a watchlist-scans/. .report-history/watchlist-scans/" in persist
+    assert watchlist_job["concurrency"] == {
+        "group": "stock-daily-report-history",
+        "cancel-in-progress": False,
+    }
 
 
 def test_daily_workflow_restores_same_date_market_scan_history_when_available():

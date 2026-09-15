@@ -21,13 +21,14 @@ _SOURCE_FIELDS = {
     "成交额": "amount",
     "换手率": "turnover_rate",
 }
-_DEFAULT_HISTORY_DAYS = 730
+_DEFAULT_HISTORY_DAYS = 250
 
 
 class AkShareMarketDataProvider:
     """Use AkShare only when installed; importing this module has no dependency."""
 
     name = "akshare"
+    supports_hard_timeout = True
 
     def __init__(
         self,

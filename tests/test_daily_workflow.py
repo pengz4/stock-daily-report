@@ -68,3 +68,21 @@ def test_daily_workflow_regenerates_when_a_new_scan_is_available():
     assert "market_rankings" in command
     assert "--reuse-existing-snapshot" in command
     assert "Report already exists with current scan; reusing immutable artifacts" in command
+
+
+def test_daily_workflow_compares_exact_deep_selection_metadata():
+    workflow = _workflow()
+    steps = workflow["jobs"]["generate"]["steps"]
+    command = next(
+        step["run"]
+        for step in steps
+        if step["name"] == "Generate report artifacts"
+    )
+
+    assert "load_watchlist" in command
+    assert "stock.name" in command
+    assert "stock.group" in command
+    assert "expected_deep" in command
+    assert "deep_metadata == expected_deep" in command
+    assert 'stock.priority == "extended"' in command
+    assert "pool_ok" in command

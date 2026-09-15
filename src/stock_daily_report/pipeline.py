@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import shutil
+import sys
 import tempfile
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import contextmanager
@@ -35,7 +36,7 @@ from stock_daily_report.market_scan.report import (
     MarketScanArtifactError,
     load_scan_artifact,
 )
-from stock_daily_report.models import DailyBar, Settings, Watchlist
+from stock_daily_report.models import DailyBar, Settings, Watchlist, WatchlistStock
 from stock_daily_report.providers.akshare import AkShareMarketDataProvider
 from stock_daily_report.providers.base import MarketDataProvider, ProviderError
 from stock_daily_report.providers.fixture import FixtureMarketDataProvider
@@ -46,12 +47,14 @@ from stock_daily_report.providers.service import (
     RawResponseCache,
 )
 from stock_daily_report.providers.sina import SinaMarketDataProvider
+from stock_daily_report.providers.universe import AkShareUniverseProvider, UniverseQuote
 from stock_daily_report.quality.checks import (
     DataQualityResult,
     DataQualitySettings,
     validate_bars,
 )
 from stock_daily_report.report.models import (
+    REPORT_RENDER_VERSION,
     AnalyzerMetadata,
     MarketConsensusRanking,
     MarketRanking,
@@ -60,6 +63,8 @@ from stock_daily_report.report.models import (
     MarketRankingsUnavailableReason,
     MarketScanReasonCount,
     MarketSummary,
+    PoolOverview,
+    PoolOverviewRow,
     ReportDocument,
     ReportMetadata,
     ReportMetrics,
@@ -84,6 +89,10 @@ from stock_daily_report.snapshots import (
 
 _MAX_PUBLICATION_TRANSACTIONS = 32
 _MAX_PUBLICATION_MANIFEST_BYTES = 1024 * 1024
+# Deep analysis covers the top-ranked watchlist stocks; the rest get the
+# lightweight pool overview backed by one bulk quote snapshot.
+_DEEP_ANALYSIS_LIMIT = 20
+_WATCHLIST_SCAN_DIRECTORY = "watchlist-scans"
 _PUBLICATION_QUARANTINE_NAME = "quarantine.json"
 _MANIFESTLESS_PAYLOAD_ROOTS = frozenset({"reports", "snapshots", "site"})
 _PUBLICATION_EVIDENCE_NAMES = frozenset(
@@ -168,6 +177,121 @@ class ReportOutputs:
     report: ReportDocument
 
 
+def _split_watchlist_by_priority(
+    watchlist: Watchlist,
+) -> tuple[list[WatchlistStock], list[WatchlistStock]]:
+    """Split the watchlist into (deep-analysis, lightweight) stocks.
+
+    Legacy lists without any explicit priority analyse every stock in depth.
+    Once any priority is set, only ``core`` stocks are analysed in depth and
+    the remaining ``extended`` stocks receive a lightweight pool-overview row
+    sourced from one bulk quote snapshot.
+    """
+    if not any(stock.priority is not None for stock in watchlist.stocks):
+        return list(watchlist.stocks), []
+    core = [stock for stock in watchlist.stocks if stock.priority == "core"]
+    extended = [stock for stock in watchlist.stocks if stock.priority != "core"]
+    if not core:
+        raise ValueError(
+            "watchlist sets priorities but contains no 'core' stock; mark at "
+            "least one stock with priority: core"
+        )
+    return core, extended
+
+
+def _fetch_light_quotes(
+    watchlist: Watchlist,
+    extended_stocks: Sequence[WatchlistStock],
+    universe_provider: AkShareUniverseProvider | None,
+) -> tuple[dict[str, UniverseQuote], str | None]:
+    """Fetch one bulk quote snapshot for the pool overview.
+
+    Core stocks are quoted too, so every watchlist row carries a price. A
+    provider failure degrades gracefully: the report still publishes with deep
+    analysis for core stocks, and the pool overview records the reason.
+    """
+    if not extended_stocks:
+        return {}, None
+    provider = universe_provider or AkShareUniverseProvider()
+    try:
+        quotes = provider.get_quotes()
+    except (ProviderError, ImportError, OSError) as error:
+        return {}, str(error)
+    wanted = {stock.code for stock in watchlist.stocks}
+    return {quote.code: quote for quote in quotes if quote.code in wanted}, None
+
+
+def _load_watchlist_scan_ranking(
+    root: Path, report_date: date, limit: int = _DEEP_ANALYSIS_LIMIT
+) -> WatchlistScanInfo | None:
+    """Return the watchlist scan ranking and fingerprint, or None.
+
+    Returns ``None`` when no complete, same-day watchlist scan artifact exists
+    so the caller can fall back to manual priorities or legacy behaviour.
+    """
+    scan_path = root / _WATCHLIST_SCAN_DIRECTORY / report_date.isoformat() / "scan.json"
+    if not scan_path.exists():
+        return None
+    try:
+        artifact = load_scan_artifact(scan_path)
+    except MarketScanArtifactError:
+        return None
+    if artifact.report_date != report_date:
+        return None
+    if any(status.status == "not_processed" for status in artifact.statuses):
+        return None
+    best_scores: dict[str, float] = {}
+    for record in (*artifact.rankings.trend, *artifact.rankings.balanced):
+        if record.score > best_scores.get(record.code, -1.0):
+            best_scores[record.code] = record.score
+    if not best_scores:
+        return None
+    ordered = sorted(best_scores.items(), key=lambda item: (-item[1], item[0]))
+    return WatchlistScanInfo(
+        ranking=ordered[:limit],
+        scan_date=artifact.report_date,
+        config_hash=artifact.config_hash,
+        input_hash=artifact.input_hash,
+    )
+
+
+@dataclass(frozen=True)
+class WatchlistScanInfo:
+    """A same-day watchlist scan's ranking and provenance fingerprint."""
+
+    ranking: tuple[tuple[str, float], ...]
+    scan_date: date
+    config_hash: str
+    input_hash: str
+
+
+def _select_deep_stocks(
+    watchlist: Watchlist,
+    scan_ranking: Sequence[tuple[str, float]] | None,
+) -> tuple[list[WatchlistStock], list[WatchlistStock]]:
+    """Split into (deep-analysis, lightweight) stocks.
+
+    A watchlist scan, when available, decides the deep set: its top-ranked
+    codes plus any stock manually marked ``priority: core``. Without a scan,
+    the existing priority-only rules apply.
+    """
+    if scan_ranking is None:
+        return _split_watchlist_by_priority(watchlist)
+    rank_index = {code: index for index, (code, _score) in enumerate(scan_ranking)}
+    selected = [
+        stock for stock in watchlist.stocks if stock.code in rank_index
+    ]
+    selected.sort(key=lambda stock: (rank_index[stock.code], stock.code))
+    for stock in watchlist.stocks:
+        if stock.priority == "core" and stock.code not in rank_index:
+            selected.append(stock)
+    if not selected:
+        return _split_watchlist_by_priority(watchlist)
+    selected_codes = {stock.code for stock in selected}
+    extended = [stock for stock in watchlist.stocks if stock.code not in selected_codes]
+    return selected, extended
+
+
 def run_daily_report(
     settings: Settings | str | Path,
     *,
@@ -176,10 +300,12 @@ def run_daily_report(
     provider: MarketDataProvider | None = None,
     service: MarketDataService | None = None,
     providers: Mapping[str, MarketDataProvider] | None = None,
+    universe_provider: AkShareUniverseProvider | None = None,
     fixture_directory: str | Path | None = None,
     report_date: date | None = None,
     now: Callable[[], datetime] | None = None,
     reuse_existing_snapshot: bool = False,
+    overwrite_snapshot: bool = False,
 ) -> ReportOutputs:
     """Fetch, validate, snapshot, analyze, and publish one daily report.
 
@@ -202,8 +328,17 @@ def run_daily_report(
         raise TypeError("report_date must be a date, not a datetime")
     root = Path(output_root).expanduser().resolve()
     root.mkdir(parents=True, exist_ok=True)
+    watchlist_scan_info = _load_watchlist_scan_ranking(root, active_report_date)
+    watchlist_scan_ranking = (
+        watchlist_scan_info.ranking if watchlist_scan_info is not None else None
+    )
+    core_stocks, extended_stocks = _select_deep_stocks(
+        active_watchlist, watchlist_scan_ranking
+    )
     failures: list[PipelineFailure] = []
     fetched: dict[str, FetchedBars] = {}
+    light_quotes: dict[str, UniverseQuote] = {}
+    light_quote_error: str | None = None
     snapshot_for_reuse: InputSnapshot | None = None
     if reuse_existing_snapshot:
         snapshot_for_reuse = load_snapshot(
@@ -251,15 +386,22 @@ def run_daily_report(
             _recover_pending_publications(root)
 
         def fetch_all() -> None:
-            for stock in sorted(active_watchlist.stocks, key=lambda item: item.code):
+            nonlocal light_quotes, light_quote_error
+            for stock in sorted(core_stocks, key=lambda item: item.code):
                 try:
                     if snapshot_for_reuse is not None:
                         bars = snapshot_for_reuse.bars_by_code.get(stock.code)
                         if bars is None:
-                            raise SnapshotError(
-                                f"Existing snapshot is missing watchlist code: "
-                                f"{stock.code}"
+                            # The snapshot for a date is frozen, so a code that
+                            # was not part of the original publication cannot be
+                            # analysed for that same date. It is picked up by the
+                            # next report date instead of failing the run.
+                            print(
+                                f"Skipping {stock.code}: the frozen snapshot for "
+                                f"{active_report_date.isoformat()} has no bars for it",
+                                file=sys.stderr,
                             )
+                            continue
                         bar_providers = tuple(
                             sorted({bar.provider_name for bar in bars})
                         )
@@ -331,6 +473,23 @@ def run_daily_report(
                     failures.append(
                         PipelineFailure(stock.code, str(error), tuple(issue_codes))
                     )
+            if not fetched:
+                if failures:
+                    raise PipelineError(failures)
+                raise PipelineError(
+                    [
+                        PipelineFailure(
+                            "snapshot_selection_unavailable",
+                            "The frozen snapshot for "
+                            f"{active_report_date.isoformat()} contains none of the "
+                            "selected watchlist codes; the deep-analysis section "
+                            "refreshes on the next report date",
+                        )
+                    ]
+                )
+            light_quotes, light_quote_error = _fetch_light_quotes(
+                active_watchlist, extended_stocks, universe_provider
+            )
             if failures:
                 raise PipelineError(failures)
 
@@ -357,6 +516,11 @@ def run_daily_report(
                         watchlist=active_watchlist,
                         fetched=fetched,
                         bars_by_code=bars_by_code,
+                        light_quotes=light_quotes,
+                        light_quote_error=light_quote_error,
+                        scan_ranking=watchlist_scan_ranking,
+                        watchlist_scan_info=watchlist_scan_info,
+                        overwrite_snapshot=overwrite_snapshot,
                         service=active_service,
                         json_path=json_path,
                         markdown_path=markdown_path,
@@ -1318,6 +1482,11 @@ def _publish_report_transaction(
     watchlist: Watchlist,
     fetched: Mapping[str, FetchedBars],
     bars_by_code: Mapping[str, Sequence[DailyBar]],
+    light_quotes: Mapping[str, UniverseQuote],
+    light_quote_error: str | None,
+    scan_ranking: Sequence[tuple[str, float]] | None,
+    watchlist_scan_info: WatchlistScanInfo | None,
+    overwrite_snapshot: bool,
     service: MarketDataService | None,
     json_path: Path,
     markdown_path: Path,
@@ -1333,9 +1502,17 @@ def _publish_report_transaction(
         )
         staged_snapshot = load_snapshot(staged_snapshot_path)
         snapshot_target = root / "snapshots" / report_date.isoformat() / "input.json"
-        snapshot = _resolve_snapshot_for_publication(
-            snapshot_target, staged_snapshot
-        )
+        if overwrite_snapshot:
+            snapshot = _resolve_snapshot_for_publication(
+                snapshot_target,
+                staged_snapshot,
+                overwrite=True,
+            )
+        else:
+            snapshot = _resolve_snapshot_for_publication(
+                snapshot_target,
+                staged_snapshot,
+            )
         market_rankings = _load_market_rankings(root, report_date)
         report = _build_report(
             settings,
@@ -1346,6 +1523,10 @@ def _publish_report_transaction(
             report_date=report_date,
             generated_at=generated_at,
             market_rankings=market_rankings,
+            light_quotes=light_quotes,
+            light_quote_error=light_quote_error,
+            scan_ranking=scan_ranking,
+            watchlist_scan_info=watchlist_scan_info,
         )
 
         staged_report_dir = transaction_root / "reports" / report_date.isoformat()
@@ -1375,7 +1556,9 @@ def _publish_report_transaction(
             report_date=report_date,
             staged_report_dir=staged_report_dir,
             staged_snapshot_path=(
-                None if snapshot_target.exists() else staged_snapshot_path
+                None
+                if (snapshot_target.exists() and not overwrite_snapshot)
+                else staged_snapshot_path
             ),
             staged_site_index=staged_site_dir / "index.html",
             staged_styles_path=staged_styles_path,
@@ -1460,8 +1643,10 @@ def _publish_report_transaction(
 def _resolve_snapshot_for_publication(
     snapshot_target: Path,
     staged_snapshot: InputSnapshot,
+    *,
+    overwrite: bool = False,
 ) -> InputSnapshot:
-    if not snapshot_target.exists():
+    if not snapshot_target.exists() or overwrite:
         return staged_snapshot
     existing_snapshot = load_snapshot(snapshot_target)
     if (
@@ -2056,12 +2241,37 @@ def _build_report(
     report_date: date,
     generated_at: datetime,
     market_rankings: MarketRankings,
+    light_quotes: Mapping[str, UniverseQuote],
+    light_quote_error: str | None,
+    scan_ranking: Sequence[tuple[str, float]] | None = None,
+    watchlist_scan_info: WatchlistScanInfo | None = None,
 ) -> ReportDocument:
     rule_hash = configuration_hash(resolve_risk_rules(settings))
     stocks: list[StockReport] = []
     latest_source_timestamp: datetime | None = None
     provider_names: set[str] = set()
-    for stock in sorted(watchlist.stocks, key=lambda item: item.code):
+    scan_rank_by_code = (
+        {
+            code: (index + 1, score)
+            for index, (code, score) in enumerate(scan_ranking)
+        }
+        if scan_ranking
+        else {}
+    )
+    # Only core stocks receive full analysis; extended stocks appear in the
+    # lightweight pool overview instead of consuming history and indicators.
+    analyzed = [
+        stock
+        for stock in sorted(
+            watchlist.stocks,
+            key=lambda item: (
+                scan_rank_by_code.get(item.code, (float("inf"), 0.0))[0],
+                item.code,
+            ),
+        )
+        if stock.code in fetched
+    ]
+    for stock in analyzed:
         item = fetched[stock.code]
         bars = list(item.bars)
         metrics = calculate_technical_metrics(bars)
@@ -2086,6 +2296,12 @@ def _build_report(
                 code=stock.code,
                 name=stock.name,
                 group=stock.group,
+                scan_rank=(
+                    scan_rank_by_code.get(stock.code, (None, None))[0]
+                ),
+                scan_score=(
+                    scan_rank_by_code.get(stock.code, (None, None))[1]
+                ),
                 provider_name=item.provider_name,
                 latest_trade_date=bars[-1].trade_date,
                 latest_source_timestamp=item_latest_timestamp,
@@ -2132,17 +2348,83 @@ def _build_report(
             config_hash=rule_hash,
             analyzer_versions=AnalyzerMetadata(structural=RULE_VERSION),
             quality_status="passed",
-            stock_count=len(stocks),
+            stock_count=len(watchlist.stocks),
+            analyzed_stock_count=len(stocks),
+            render_version=REPORT_RENDER_VERSION,
         ),
         market_summary=_build_market_summary(fetched),
         market_rankings=market_rankings,
         stocks=tuple(stocks),
+        pool_overview=_build_pool_overview(
+            watchlist,
+            light_quotes,
+            light_quote_error,
+            report_date=report_date,
+            scan_ranking=scan_ranking,
+            watchlist_scan_info=watchlist_scan_info,
+        ),
+    )
+
+
+def _build_pool_overview(
+    watchlist: Watchlist,
+    light_quotes: Mapping[str, UniverseQuote],
+    light_quote_error: str | None,
+    *,
+    report_date: date,
+    scan_ranking: Sequence[tuple[str, float]] | None = None,
+    watchlist_scan_info: WatchlistScanInfo | None = None,
+) -> PoolOverview | None:
+    """Build the lightweight full-pool overview, or None in legacy mode."""
+    if not light_quotes and light_quote_error is None:
+        return None
+    rank_by_code = (
+        {code: (index + 1, score) for index, (code, score) in enumerate(scan_ranking)}
+        if scan_ranking
+        else {}
+    )
+    rows: list[PoolOverviewRow] = []
+    for stock in sorted(watchlist.stocks, key=lambda item: item.code):
+        quote = light_quotes.get(stock.code)
+        rank, score = rank_by_code.get(stock.code, (None, None))
+        rows.append(
+            PoolOverviewRow(
+                code=stock.code,
+                name=stock.name,
+                group=stock.group,
+                priority=stock.priority or "core",
+                latest_price=quote.latest_price if quote else None,
+                change_pct=quote.change_pct if quote else None,
+                amount=quote.amount if quote else None,
+                scan_rank=rank,
+                scan_score=score,
+            )
+        )
+    quote_dates = {quote.quote_date for quote in light_quotes.values()}
+    quote_date = (
+        max(quote_dates) if quote_dates else report_date
+    )
+    return PoolOverview(
+        quote_date=quote_date,
+        rows=tuple(rows),
+        unavailable_reason=light_quote_error,
+        scan_date=(
+            watchlist_scan_info.scan_date if watchlist_scan_info is not None else None
+        ),
+        config_hash=(
+            watchlist_scan_info.config_hash if watchlist_scan_info is not None else None
+        ),
+        input_hash=(
+            watchlist_scan_info.input_hash if watchlist_scan_info is not None else None
+        ),
     )
 
 
 def _load_market_rankings(root: Path, report_date: date) -> MarketRankings:
     scan_path = root / "market-scans" / report_date.isoformat() / "scan.json"
     if not scan_path.exists():
+        if _scan_progress_exists(root, report_date):
+            return _unavailable_market_rankings("scan_incomplete")
         return _unavailable_market_rankings("scan_artifact_missing")
     try:
         artifact = load_scan_artifact(scan_path)
@@ -2158,6 +2440,13 @@ def _load_market_rankings(root: Path, report_date: date) -> MarketRankings:
             artifact,
         )
     return _market_rankings_from_artifact(artifact)
+
+
+def _scan_progress_exists(root: Path, report_date: date) -> bool:
+    """Return whether a resumable scan has an in-flight checkpoint."""
+
+    progress_path = root / "market-scans" / report_date.isoformat() / "progress.json"
+    return progress_path.exists()
 
 
 def _unavailable_market_rankings(

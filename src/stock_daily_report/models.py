@@ -37,6 +37,10 @@ class WatchlistStock(BaseModel):
     # Tags are stripped of surrounding whitespace while retaining their case.
     tags: list[str] = Field(default_factory=list)
     news_enabled: bool = True
+    # None keeps legacy behaviour (every stock gets full analysis). When any
+    # stock sets a priority, only "core" stocks are analysed in depth and the
+    # rest receive a lightweight pool-overview row sourced from bulk quotes.
+    priority: Literal["core", "extended"] | None = None
 
     @field_validator("code")
     @classmethod

@@ -23,6 +23,7 @@ from stock_daily_report.market_scan.report import (
     MarketScanArtifactError,
     load_scan_artifact,
 )
+from stock_daily_report.market_scan.resume import CheckpointError
 from stock_daily_report.market_scan.runner import (
     market_scan_config_hash,
     run_market_scan,
@@ -37,7 +38,10 @@ from stock_daily_report.pipeline import (
 from stock_daily_report.providers.base import ProviderError
 from stock_daily_report.providers.fixture import FixtureMarketDataProvider
 from stock_daily_report.providers.service import CacheRollbackError
-from stock_daily_report.providers.universe import AkShareUniverseProvider
+from stock_daily_report.providers.universe import (
+    AkShareUniverseProvider,
+    WatchlistUniverseProvider,
+)
 from stock_daily_report.report.models import ReportDocument
 from stock_daily_report.snapshots import SnapshotError
 
@@ -64,6 +68,11 @@ def main(argv: list[str] | None = None) -> int:
         "--reuse-existing-snapshot",
         action="store_true",
         help="refresh report rendering without refetching an immutable snapshot",
+    )
+    daily.add_argument(
+        "--overwrite-snapshot",
+        action="store_true",
+        help="replace the date's snapshot when the deep-analysis set changed",
     )
     daily.add_argument(
         "--report-url",
@@ -109,6 +118,29 @@ def main(argv: list[str] | None = None) -> int:
         default=_project_root() / "config/settings.yaml",
     )
     market_scan.add_argument("--output-root", type=Path, default=Path.cwd())
+    market_scan.add_argument(
+        "--resumable",
+        action="store_true",
+        help="process in resumable batches, persisting a checkpoint after each",
+    )
+    market_scan.add_argument(
+        "--max-batches",
+        type=int,
+        default=None,
+        help="stop after this many batches, leaving the rest for a later run",
+    )
+    market_scan.add_argument(
+        "--scope",
+        choices=("market", "watchlist"),
+        default="market",
+        help="scan the full market, or only the watchlist (watchlist-scans/)",
+    )
+    market_scan.add_argument(
+        "--watchlist",
+        type=Path,
+        default=_project_root() / "config/watchlist.yaml",
+        help="watchlist used when --scope watchlist is selected",
+    )
     args = parser.parse_args(argv)
 
     if args.command == "daily":
@@ -127,6 +159,7 @@ def main(argv: list[str] | None = None) -> int:
                 provider=provider,
                 report_date=args.date,
                 reuse_existing_snapshot=args.reuse_existing_snapshot,
+                overwrite_snapshot=args.overwrite_snapshot,
             )
             if settings.notifications.enabled_channels and not args.skip_notifications:
                 if args.report_url:
@@ -193,18 +226,60 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "market-scan":
         try:
             settings = load_market_scan_settings(args.settings)
-            artifact_path = _scan_artifact_path(args.output_root, args.date)
+            data_settings = load_settings(args.data_settings)
+            configuration_hash = market_scan_config_hash(
+                settings,
+                data_settings.market_data,
+            )
+            directory = (
+                "watchlist-scans" if args.scope == "watchlist" else "market-scans"
+            )
+            if args.scope == "watchlist":
+                universe_provider: object = WatchlistUniverseProvider(
+                    (stock.code for stock in load_watchlist(args.watchlist).stocks),
+                    AkShareUniverseProvider(),
+                )
+            else:
+                universe_provider = AkShareUniverseProvider()
+            artifact_path = _scan_artifact_path(args.output_root, args.date, directory)
             if artifact_path.exists():
-                data_settings = load_settings(args.data_settings)
                 artifact_path = _existing_scan_artifact(
                     artifact_path,
                     report_date=args.date,
-                    expected_config_hash=market_scan_config_hash(
-                        settings,
-                        data_settings.market_data,
-                    ),
+                    expected_config_hash=configuration_hash,
                     expected_rule_version=settings.rule_version,
                 )
+            elif args.resumable:
+                current_date = _current_market_date()
+                if args.date != current_date:
+                    raise _MarketScanCliError(
+                        "Resumable live scans only support the current "
+                        f"Asia/Shanghai date {current_date.isoformat()}; "
+                        f"requested {args.date.isoformat()}."
+                    )
+                from stock_daily_report.market_scan.resumable import (
+                    run_resumable_scan,
+                )
+
+                artifact_path = run_resumable_scan(
+                    settings,
+                    universe_provider,
+                    build_market_data_service(
+                        data_settings,
+                        output_root=args.output_root,
+                    ),
+                    report_date=args.date,
+                    output_root=args.output_root,
+                    configuration_hash=configuration_hash,
+                    max_batches=args.max_batches,
+                    directory=directory,
+                )
+                if artifact_path is None:
+                    print(
+                        "scan incomplete; checkpoint persisted, resume later",
+                        file=sys.stderr,
+                    )
+                    return 0
             else:
                 current_date = _current_market_date()
                 if args.date != current_date:
@@ -213,24 +288,32 @@ def main(argv: list[str] | None = None) -> int:
                         f"Asia/Shanghai date {current_date.isoformat()}; "
                         f"requested {args.date.isoformat()}."
                     )
-                data_settings = load_settings(args.data_settings)
-                configuration_hash = market_scan_config_hash(
-                    settings,
-                    data_settings.market_data,
-                )
-                artifact_path = run_market_scan(
-                    settings,
-                    AkShareUniverseProvider(),
-                    build_market_data_service(
-                        data_settings,
-                        output_root=args.output_root,
-                    ),
-                    report_date=args.date,
+                history_service = build_market_data_service(
+                    data_settings,
                     output_root=args.output_root,
-                    configuration_hash=configuration_hash,
                 )
+                if directory == "market-scans":
+                    artifact_path = run_market_scan(
+                        settings,
+                        universe_provider,
+                        history_service,
+                        report_date=args.date,
+                        output_root=args.output_root,
+                        configuration_hash=configuration_hash,
+                    )
+                else:
+                    artifact_path = run_market_scan(
+                        settings,
+                        universe_provider,
+                        history_service,
+                        report_date=args.date,
+                        output_root=args.output_root,
+                        configuration_hash=configuration_hash,
+                        directory=directory,
+                    )
         except (
             ConfigurationError,
+            CheckpointError,
             MarketScanArtifactError,
             ProviderError,
             _MarketScanCliError,
@@ -250,8 +333,10 @@ def _current_market_date() -> date:
     return datetime.now(ZoneInfo("Asia/Shanghai")).date()
 
 
-def _scan_artifact_path(output_root: Path, report_date: date) -> Path:
-    return output_root / "market-scans" / report_date.isoformat() / "scan.json"
+def _scan_artifact_path(
+    output_root: Path, report_date: date, directory: str = "market-scans"
+) -> Path:
+    return output_root / directory / report_date.isoformat() / "scan.json"
 
 
 def _existing_scan_artifact(

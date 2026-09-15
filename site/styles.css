@@ -77,6 +77,72 @@ a {
   box-shadow: inset 0.25rem 0 #059669;
 }
 
+.pool-overview {
+  border-top: 1px solid #d9e2ec;
+  margin-top: 1.5rem;
+  overflow-x: auto;
+  padding-top: 1rem;
+}
+
+.pool-overview p {
+  color: #486581;
+  font-size: 0.875rem;
+}
+
+.pool-overview-warning {
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  color: #9a3412;
+  padding: 0.5rem 0.75rem;
+}
+
+.pool-table {
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  margin-bottom: 1.5rem;
+  width: 100%;
+}
+
+.pool-table th,
+.pool-table td {
+  border: 1px solid #d9e2ec;
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.pool-table th {
+  background: #f0f4f8;
+  position: sticky;
+  top: 0;
+}
+
+.pool-table td.numeric,
+.pool-table th.numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.pool-table .pool-row[data-priority="core"] {
+  background: #eef4ff;
+}
+
+/* A股惯例：涨红跌绿 */
+.pool-table .up {
+  color: #c0392b;
+  font-weight: 600;
+}
+
+.pool-table .down {
+  color: #047857;
+  font-weight: 600;
+}
+
+.pool-table .flat {
+  color: #486581;
+}
+
 .report-page {
   --report-bg: #fcfdff;
   --report-panel: #ffffff;
@@ -99,7 +165,7 @@ a {
   display: grid;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   gap: 1.5rem;
-  max-width: 72rem;
+  width: min(94vw, 1320px);
   padding: 2rem;
 }
 
@@ -597,5 +663,57 @@ a {
   .report-page .runtime-metadata__section,
   .report-page .component-group {
     padding: 0.9rem;
+  }
+}
+
+@media (max-width: 375px) {
+  .report-page {
+    padding: 0.75rem;
+  }
+
+  .report-page > section,
+  .report-page .report-header,
+  .report-page .market-rankings,
+  .report-page .ranking-profile,
+  .report-page .stock-card {
+    padding: 0.75rem;
+  }
+
+  .report-page .ranking-row__summary {
+    grid-template-areas:
+      "rank code"
+      "name name"
+      "consensus consensus"
+      "risk risk"
+      "score score";
+    grid-template-columns: max-content minmax(0, 1fr);
+    row-gap: 0.4rem;
+  }
+
+  .report-page .ranking-score {
+    justify-self: end;
+    text-align: right;
+    width: 100%;
+  }
+
+  .report-page .ranking-risk {
+    justify-self: start;
+    text-align: left;
+    width: 100%;
+  }
+
+  .report-page .detail-field {
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .report-page .detail-field__label {
+    flex-basis: auto;
+  }
+
+  .report-page .detail-field__value,
+  .report-page .detail-field ul {
+    flex-basis: auto;
+    width: 100%;
   }
 }

@@ -9,6 +9,15 @@ on:
         description: "Trading date to report (YYYY-MM-DD); blank means today"
         required: false
         type: string
+  push:
+    branches:
+      - master
+      - feature/report-wide-cn
+    paths:
+      - "config/watchlist.yaml"
+      - ".github/workflows/daily-report.yml"
+      - "src/stock_daily_report/report/**"
+      - "src/stock_daily_report/pipeline.py"
 
 permissions:
   contents: write
@@ -79,15 +88,20 @@ jobs:
           if [ -d .report-history/market-scans ]; then
             cp -a .report-history/market-scans ./market-scans
           fi
+          if [ -d .report-history/watchlist-scans ]; then
+            cp -a .report-history/watchlist-scans ./watchlist-scans
+          fi
       - name: Generate report artifacts
         env:
           WECOM_WEBHOOK_URL: ${{ secrets.WECOM_WEBHOOK_URL }}
           FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+          FEISHU_WEBHOOK_SECRET: ${{ secrets.FEISHU_WEBHOOK_SECRET }}
         run: |
           report_date="${{ steps.report-date.outputs.report_date }}"
           report_path="reports/${report_date}/report.json"
           snapshot_path="snapshots/${report_date}/input.json"
           scan_path="market-scans/${report_date}/scan.json"
+          watchlist_scan_path="watchlist-scans/${report_date}/scan.json"
           reuse_report=false
           reuse_snapshot=false
           if [ -f "$report_path" ] && [ -f "$snapshot_path" ]; then
@@ -98,7 +112,10 @@ jobs:
           from pathlib import Path
 
           from stock_daily_report.market_scan.report import load_scan_artifact
-          from stock_daily_report.report.models import ReportDocument
+          from stock_daily_report.report.models import (
+              REPORT_RENDER_VERSION,
+              ReportDocument,
+          )
 
           try:
               report = ReportDocument.model_validate_json(
@@ -112,6 +129,8 @@ jobs:
           raise SystemExit(
               0
               if (
+                  report.metadata.render_version == REPORT_RENDER_VERSION
+                  and
                   rankings.scan_date == scan.report_date
                   and rankings.rule_version == scan.rule_version
                   and rankings.config_hash == scan.config_hash
@@ -122,19 +141,143 @@ jobs:
           PY
               then
                 echo "Report already exists with current scan; reusing immutable artifacts"
+                echo "Report matches the current full-market scan"
               else
                 reuse_report=false
                 reuse_snapshot=true
                 echo "Existing report does not include the current scan; regenerating"
               fi
             else
-              echo "No scan artifact for this date; reusing immutable report"
+              if python - "$report_path" <<'PY'
+          import sys
+          from pathlib import Path
+
+          from stock_daily_report.report.models import (
+              REPORT_RENDER_VERSION,
+              ReportDocument,
+          )
+
+          try:
+              report = ReportDocument.model_validate_json(
+                  Path(sys.argv[1]).read_text(encoding="utf-8")
+              )
+          except (OSError, ValueError):
+              raise SystemExit(1)
+
+          raise SystemExit(
+              0
+              if report.metadata.render_version == REPORT_RENDER_VERSION
+              else 1
+          )
+          PY
+              then
+                echo "No full-market scan artifact for this date; reusing immutable report"
+              else
+                reuse_report=false
+                reuse_snapshot=false
+                echo "Existing report uses an older renderer; regenerating"
+              fi
+            fi
+            # A changed or missing watchlist scan forces regeneration of the
+            # self-selected deep-analysis section. The deep set itself changed,
+            # so refetch history (do NOT reuse the frozen snapshot, which only
+            # holds the previous deep set's bars).
+            if [ "$reuse_report" = true ]; then
+              if [ ! -f "$watchlist_scan_path" ]; then
+                reuse_report=false
+                reuse_snapshot=false
+                echo "No watchlist scan for this date; regenerating the self-selected section"
+              elif ! python - "$report_path" "$watchlist_scan_path" <<'PY'
+          import sys
+          from pathlib import Path
+
+          from stock_daily_report.config import load_watchlist
+          from stock_daily_report.market_scan.report import load_scan_artifact
+          from stock_daily_report.pipeline import _select_deep_stocks
+          from stock_daily_report.report.models import ReportDocument
+
+          try:
+              report = ReportDocument.model_validate_json(
+                  Path(sys.argv[1]).read_text(encoding="utf-8")
+              )
+              scan = load_scan_artifact(sys.argv[2])
+              watchlist = load_watchlist("config/watchlist.yaml")
+          except (OSError, ValueError):
+              raise SystemExit(1)
+
+          pool = report.pool_overview
+          best_scores = {}
+          for record in (*scan.rankings.trend, *scan.rankings.balanced):
+              best_scores[record.code] = max(
+                  record.score, best_scores.get(record.code, -1.0)
+              )
+          ranked_scores = sorted(
+              best_scores.items(), key=lambda item: (-item[1], item[0])
+          )[:20]
+          deep_stocks, _extended_stocks = _select_deep_stocks(
+              watchlist, ranked_scores
+          )
+          expected_deep = {
+              stock.code: (stock.name, stock.group)
+              for stock in deep_stocks
+          }
+          deep_metadata = {
+              stock.code: (stock.name, stock.group) for stock in report.stocks
+          }
+          expected_pool = {
+              stock.code: (stock.name, stock.group, stock.priority or "core")
+              for stock in watchlist.stocks
+          }
+          pool_metadata = (
+              {
+                  row.code: (row.name, row.group, row.priority)
+                  for row in pool.rows
+              }
+              if pool is not None
+              else {}
+          )
+          pool_ok = (
+              pool is None
+              and not any(stock.priority == "extended" for stock in watchlist.stocks)
+              and {
+                  stock.code: (stock.name, stock.group, stock.priority or "core")
+                  for stock in deep_stocks
+              }
+              == expected_pool
+          ) or (
+              pool is not None
+              and pool_metadata == expected_pool
+          )
+          raise SystemExit(
+              0
+              if (
+                  (
+                      pool is None
+                      or (
+                          pool.scan_date == scan.report_date
+                          and pool.config_hash == scan.config_hash
+                          and pool.input_hash == scan.input_hash
+                      )
+                  )
+                  and deep_metadata == expected_deep
+                  and pool_ok
+              )
+              else 1
+          )
+          PY
+              then
+                reuse_report=false
+                reuse_snapshot=false
+                echo "Watchlist scan changed; regenerating the self-selected section"
+              fi
             fi
           fi
           if [ "$reuse_report" != true ]; then
             refresh_args=()
             if [ "$reuse_snapshot" = true ]; then
               refresh_args+=(--reuse-existing-snapshot)
+            else
+              refresh_args+=(--overwrite-snapshot)
             fi
             python -m stock_daily_report.cli daily \
               --date "$report_date" \
@@ -201,6 +344,7 @@ jobs:
       REPORT_BASE_URL: ${{ vars.REPORT_BASE_URL }}
       WECOM_WEBHOOK_URL: ${{ secrets.WECOM_WEBHOOK_URL }}
       FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+      FEISHU_WEBHOOK_SECRET: ${{ secrets.FEISHU_WEBHOOK_SECRET }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4

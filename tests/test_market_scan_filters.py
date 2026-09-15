@@ -214,14 +214,35 @@ def test_valid_history_passes_with_empty_reasons():
     assert result == EligibilityResult(True, ())
 
 
+def test_history_filter_accepts_one_completed_trading_day_lag():
+    # Friday's bar is the latest completed session when reporting Monday.
+    latest_trade_date = date(2026, 9, 11)
+    report_date = date(2026, 9, 14)
+    bars = [
+        _bar(latest_trade_date - timedelta(days=2)),
+        _bar(latest_trade_date - timedelta(days=1)),
+        _bar(latest_trade_date),
+    ]
+
+    result = filter_history(
+        "600519",
+        bars,
+        report_date=report_date,
+        settings=_settings(),
+    )
+
+    assert result == EligibilityResult(True, ())
+
+
 @pytest.mark.parametrize(
     ("latest_trade_date", "report_date"),
     [
-        (date(2026, 9, 10), date(2026, 9, 11)),
-        (date(2026, 9, 11), date(2026, 9, 14)),
+        (date(2026, 9, 9), date(2026, 9, 11)),
+        (date(2026, 9, 10), date(2026, 9, 14)),
+        (date(2026, 9, 11), date(2026, 9, 15)),
     ],
 )
-def test_history_filter_requires_latest_completed_trading_day(
+def test_history_filter_rejects_stale_history_beyond_lag(
     latest_trade_date, report_date
 ):
     bars = [

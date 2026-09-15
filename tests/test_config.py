@@ -1,4 +1,7 @@
+from pathlib import Path
+
 import pytest
+import yaml
 from pydantic import ValidationError
 
 from stock_daily_report.config import (
@@ -574,3 +577,36 @@ def test_load_market_scan_settings_rejects_arbitrary_yaml_objects(tmp_path):
 
     with pytest.raises(ConfigurationError, match="Invalid YAML"):
         load_market_scan_settings(path)
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_shipped_watchlist_is_valid_yaml_and_parses():
+    """The committed watchlist must load; a YAML alias like ``*ST`` would break CI."""
+
+    watchlist = load_watchlist(PROJECT_ROOT / "config/watchlist.yaml")
+
+    assert watchlist.stocks
+    codes = [stock.code for stock in watchlist.stocks]
+    assert len(codes) == len(set(codes))
+
+
+def test_shipped_watchlist_excludes_risk_warning_names():
+    watchlist = load_watchlist(PROJECT_ROOT / "config/watchlist.yaml")
+
+    flagged = [
+        stock.code
+        for stock in watchlist.stocks
+        if stock.name.startswith(("ST", "*ST", "S*ST", "SST"))
+    ]
+    assert flagged == []
+
+
+def test_every_shipped_config_file_is_valid_yaml():
+    config_directory = PROJECT_ROOT / "config"
+    paths = sorted(config_directory.glob("*.yaml"))
+
+    assert paths
+    for path in paths:
+        assert yaml.safe_load(path.read_text(encoding="utf-8")) is not None

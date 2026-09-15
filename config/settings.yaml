@@ -2,7 +2,7 @@ rule_version:
   name: simplified
   version: v1
 notifications:
-  enabled_channels: []
+  enabled_channels: [feishu]
   timeout_seconds: 10
   max_attempts: 3
 market_data:

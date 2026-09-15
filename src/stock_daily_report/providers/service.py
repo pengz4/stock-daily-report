@@ -943,6 +943,8 @@ class RawResponseCache:
 class MarketDataService:
     """Fetch configured primary then fallback data; invalid primary data stops here."""
 
+    supports_hard_timeout = True
+
     def __init__(
         self,
         providers: Mapping[str, MarketDataProvider],

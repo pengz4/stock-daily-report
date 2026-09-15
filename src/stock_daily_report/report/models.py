@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from stock_daily_report.decision import DecisionLabel
 
 REPORT_SCHEMA_VERSION = 2
+REPORT_RENDER_VERSION = "cn-v2"
 
 
 class AnalyzerMetadata(BaseModel):
@@ -35,6 +36,8 @@ class ReportMetadata(BaseModel):
     analyzer_versions: AnalyzerMetadata
     quality_status: Literal["passed"]
     stock_count: int = Field(ge=1)
+    analyzed_stock_count: int | None = Field(default=None, ge=0)
+    render_version: str | None = Field(default=None, min_length=1)
 
 
 class MarketSummary(BaseModel):
@@ -289,6 +292,38 @@ class StructureSummary(BaseModel):
     observations: tuple[str, ...]
 
 
+class PoolOverviewRow(BaseModel):
+    """One lightweight watchlist row in the pool overview table."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    code: str = Field(pattern=r"^\d{6}$")
+    name: str = Field(min_length=1)
+    group: str = Field(min_length=1)
+    priority: Literal["core", "extended"]
+    latest_price: float | None = None
+    change_pct: float | None = None
+    amount: float | None = None
+    # Watchlist-scanned rank (1-based) and score, when the scan covered it.
+    scan_rank: int | None = None
+    scan_score: float | None = None
+
+
+class PoolOverview(BaseModel):
+    """Bulk-quote snapshot covering the full watchlist, deep analysis aside."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    quote_date: date
+    rows: tuple[PoolOverviewRow, ...]
+    unavailable_reason: str | None = None
+    # Fingerprints of the watchlist scan that drove the deep-analysis selection
+    # (when one existed); None in legacy reports or when the scan is missing.
+    scan_date: date | None = None
+    config_hash: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    input_hash: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+
+
 class StockReport(BaseModel):
     """One validated watchlist security in a daily report."""
 
@@ -297,6 +332,8 @@ class StockReport(BaseModel):
     code: str = Field(pattern=r"^\d{6}$")
     name: str = Field(min_length=1)
     group: str = Field(min_length=1)
+    scan_rank: int | None = Field(default=None, ge=1)
+    scan_score: float | None = Field(default=None, ge=0.0, le=100.0)
     provider_name: str = Field(min_length=1)
     latest_trade_date: date
     latest_source_timestamp: datetime
@@ -331,6 +368,7 @@ class ReportDocument(BaseModel):
     market_summary: MarketSummary
     market_rankings: MarketRankings
     stocks: tuple[StockReport, ...]
+    pool_overview: PoolOverview | None = None
 
 
 __all__ = [
@@ -343,6 +381,8 @@ __all__ = [
     "MarketRankingsUnavailableReason",
     "MarketScanReasonCount",
     "MarketSummary",
+    "PoolOverview",
+    "PoolOverviewRow",
     "ReportDocument",
     "ReportMetadata",
     "ReportMetrics",

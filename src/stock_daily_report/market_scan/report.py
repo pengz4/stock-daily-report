@@ -25,12 +25,14 @@ class MarketScanConflictError(MarketScanArtifactError):
 def write_scan_artifact(
     root_directory: str | Path,
     artifact: MarketScanArtifact,
+    *,
+    directory: str | Path = "market-scans",
 ) -> Path:
     """Persist one immutable artifact, reusing a semantically identical rerun."""
 
     path = (
         Path(root_directory)
-        / "market-scans"
+        / directory
         / artifact.report_date.isoformat()
         / "scan.json"
     )

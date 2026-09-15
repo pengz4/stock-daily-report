@@ -10,7 +10,7 @@ from stock_daily_report.providers.base import (
     ProviderError,
 )
 
-_DEFAULT_HISTORY_DAYS = 730
+_DEFAULT_HISTORY_DAYS = 250
 _REQUIRED_FIELDS = {
     "date",
     "open",
@@ -27,6 +27,7 @@ class SinaMarketDataProvider:
     """Fetch A-share daily history from AkShare's Sina endpoint."""
 
     name = "sina"
+    supports_hard_timeout = True
 
     def __init__(
         self,

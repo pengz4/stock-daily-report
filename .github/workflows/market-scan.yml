@@ -9,19 +9,107 @@ on:
         description: "Current Shanghai date; older dates require a valid artifact"
         required: false
         type: string
+  push:
+    branches:
+      - feature/report-wide-cn
+    paths:
+      - "config/market_scan.yaml"
+      - "config/watchlist.yaml"
 
 permissions:
   contents: write
 
+env:
+  TZ: Asia/Shanghai
+
 jobs:
-  scan:
+  watchlist-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     concurrency:
       group: stock-daily-report-history
       cancel-in-progress: false
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install project
+        run: |
+          python -m pip install setuptools==80.9.0 wheel==0.45.1
+          python -m pip install --no-build-isolation -r requirements.lock
+          python -m pip install --no-build-isolation --no-deps .
+      - name: Select report date
+        id: report-date
+        env:
+          REQUESTED_DATE: ${{ inputs.report_date }}
+        run: |
+          if [ -n "$REQUESTED_DATE" ]; then
+            report_date="$REQUESTED_DATE"
+          else
+            report_date="$(date +%F)"
+          fi
+          canonical_date="$(python - "$report_date" <<'PY'
+          import sys
+          from datetime import date
+          print(date.fromisoformat(sys.argv[1]).isoformat())
+          PY
+          )"
+          echo "report_date=$canonical_date" >> "$GITHUB_OUTPUT"
+      - name: Generate watchlist scan
+        run: |
+          report_date="${{ steps.report-date.outputs.report_date }}"
+          python -m stock_daily_report.cli market-scan \
+            --date "$report_date" \
+            --settings config/market_scan.yaml \
+            --data-settings config/settings.yaml \
+            --output-root . \
+            --scope watchlist \
+            --watchlist config/watchlist.yaml
+      - name: Persist watchlist scan history
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p .report-history
+          if [ ! -d .report-history/.git ]; then
+            git -C .report-history init
+            git -C .report-history remote add origin \
+              "https://github.com/${GITHUB_REPOSITORY}.git"
+          fi
+          git -C .report-history config user.name "github-actions[bot]"
+          git -C .report-history config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C .report-history pull --rebase --autostash origin reports-history \
+            || git -C .report-history fetch origin reports-history
+          git -C .report-history reset --hard origin/reports-history 2>/dev/null || true
+          mkdir -p .report-history/watchlist-scans
+          if [ -d watchlist-scans ]; then
+            cp -a watchlist-scans/. .report-history/watchlist-scans/
+          fi
+          find .report-history/watchlist-scans -name '*.lock' -delete 2>/dev/null || true
+          git -C .report-history add watchlist-scans
+          if ! git -C .report-history diff --cached --quiet; then
+            git -C .report-history commit -m "chore: publish watchlist scan history"
+            for attempt in 1 2 3; do
+              if git -C .report-history -c \
+                http.extraheader="AUTHORIZATION: bearer ${GITHUB_TOKEN}" \
+                push origin HEAD:refs/heads/reports-history; then
+                break
+              fi
+              if [ "$attempt" -lt 3 ]; then
+                git -C .report-history pull --rebase --autostash origin reports-history
+              fi
+            done
+          fi
+
+  market-scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-    env:
-      TZ: Asia/Shanghai
+    timeout-minutes: 120
+    concurrency:
+      group: stock-daily-report-history
+      cancel-in-progress: false
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -71,7 +159,8 @@ jobs:
             --date "$report_date" \
             --settings config/market_scan.yaml \
             --data-settings config/settings.yaml \
-            --output-root .
+            --output-root . \
+            --resumable
       - name: Persist market scan history
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -84,18 +173,28 @@ jobs:
           fi
           rm -rf .report-history/market-scans
           cp -a market-scans .report-history/market-scans
+          find .report-history/market-scans -name '*.lock' -delete
           git -C .report-history config user.name "github-actions[bot]"
           git -C .report-history config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git -C .report-history add market-scans
           if ! git -C .report-history diff --cached --quiet; then
             git -C .report-history commit -m "chore: publish market scan history"
-            git -C .report-history -c \
-              http.extraheader="AUTHORIZATION: bearer ${GITHUB_TOKEN}" \
-              push origin HEAD:refs/heads/reports-history
+            for attempt in 1 2 3; do
+              if git -C .report-history -c \
+                http.extraheader="AUTHORIZATION: bearer ${GITHUB_TOKEN}" \
+                push origin HEAD:refs/heads/reports-history; then
+                break
+              fi
+              if [ "$attempt" -lt 3 ]; then
+                git -C .report-history pull --rebase --autostash origin \
+                  reports-history
+              fi
+            done
           fi
       - name: Upload market scan artifact
         uses: actions/upload-artifact@v4
         with:
           name: market-scan-${{ steps.report-date.outputs.report_date }}
-          path: market-scans/${{ steps.report-date.outputs.report_date }}/scan.json
+          path: market-scans/${{ steps.report-date.outputs.report_date }}
           retention-days: 30
+          overwrite: true

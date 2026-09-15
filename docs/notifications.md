@@ -24,6 +24,14 @@ export REPORT_BASE_URL='https://<owner>.github.io/<repository>'
 stock-daily-report daily --date 2026-09-04 --output-root .
 ```
 
+When the Feishu custom bot has signature verification enabled, also export its
+signing secret; the adapter then stamps each request with a fresh `timestamp`
+and matching HMAC-SHA256 `sign`:
+
+```bash
+export FEISHU_WEBHOOK_SECRET='<bot signing secret>'
+```
+
 `--report-url` is the final absolute report URL and overrides
 `REPORT_BASE_URL` for a single run. An absolute URL is required whenever
 notifications are enabled.
