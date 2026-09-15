@@ -27,6 +27,7 @@ class SinaMarketDataProvider:
     """Fetch A-share daily history from AkShare's Sina endpoint."""
 
     name = "sina"
+    supports_hard_timeout = True
 
     def __init__(
         self,

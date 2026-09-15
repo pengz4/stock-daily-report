@@ -3865,6 +3865,28 @@ def test_watchlist_scan_top_ranking_is_augmented_with_manual_core_stocks(
     assert [stock.code for stock in outputs.report.stocks] == ["000001", "600519"]
 
 
+def test_report_metadata_stock_count_includes_lightweight_watchlist_entries(
+    tmp_path, fixture_settings
+):
+    watchlist = Watchlist(
+        stocks=[
+            {"code": "600519", "name": "贵州茅台", "priority": "core"},
+            {"code": "000001", "name": "平安银行", "priority": "extended"},
+        ]
+    )
+    outputs = run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        report_date=date(2026, 9, 4),
+        now=lambda: datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
+    )
+
+    assert len(outputs.report.stocks) == 1
+    assert outputs.report.metadata.stock_count == 2
+
+
 def test_incomplete_watchlist_scan_falls_back_to_manual_priorities(
     tmp_path, fixture_settings
 ):

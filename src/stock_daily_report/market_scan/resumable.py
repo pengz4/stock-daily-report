@@ -13,7 +13,7 @@ matching the existing gate in ``runner.scan_market``.
 from __future__ import annotations
 
 from collections.abc import Mapping
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -30,7 +30,9 @@ from stock_daily_report.market_scan.resume import (
 )
 from stock_daily_report.market_scan.runner import (
     _CandidateResult,
+    _collect_with_timeout,
     _process_candidate,
+    _provider_name,
     scan_market,
     scoring_config_hash,
 )
@@ -269,7 +271,8 @@ def _process_batch(
     settings: MarketScanSettings,
 ) -> dict[str, _CandidateResult]:
     results: dict[str, _CandidateResult] = {}
-    with ThreadPoolExecutor(max_workers=settings.max_workers) as executor:
+    executor = ThreadPoolExecutor(max_workers=settings.max_workers)
+    try:
         futures = {
             executor.submit(
                 _process_candidate,
@@ -280,9 +283,14 @@ def _process_batch(
             ): quote.code
             for quote in batch
         }
-        for future in as_completed(futures):
-            code = futures[future]
-            results[code] = future.result()
+        _collect_with_timeout(
+            futures,
+            results,
+            quotes_by_code={quote.code: quote for quote in batch},
+            provider_name=_provider_name(history_provider),
+        )
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
     return results
 
 

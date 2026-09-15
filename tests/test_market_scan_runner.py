@@ -203,9 +203,9 @@ def test_scanner_bounds_history_workers_and_passes_report_date():
 
 
 def test_hung_symbol_is_fused_without_aborting_the_scan(monkeypatch):
-    import stock_daily_report.market_scan.runner as runner
+    from stock_daily_report.market_scan import runner
 
-    monkeypatch.setattr(runner, "_FETCH_TIMEOUT_SECONDS", 0.02)
+    monkeypatch.setattr(runner, "_FETCH_TIMEOUT_SECONDS", 0.1)
 
     codes = _codes(3)
     bars_by_code = {code: _bars(code) for code in codes}
@@ -221,6 +221,26 @@ def test_hung_symbol_is_fused_without_aborting_the_scan(monkeypatch):
     hung = next(status for status in artifact.statuses if status.code == codes[0])
     assert hung.status == "history_failed"
     assert hung.reason_codes == ("fetch_timeout",)
+
+
+def test_hung_symbol_does_not_block_scan_return(monkeypatch):
+    from stock_daily_report.market_scan import runner
+
+    monkeypatch.setattr(runner, "_FETCH_TIMEOUT_SECONDS", 0.1)
+    codes = _codes(1)
+
+    class KillableHistoryProvider(FakeHistoryProvider):
+        supports_hard_timeout = True
+
+    provider = KillableHistoryProvider(
+        {codes[0]: _bars(codes[0])}, delays={codes[0]: 1.0}
+    )
+
+    started = time.monotonic()
+    artifact = _scan(codes, provider)
+
+    assert time.monotonic() - started < 0.5
+    assert artifact.failure_counts == {"fetch_timeout": 1}
 
 
 def test_scanner_output_is_deterministic_despite_completion_order():

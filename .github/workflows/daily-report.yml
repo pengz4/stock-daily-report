@@ -154,7 +154,9 @@ jobs:
           import sys
           from pathlib import Path
 
+          from stock_daily_report.config import load_watchlist
           from stock_daily_report.market_scan.report import load_scan_artifact
+          from stock_daily_report.pipeline import _select_deep_stocks
           from stock_daily_report.report.models import ReportDocument
 
           try:
@@ -162,28 +164,66 @@ jobs:
                   Path(sys.argv[1]).read_text(encoding="utf-8")
               )
               scan = load_scan_artifact(sys.argv[2])
+              watchlist = load_watchlist("config/watchlist.yaml")
           except (OSError, ValueError):
               raise SystemExit(1)
 
           pool = report.pool_overview
-          # The deep-analysis section is stale when it predates the scan or
-          # when it analyses fewer names than the scan ranked (a sign that an
-          # earlier run snapshot only covered a subset).
-          ranked_codes = {
-              record.code
-              for record in (*scan.rankings.trend, *scan.rankings.balanced)
+          best_scores = {}
+          for record in (*scan.rankings.trend, *scan.rankings.balanced):
+              best_scores[record.code] = max(
+                  record.score, best_scores.get(record.code, -1.0)
+              )
+          ranked_scores = sorted(
+              best_scores.items(), key=lambda item: (-item[1], item[0])
+          )[:20]
+          deep_stocks, _extended_stocks = _select_deep_stocks(
+              watchlist, ranked_scores
+          )
+          expected_deep = {
+              stock.code: (stock.name, stock.group)
+              for stock in deep_stocks
           }
-          deep_codes = {stock.code for stock in report.stocks}
-          minimal_deep = min(20, len(ranked_codes))
-          deep_ok = len(deep_codes & ranked_codes) >= minimal_deep
+          deep_metadata = {
+              stock.code: (stock.name, stock.group) for stock in report.stocks
+          }
+          expected_pool = {
+              stock.code: (stock.name, stock.group, stock.priority or "core")
+              for stock in watchlist.stocks
+          }
+          pool_metadata = (
+              {
+                  row.code: (row.name, row.group, row.priority)
+                  for row in pool.rows
+              }
+              if pool is not None
+              else {}
+          )
+          pool_ok = (
+              pool is None
+              and not any(stock.priority == "extended" for stock in watchlist.stocks)
+              and {
+                  stock.code: (stock.name, stock.group, stock.priority or "core")
+                  for stock in deep_stocks
+              }
+              == expected_pool
+          ) or (
+              pool is not None
+              and pool_metadata == expected_pool
+          )
           raise SystemExit(
               0
               if (
-                  pool is not None
-                  and pool.scan_date == scan.report_date
-                  and pool.config_hash == scan.config_hash
-                  and pool.input_hash == scan.input_hash
-                  and deep_ok
+                  (
+                      pool is None
+                      or (
+                          pool.scan_date == scan.report_date
+                          and pool.config_hash == scan.config_hash
+                          and pool.input_hash == scan.input_hash
+                      )
+                  )
+                  and deep_metadata == expected_deep
+                  and pool_ok
               )
               else 1
           )

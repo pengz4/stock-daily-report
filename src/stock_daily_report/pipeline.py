@@ -40,7 +40,6 @@ from stock_daily_report.models import DailyBar, Settings, Watchlist, WatchlistSt
 from stock_daily_report.providers.akshare import AkShareMarketDataProvider
 from stock_daily_report.providers.base import MarketDataProvider, ProviderError
 from stock_daily_report.providers.fixture import FixtureMarketDataProvider
-from stock_daily_report.providers.universe import AkShareUniverseProvider, UniverseQuote
 from stock_daily_report.providers.service import (
     CacheRollbackError,
     FetchedBars,
@@ -48,6 +47,7 @@ from stock_daily_report.providers.service import (
     RawResponseCache,
 )
 from stock_daily_report.providers.sina import SinaMarketDataProvider
+from stock_daily_report.providers.universe import AkShareUniverseProvider, UniverseQuote
 from stock_daily_report.quality.checks import (
     DataQualityResult,
     DataQualitySettings,
@@ -62,11 +62,11 @@ from stock_daily_report.report.models import (
     MarketRankingsUnavailableReason,
     MarketScanReasonCount,
     MarketSummary,
+    PoolOverview,
+    PoolOverviewRow,
     ReportDocument,
     ReportMetadata,
     ReportMetrics,
-    PoolOverview,
-    PoolOverviewRow,
     StockReport,
     StructureLevel,
     StructureSummary,
@@ -222,7 +222,7 @@ def _fetch_light_quotes(
 
 def _load_watchlist_scan_ranking(
     root: Path, report_date: date, limit: int = _DEEP_ANALYSIS_LIMIT
-) -> "WatchlistScanInfo | None":
+) -> WatchlistScanInfo | None:
     """Return the watchlist scan ranking and fingerprint, or None.
 
     Returns ``None`` when no complete, same-day watchlist scan artifact exists
@@ -1482,7 +1482,7 @@ def _publish_report_transaction(
     light_quotes: Mapping[str, UniverseQuote],
     light_quote_error: str | None,
     scan_ranking: Sequence[tuple[str, float]] | None,
-    watchlist_scan_info: "WatchlistScanInfo | None",
+    watchlist_scan_info: WatchlistScanInfo | None,
     overwrite_snapshot: bool,
     service: MarketDataService | None,
     json_path: Path,
@@ -2235,7 +2235,7 @@ def _build_report(
     light_quotes: Mapping[str, UniverseQuote],
     light_quote_error: str | None,
     scan_ranking: Sequence[tuple[str, float]] | None = None,
-    watchlist_scan_info: "WatchlistScanInfo | None" = None,
+    watchlist_scan_info: WatchlistScanInfo | None = None,
 ) -> ReportDocument:
     rule_hash = configuration_hash(resolve_risk_rules(settings))
     stocks: list[StockReport] = []
@@ -2319,7 +2319,8 @@ def _build_report(
             config_hash=rule_hash,
             analyzer_versions=AnalyzerMetadata(structural=RULE_VERSION),
             quality_status="passed",
-            stock_count=len(stocks),
+            stock_count=len(watchlist.stocks),
+            analyzed_stock_count=len(stocks),
         ),
         market_summary=_build_market_summary(fetched),
         market_rankings=market_rankings,
@@ -2342,7 +2343,7 @@ def _build_pool_overview(
     *,
     report_date: date,
     scan_ranking: Sequence[tuple[str, float]] | None = None,
-    watchlist_scan_info: "WatchlistScanInfo | None" = None,
+    watchlist_scan_info: WatchlistScanInfo | None = None,
 ) -> PoolOverview | None:
     """Build the lightweight full-pool overview, or None in legacy mode."""
     if not light_quotes and light_quote_error is None:

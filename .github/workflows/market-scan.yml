@@ -26,6 +26,9 @@ jobs:
   watchlist-scan:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    concurrency:
+      group: stock-daily-report-history
+      cancel-in-progress: false
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -81,9 +84,9 @@ jobs:
           git -C .report-history pull --rebase --autostash origin reports-history \
             || git -C .report-history fetch origin reports-history
           git -C .report-history reset --hard origin/reports-history 2>/dev/null || true
-          rm -rf .report-history/watchlist-scans
+          mkdir -p .report-history/watchlist-scans
           if [ -d watchlist-scans ]; then
-            cp -a watchlist-scans .report-history/watchlist-scans
+            cp -a watchlist-scans/. .report-history/watchlist-scans/
           fi
           find .report-history/watchlist-scans -name '*.lock' -delete 2>/dev/null || true
           git -C .report-history add watchlist-scans

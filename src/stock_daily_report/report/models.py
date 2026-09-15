@@ -35,6 +35,7 @@ class ReportMetadata(BaseModel):
     analyzer_versions: AnalyzerMetadata
     quality_status: Literal["passed"]
     stock_count: int = Field(ge=1)
+    analyzed_stock_count: int | None = Field(default=None, ge=0)
 
 
 class MarketSummary(BaseModel):

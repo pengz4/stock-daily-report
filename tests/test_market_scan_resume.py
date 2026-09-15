@@ -1,10 +1,12 @@
 """Tests for resumable full-market scan orchestration and checkpointing."""
 
 import json
+import time
 from datetime import UTC, date, datetime, timedelta
 
 import pytest
 
+from stock_daily_report.market_scan.resumable import run_resumable_scan
 from stock_daily_report.market_scan.resume import (
     CheckpointIntegrityError,
     ScanCheckpoint,
@@ -16,7 +18,6 @@ from stock_daily_report.market_scan.resume import (
     manifest_hash_for,
     save_checkpoint,
 )
-from stock_daily_report.market_scan.resumable import run_resumable_scan
 from stock_daily_report.market_scan.runner import (
     _candidate_result_from_json,
     _candidate_result_to_json,
@@ -143,9 +144,37 @@ def test_scoring_config_hash_excludes_runtime_parameters():
     assert base != scoring_config_hash(_settings(minimum_coverage_ratio=0.9))
 
 
+def test_resumable_batch_fuses_hung_symbol(monkeypatch):
+    from stock_daily_report.market_scan import runner
+    from stock_daily_report.market_scan.resumable import _process_batch
+
+    monkeypatch.setattr(runner, "_FETCH_TIMEOUT_SECONDS", 0.1)
+    codes = _codes(1)
+
+    class SlowHistoryProvider(FakeHistoryProvider):
+        supports_hard_timeout = True
+
+        def get_daily_bars(self, code, *, start=None, end=None):
+            time.sleep(1.0)
+            return super().get_daily_bars(code, start=start, end=end)
+
+    provider = SlowHistoryProvider({codes[0]: _bars(codes[0])})
+    started = time.monotonic()
+    results = _process_batch(
+        [_quote(codes[0])],
+        provider,
+        REPORT_DATE,
+        _settings(),
+    )
+
+    assert time.monotonic() - started < 0.5
+    assert results[codes[0]].status.status == "history_failed"
+    assert results[codes[0]].status.reason_codes == ("fetch_timeout",)
+
+
 def test_candidate_result_serialization_roundtrip():
-    from stock_daily_report.market_scan.runner import _CandidateResult
     from stock_daily_report.market_scan.models import ScanStatus
+    from stock_daily_report.market_scan.runner import _CandidateResult
 
     quote = _quote("600000")
     status = ScanStatus(
@@ -176,7 +205,7 @@ def test_candidate_result_serialization_roundtrip():
 
 def test_checkpoint_roundtrip_preserves_execution_date(tmp_path):
     quotes = [_quote("600000"), _quote("600001")]
-    checkpoint = _make_checkpoint_for(
+    _make_checkpoint_for(
         tmp_path,
         report_date=REPORT_DATE,
         execution_date=REPORT_DATE,
@@ -198,7 +227,7 @@ def test_load_checkpoint_returns_none_when_missing(tmp_path):
 
 def test_load_checkpoint_rejects_manifest_hash_mismatch(tmp_path):
     quotes = [_quote("600000")]
-    checkpoint = _make_checkpoint_for(
+    _make_checkpoint_for(
         tmp_path,
         report_date=REPORT_DATE,
         execution_date=REPORT_DATE,

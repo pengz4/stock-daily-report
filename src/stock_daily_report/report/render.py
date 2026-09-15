@@ -44,6 +44,11 @@ def render_markdown(report: ReportDocument) -> str:
         f"- Latest source timestamp: {_md(metadata.latest_source_timestamp.isoformat())}",
         f"- Quality: {_md(metadata.quality_status)}",
         f"- Stock count: {metadata.stock_count}",
+        *(
+            [f"- Deep-analysis count: {metadata.analyzed_stock_count}"]
+            if metadata.analyzed_stock_count is not None
+            else []
+        ),
         f"- Providers: {_md(', '.join(metadata.provider_names))}",
         f"- Snapshot: `{_md(metadata.snapshot_path)}`",
         f"- Snapshot hash: `{metadata.snapshot_hash}`",
@@ -415,6 +420,11 @@ def _render_runtime_metadata(report: ReportDocument, rankings: MarketRankings) -
                 _sequence_text(metadata.provider_names),
             ),
             _render_html_field("股票数量", metadata.stock_count),
+            *(
+                (_render_html_field("深度分析数量", metadata.analyzed_stock_count),)
+                if metadata.analyzed_stock_count is not None
+                else ()
+            ),
             _render_html_field("快照路径", metadata.snapshot_path),
             _render_html_field("快照哈希", metadata.snapshot_hash),
             _render_html_field("报告配置哈希", metadata.config_hash),

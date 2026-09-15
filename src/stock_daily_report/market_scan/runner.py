@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import multiprocessing
+import time
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
@@ -42,6 +44,85 @@ from stock_daily_report.providers.universe import UniverseQuote
 
 _FETCH_TIMEOUT_SECONDS = 120.0
 _PROGRESS_INTERVAL = 50
+
+
+def _fetch_history_worker(
+    connection: object,
+    history_provider: object,
+    code: str,
+    report_date: date,
+) -> None:
+    """Fetch one symbol in a process that can be terminated on timeout."""
+
+    try:
+        payload = ("ok", _fetch_history(history_provider, code, report_date))
+    except AllProvidersFailedError as error:
+        payload = (
+            "all_providers_failed",
+            tuple(
+                (failure.provider, failure.code, failure.detail)
+                for failure in error.failures
+            ),
+        )
+    except DataQualityError as error:
+        payload = ("data_quality", error.provider, error.quality)
+    except ProviderError as error:
+        payload = ("provider_error", error.provider, error.code, error.detail)
+    except Exception as error:  # noqa: BLE001
+        payload = ("error", type(error).__name__, str(error))
+    connection.send(payload)  # type: ignore[union-attr]
+    connection.close()  # type: ignore[union-attr]
+
+
+def _fetch_history_with_timeout(
+    history_provider: object,
+    code: str,
+    report_date: date,
+) -> tuple[Sequence[DailyBar | Mapping[str, object]], str]:
+    """Run provider I/O in a killable child process on POSIX runners."""
+
+    if not getattr(history_provider, "supports_hard_timeout", False):
+        return _fetch_history(history_provider, code, report_date)
+    try:
+        context = multiprocessing.get_context("fork")
+    except ValueError:
+        return _fetch_history(history_provider, code, report_date)
+
+    read_connection, write_connection = context.Pipe(duplex=False)
+    process = context.Process(
+        target=_fetch_history_worker,
+        args=(write_connection, history_provider, code, report_date),
+    )
+    process.start()
+    write_connection.close()
+    try:
+        if not read_connection.poll(_FETCH_TIMEOUT_SECONDS):
+            process.terminate()
+            process.join()
+            raise ProviderError(
+                _provider_name(history_provider),
+                "fetch_timeout",
+                f"history request exceeded {_FETCH_TIMEOUT_SECONDS:.1f}s",
+            )
+        payload = read_connection.recv()
+    finally:
+        read_connection.close()
+        if process.is_alive():
+            process.terminate()
+        process.join()
+
+    kind = payload[0]
+    if kind == "ok":
+        return payload[1]
+    if kind == "all_providers_failed":
+        raise AllProvidersFailedError(
+            [ProviderError(provider, code, detail) for provider, code, detail in payload[1]]
+        )
+    if kind == "data_quality":
+        raise DataQualityError(payload[1], payload[2])
+    if kind == "provider_error":
+        raise ProviderError(payload[1], payload[2], payload[3])
+    raise RuntimeError(f"{payload[1]}: {payload[2]}")
 
 
 class UniverseProvider(Protocol):
@@ -146,7 +227,8 @@ def scan_market(
             reason_codes=(reason,),
         )
 
-    with ThreadPoolExecutor(max_workers=settings.max_workers) as executor:
+    executor = ThreadPoolExecutor(max_workers=settings.max_workers)
+    try:
         futures: dict[Future[_CandidateResult], str] = {
             executor.submit(
                 _process_candidate,
@@ -163,6 +245,8 @@ def scan_market(
             quotes_by_code={quote.code: quote for quote in selected},
             provider_name=_provider_name(history_provider),
         )
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
 
     trend_scores: list[ProfileScore] = []
     balanced_scores: list[ProfileScore] = []
@@ -256,7 +340,7 @@ def _process_candidate(
     settings: MarketScanSettings,
 ) -> _CandidateResult:
     try:
-        raw_bars, provider_name = _fetch_history(
+        raw_bars, provider_name = _fetch_history_with_timeout(
             history_provider,
             quote.code,
             report_date,
@@ -378,16 +462,34 @@ def _collect_with_timeout(
     """
 
     pending: set[Future[_CandidateResult]] = set(futures)
+    deadlines = {
+        future: time.monotonic() + _FETCH_TIMEOUT_SECONDS for future in pending
+    }
     total = len(pending)
     completed = 0
     while pending:
+        now = time.monotonic()
+        expired = {future for future in pending if deadlines[future] <= now}
+        if expired:
+            pending -= expired
+            for future in expired:
+                future.cancel()
+                code = futures[future]
+                results[code] = _failed_result(
+                    quotes_by_code[code],
+                    reason="fetch_timeout",
+                    provider_name=provider_name,
+                )
+                completed += 1
+            _report_progress(completed, total)
+            continue
         done, pending = wait(
             pending,
-            timeout=_FETCH_TIMEOUT_SECONDS,
+            timeout=min(deadlines[future] - now for future in pending),
             return_when=FIRST_COMPLETED,
         )
         if not done:
-            break
+            continue
         for future in done:
             results[futures[future]] = future.result()
             completed += 1
@@ -660,7 +762,7 @@ def _quote_from_json(document: Mapping[str, object]) -> UniverseQuote:
     elif isinstance(quote_date, date):
         parsed_date = quote_date
     else:
-        raise ValueError("universe quote is missing a valid quote_date")
+        raise TypeError("universe quote is missing a valid quote_date")
     return UniverseQuote(
         code=str(document["code"]),
         name=str(document["name"]),

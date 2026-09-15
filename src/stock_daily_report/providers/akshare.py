@@ -28,6 +28,7 @@ class AkShareMarketDataProvider:
     """Use AkShare only when installed; importing this module has no dependency."""
 
     name = "akshare"
+    supports_hard_timeout = True
 
     def __init__(
         self,
