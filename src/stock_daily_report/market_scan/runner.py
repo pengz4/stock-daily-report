@@ -176,6 +176,7 @@ def scan_market(
     generated_at: datetime | None = None,
     configuration_hash: str | None = None,
     index_provider: object | None = None,
+    market_state: MarketState | None = None,
     universe_quotes: Sequence[UniverseQuote] | None = None,
     resume_from: Mapping[str, _CandidateResult] | None = None,
 ) -> MarketScanArtifact:
@@ -198,8 +199,8 @@ def scan_market(
         )
     quotes = tuple(universe_quotes)
     _require_unique_quotes(quotes)
-    market_state = (
-        _build_market_state(
+    if market_state is None and index_provider is not None:
+        market_state = _build_market_state(
             settings,
             index_provider,
             quotes,
@@ -207,9 +208,6 @@ def scan_market(
             generated_at=timestamp,
             breadth_provider=_provider_name(universe_provider),
         )
-        if index_provider is not None
-        else None
-    )
     exclusion_counts: Counter[str] = Counter()
     failure_counts: Counter[str] = Counter()
     statuses: dict[str, ScanStatus] = {}
@@ -737,7 +735,7 @@ def _build_market_state(
     index_bars: dict[str, Sequence[DailyBar] | BaseException] = {}
     for code in settings.market_state.index_codes:
         try:
-            raw_bars, _provider_name = _fetch_history_with_timeout(
+            raw_bars, _index_provider_name = _fetch_history_with_timeout(
                 index_provider,
                 code,
                 report_date,

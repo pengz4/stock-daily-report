@@ -6,7 +6,10 @@ import pytest
 from stock_daily_report.market_scan.models import (
     SCAN_SCHEMA_VERSION,
     ConsensusRecord,
+    MarketBreadth,
+    MarketIndexState,
     MarketScanArtifact,
+    MarketState,
     ProfileRankings,
     RankingRecord,
     ScanStatus,
@@ -44,6 +47,7 @@ def _artifact(
     *,
     generated_at: datetime,
     input_hash: str = "1" * 64,
+    market_state: MarketState | None = None,
 ) -> MarketScanArtifact:
     trend = _ranking("trend", 82.0)
     balanced = _ranking("balanced", 75.0)
@@ -83,6 +87,31 @@ def _artifact(
         config_hash="0" * 64,
         input_hash=input_hash,
         provider_names=("fake-universe", "fixture"),
+        market_state=market_state,
+    )
+
+
+def _market_state(generated_at: datetime) -> MarketState:
+    return MarketState(
+        report_date=date(2026, 9, 11),
+        generated_at=generated_at,
+        rule_version="market-state-v1",
+        indices=(
+            MarketIndexState(
+                name="上证指数",
+                code="000001",
+                status="unavailable",
+                error_code="offline",
+                error_message="fixture",
+            ),
+        ),
+        breadth=MarketBreadth(
+            status="unavailable",
+            error_code="offline",
+            error_message="fixture",
+        ),
+        status="unavailable",
+        conclusion="市场状态数据不足",
     )
 
 
@@ -137,6 +166,23 @@ def test_same_date_identical_artifact_is_reused_without_changing_bytes(tmp_path)
     assert reused_path == path
     assert path.read_bytes() == original_bytes
     assert load_scan_artifact(path).generated_at == first.generated_at
+
+
+def test_same_date_artifact_reuse_ignores_market_state_observation_timestamp(tmp_path):
+    first = _artifact(
+        generated_at=datetime(2026, 9, 11, 8, 0, tzinfo=UTC),
+        market_state=_market_state(datetime(2026, 9, 11, 8, 0, tzinfo=UTC)),
+    )
+    rerun = _artifact(
+        generated_at=datetime(2026, 9, 11, 9, 0, tzinfo=UTC),
+        market_state=_market_state(datetime(2026, 9, 11, 9, 0, tzinfo=UTC)),
+    )
+
+    path = write_scan_artifact(tmp_path, first)
+    reused_path = write_scan_artifact(tmp_path, rerun)
+
+    assert reused_path == path
+    assert load_scan_artifact(path).market_state == first.market_state
 
 
 def test_same_date_different_artifact_raises_explicit_conflict(tmp_path):

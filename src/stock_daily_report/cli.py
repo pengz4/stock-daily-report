@@ -226,6 +226,10 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "market-scan":
         try:
+            if args.max_batches is not None and args.max_batches <= 0:
+                raise _MarketScanCliError(
+                    "--max-batches must be a positive integer"
+                )
             settings = load_market_scan_settings(args.settings)
             data_settings = load_settings(args.data_settings)
             configuration_hash = market_scan_config_hash(

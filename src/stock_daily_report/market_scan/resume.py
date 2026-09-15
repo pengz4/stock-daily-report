@@ -13,10 +13,12 @@ resumed and must be archived manually.
 
 from __future__ import annotations
 
+import fcntl
 import hashlib
 import json
 import os
 from collections.abc import Iterable, Mapping
+from contextlib import contextmanager
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Literal
@@ -24,6 +26,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from stock_daily_report.market_scan.models import MarketState
 from stock_daily_report.providers.universe import UniverseQuote
 
 CHECKPOINT_SCHEMA_VERSION = 2
@@ -59,6 +62,7 @@ class ScanCheckpoint(BaseModel):
     source_revision: str = ""
     universe_quotes: tuple[dict[str, object], ...]
     completed: tuple[dict[str, object], ...]
+    market_state: MarketState | None = None
     state: Literal["running", "complete"]
     updated_at: datetime
     last_batch: int = Field(ge=0)
@@ -162,6 +166,7 @@ def build_checkpoint(
     universe_quotes: Iterable[UniverseQuote],
     completed: Iterable[object],
     state: Literal["running", "complete"],
+    market_state: MarketState | None = None,
     source_revision: str = "",
     last_batch: int = 0,
     updated_at: datetime | None = None,
@@ -186,6 +191,7 @@ def build_checkpoint(
         completed=tuple(
             _candidate_result_to_json(result) for result in completed
         ),
+        market_state=market_state,
         state=state,
         updated_at=updated_at or datetime.now(UTC),
         last_batch=last_batch,
@@ -275,6 +281,39 @@ def _checkpoint_path(
     root: str | Path, report_date: date, directory: str | Path = "market-scans"
 ) -> Path:
     return Path(root) / directory / report_date.isoformat() / "progress.json"
+
+
+@contextmanager
+def _checkpoint_lock(
+    root: str | Path,
+    report_date: date,
+    *,
+    directory: str | Path = "market-scans",
+):
+    checkpoint_directory = _checkpoint_path(root, report_date, directory).parent
+    try:
+        checkpoint_directory.mkdir(parents=True, exist_ok=True)
+        lock_file = (checkpoint_directory / ".progress.lock").open(
+            "a",
+            encoding="utf-8",
+        )
+    except OSError as error:
+        raise CheckpointError(
+            f"Could not lock checkpoint directory: {checkpoint_directory}"
+        ) from error
+    try:
+        try:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        except OSError as error:
+            raise CheckpointError(
+                f"Could not lock checkpoint directory: {checkpoint_directory}"
+            ) from error
+        try:
+            yield
+        finally:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+    finally:
+        lock_file.close()
 
 
 def _canonical_json(checkpoint: ScanCheckpoint) -> str:

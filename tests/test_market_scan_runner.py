@@ -519,6 +519,34 @@ def test_index_provider_failures_are_isolated_from_the_scan():
     assert failed.error_code == "network_error"
 
 
+def test_malformed_index_responses_are_unavailable_instead_of_aborting():
+    from stock_daily_report.models import MARKET_STATE_INDEX_CODES
+
+    class MalformedIndexProvider(FakeIndexProvider):
+        def get_daily_bars(self, code, *, start=None, end=None):
+            del code, start, end
+            return [{"not": "a daily bar"}]
+
+    code = _codes(1)[0]
+    artifact = _scan(
+        [code],
+        FakeHistoryProvider({code: _bars(code)}),
+        index_provider=MalformedIndexProvider(
+            {index_code: [] for index_code in MARKET_STATE_INDEX_CODES}
+        ),
+        universe_quotes=[_quote(code, 1.0)],
+    )
+
+    assert artifact.valid_count == 1
+    assert artifact.market_state is not None
+    assert artifact.market_state.status == "partial"
+    assert all(
+        index.status == "unavailable"
+        and index.error_code == "index_data_invalid"
+        for index in artifact.market_state.indices
+    )
+
+
 def test_market_state_inputs_contribute_to_artifact_identity():
     from stock_daily_report.models import MARKET_STATE_INDEX_CODES
 

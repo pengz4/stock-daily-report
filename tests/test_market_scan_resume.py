@@ -1,6 +1,7 @@
 """Tests for resumable full-market scan orchestration and checkpointing."""
 
 import json
+import threading
 import time
 from datetime import UTC, date, datetime, timedelta
 
@@ -112,6 +113,7 @@ class FakeIndexProvider:
 
     def __init__(self, bars_by_code: dict[str, list[DailyBar]]) -> None:
         self._bars_by_code = bars_by_code
+        self.requested: list[str] = []
 
     def get_daily_bars(
         self,
@@ -121,6 +123,7 @@ class FakeIndexProvider:
         end: date | None = None,
     ) -> list[DailyBar]:
         del start, end
+        self.requested.append(code)
         return list(self._bars_by_code[code])
 
 
@@ -395,7 +398,16 @@ def test_resumable_scan_preserves_market_state_from_checkpoint_snapshot(tmp_path
         is None
     )
 
+    checkpoint = load_checkpoint(tmp_path, REPORT_DATE)
+    assert checkpoint is not None
+    assert checkpoint.market_state is not None
+    initial_market_state = checkpoint.market_state
+    assert len(index.requested) == len(MARKET_STATE_INDEX_CODES)
+
     universe._quotes = [_quote(codes[0], -1.0), _quote(codes[1], 1.0)]
+    index._bars_by_code = {
+        code: _bars("600001") for code in MARKET_STATE_INDEX_CODES
+    }
 
     path = run_resumable_scan(
         settings,
@@ -408,9 +420,63 @@ def test_resumable_scan_preserves_market_state_from_checkpoint_snapshot(tmp_path
 
     assert path is not None
     artifact = MarketScanArtifact.model_validate_json(path.read_text(encoding="utf-8"))
-    assert artifact.market_state is not None
-    assert artifact.market_state.breadth.advancing_count == 1
-    assert artifact.market_state.breadth.declining_count == 1
+    assert artifact.market_state == initial_market_state
+    assert len(index.requested) == len(MARKET_STATE_INDEX_CODES)
+
+
+def test_concurrent_resumable_scans_serialize_checkpoint_lifecycle(tmp_path):
+    codes = _codes(2)
+    quotes = [_quote(code) for code in codes]
+    universe = FakeUniverseProvider(quotes)
+    settings = _settings(max_candidates=2)
+    started = threading.Event()
+    release = threading.Event()
+    calls: list[str] = []
+    calls_lock = threading.Lock()
+
+    class BlockingHistoryProvider(FakeHistoryProvider):
+        def get_daily_bars(self, code, *, start=None, end=None):
+            with calls_lock:
+                calls.append(code)
+                first_call = len(calls) == 1
+            if first_call:
+                started.set()
+                assert release.wait(timeout=2)
+            return super().get_daily_bars(code, start=start, end=end)
+
+    history = BlockingHistoryProvider({code: _bars(code) for code in codes})
+    results: list[object] = []
+
+    def run() -> None:
+        results.append(
+            run_resumable_scan(
+                settings,
+                universe,
+                history,
+                report_date=REPORT_DATE,
+                output_root=tmp_path,
+                max_batches=1,
+                batch_size=1,
+            )
+        )
+
+    first = threading.Thread(target=run)
+    second = threading.Thread(target=run)
+    first.start()
+    assert started.wait(timeout=2)
+    second.start()
+    time.sleep(0.05)
+    with calls_lock:
+        assert calls == [codes[0]]
+    release.set()
+    first.join(timeout=2)
+    second.join(timeout=2)
+
+    assert not first.is_alive()
+    assert not second.is_alive()
+    checkpoint = load_checkpoint(tmp_path, REPORT_DATE)
+    assert checkpoint is not None
+    assert len(checkpoint.completed) == 2
 
 
 def test_resumable_scan_archives_checkpoint_when_market_state_configuration_changes(

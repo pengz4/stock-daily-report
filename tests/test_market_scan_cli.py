@@ -185,6 +185,23 @@ def test_market_scan_cli_accepts_date_settings_and_output_root(
     assert capsys.readouterr().out == f"{artifact_path}\n"
 
 
+def test_market_scan_cli_rejects_non_positive_max_batches(capsys):
+    result = cli_module.main(
+        [
+            "market-scan",
+            "--date",
+            REPORT_DATE.isoformat(),
+            "--resumable",
+            "--max-batches",
+            "0",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert result == 1
+    assert captured.err == "--max-batches must be a positive integer\n"
+
+
 def test_market_scan_cli_wires_index_provider_for_market_scope(
     monkeypatch, tmp_path, capsys
 ):

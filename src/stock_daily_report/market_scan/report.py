@@ -88,6 +88,9 @@ def load_scan_artifact(path: str | Path) -> MarketScanArtifact:
 def _identity_payload(artifact: MarketScanArtifact) -> dict[str, object]:
     payload = artifact.model_dump(mode="json")
     payload.pop("generated_at")
+    market_state = payload.get("market_state")
+    if isinstance(market_state, dict):
+        market_state.pop("generated_at", None)
     return payload
 
 
