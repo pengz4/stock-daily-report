@@ -8,6 +8,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from stock_daily_report.decision import DecisionLabel
+from stock_daily_report.market_scan.models import MarketState
 
 REPORT_SCHEMA_VERSION = 2
 REPORT_RENDER_VERSION = "cn-v2"
@@ -366,6 +367,7 @@ class ReportDocument(BaseModel):
     schema_version: Literal[1, REPORT_SCHEMA_VERSION] = REPORT_SCHEMA_VERSION
     metadata: ReportMetadata
     market_summary: MarketSummary
+    market_state: MarketState | None = None
     market_rankings: MarketRankings
     stocks: tuple[StockReport, ...]
     pool_overview: PoolOverview | None = None
@@ -380,6 +382,7 @@ __all__ = [
     "MarketRankings",
     "MarketRankingsUnavailableReason",
     "MarketScanReasonCount",
+    "MarketState",
     "MarketSummary",
     "PoolOverview",
     "PoolOverviewRow",

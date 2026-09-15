@@ -30,6 +30,7 @@ from stock_daily_report.indicators.trend import classify_trend
 from stock_daily_report.market_scan.models import (
     ConsensusRecord,
     MarketScanArtifact,
+    MarketState,
     RankingRecord,
 )
 from stock_daily_report.market_scan.report import (
@@ -1514,6 +1515,7 @@ def _publish_report_transaction(
                 staged_snapshot,
             )
         market_rankings = _load_market_rankings(root, report_date)
+        market_state = _load_market_state(root, report_date)
         report = _build_report(
             settings,
             watchlist,
@@ -1522,6 +1524,7 @@ def _publish_report_transaction(
             snapshot_hash=snapshot.content_hash,
             report_date=report_date,
             generated_at=generated_at,
+            market_state=market_state,
             market_rankings=market_rankings,
             light_quotes=light_quotes,
             light_quote_error=light_quote_error,
@@ -2240,6 +2243,7 @@ def _build_report(
     snapshot_hash: str,
     report_date: date,
     generated_at: datetime,
+    market_state: MarketState | None,
     market_rankings: MarketRankings,
     light_quotes: Mapping[str, UniverseQuote],
     light_quote_error: str | None,
@@ -2353,6 +2357,7 @@ def _build_report(
             render_version=REPORT_RENDER_VERSION,
         ),
         market_summary=_build_market_summary(fetched),
+        market_state=market_state,
         market_rankings=market_rankings,
         stocks=tuple(stocks),
         pool_overview=_build_pool_overview(
@@ -2440,6 +2445,19 @@ def _load_market_rankings(root: Path, report_date: date) -> MarketRankings:
             artifact,
         )
     return _market_rankings_from_artifact(artifact)
+
+
+def _load_market_state(root: Path, report_date: date) -> MarketState | None:
+    scan_path = root / "market-scans" / report_date.isoformat() / "scan.json"
+    if not scan_path.exists():
+        return None
+    try:
+        artifact = load_scan_artifact(scan_path)
+    except MarketScanArtifactError:
+        return None
+    if artifact.report_date != report_date:
+        return None
+    return artifact.market_state
 
 
 def _scan_progress_exists(root: Path, report_date: date) -> bool:

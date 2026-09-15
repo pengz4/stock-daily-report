@@ -15,7 +15,10 @@ import stock_daily_report.cli as cli_module
 import stock_daily_report.pipeline as pipeline_module
 from stock_daily_report.market_scan.models import (
     ConsensusRecord,
+    MarketBreadth,
+    MarketIndexState,
     MarketScanArtifact,
+    MarketState,
     ProfileRankings,
     RankingRecord,
     ScanStatus,
@@ -207,6 +210,51 @@ def _market_scan_artifact(
     )
 
 
+def _market_state() -> MarketState:
+    return MarketState(
+        report_date=date(2026, 9, 4),
+        generated_at=datetime(2026, 9, 4, 8, 30, tzinfo=UTC),
+        rule_version="market-state-v1",
+        indices=tuple(
+            MarketIndexState(
+                name=name,
+                code=code,
+                status="available",
+                latest_trade_date=date(2026, 9, 4),
+                close=3000.0 + index,
+                change_pct=1.2 - index * 0.1,
+                close_vs_ma20="above",
+                close_vs_ma60="above",
+                trend="bullish",
+                provider="fixture",
+            )
+            for index, (name, code) in enumerate(
+                (
+                    ("上证指数", "000001"),
+                    ("深证成指", "399001"),
+                    ("创业板指", "399006"),
+                    ("沪深300", "000300"),
+                    ("中证1000", "000852"),
+                )
+            )
+        ),
+        breadth=MarketBreadth(
+            status="available",
+            advancing_count=60,
+            declining_count=30,
+            unchanged_count=10,
+            advancing_ratio=0.6,
+            declining_ratio=0.3,
+            advance_decline_ratio=2.0,
+            valid_count=100,
+            total_count=100,
+            provider="fake-universe",
+        ),
+        status="available",
+        conclusion="指数与市场广度方向一致",
+    )
+
+
 @pytest.fixture
 def fixture_settings() -> Settings:
     return Settings(
@@ -253,7 +301,8 @@ def test_daily_pipeline_writes_json_markdown_and_html(tmp_path, fixture_settings
 def test_market_scan_is_published_in_json_markdown_and_html(
     tmp_path, fixture_settings
 ):
-    write_scan_artifact(tmp_path, _market_scan_artifact())
+    artifact = _market_scan_artifact().model_copy(update={"market_state": _market_state()})
+    write_scan_artifact(tmp_path, artifact)
 
     outputs = run_daily_report(
         fixture_settings,
@@ -276,6 +325,13 @@ def test_market_scan_is_published_in_json_markdown_and_html(
     assert rankings["universe_count"] == 2
     assert rankings["eligible_count"] == 1
     assert rankings["valid_count"] == 1
+    assert document["market_state"]["status"] == "available"
+    assert document["market_state"]["breadth"]["advancing_count"] == 60
+    assert outputs.report.market_state is not None
+    assert outputs.report.market_state.conclusion == "指数与市场广度方向一致"
+    assert "## 市场状态" in markdown
+    assert markdown.index("## 市场状态") < markdown.index("## 全市场排名")
+    assert "市场状态" in html
     assert rankings["provider_names"] == ["fake-universe", "fixture"]
     assert rankings["trend"][0]["components"]["trend"] == 90.0
     assert rankings["trend"][0]["evidence_codes"] == ["close_above_ma20"]
