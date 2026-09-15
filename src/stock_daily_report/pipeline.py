@@ -54,6 +54,7 @@ from stock_daily_report.quality.checks import (
     validate_bars,
 )
 from stock_daily_report.report.models import (
+    REPORT_RENDER_VERSION,
     AnalyzerMetadata,
     MarketConsensusRanking,
     MarketRanking,
@@ -2341,6 +2342,7 @@ def _build_report(
             quality_status="passed",
             stock_count=len(watchlist.stocks),
             analyzed_stock_count=len(stocks),
+            render_version=REPORT_RENDER_VERSION,
         ),
         market_summary=_build_market_summary(fetched),
         market_rankings=market_rankings,

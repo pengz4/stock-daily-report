@@ -15,6 +15,9 @@ on:
       - feature/report-wide-cn
     paths:
       - "config/watchlist.yaml"
+      - ".github/workflows/daily-report.yml"
+      - "src/stock_daily_report/report/**"
+      - "src/stock_daily_report/pipeline.py"
 
 permissions:
   contents: write
@@ -109,7 +112,10 @@ jobs:
           from pathlib import Path
 
           from stock_daily_report.market_scan.report import load_scan_artifact
-          from stock_daily_report.report.models import ReportDocument
+          from stock_daily_report.report.models import (
+              REPORT_RENDER_VERSION,
+              ReportDocument,
+          )
 
           try:
               report = ReportDocument.model_validate_json(
@@ -123,6 +129,8 @@ jobs:
           raise SystemExit(
               0
               if (
+                  report.metadata.render_version == REPORT_RENDER_VERSION
+                  and
                   rankings.scan_date == scan.report_date
                   and rankings.rule_version == scan.rule_version
                   and rankings.config_hash == scan.config_hash
@@ -139,7 +147,35 @@ jobs:
                 echo "Existing report does not include the current scan; regenerating"
               fi
             else
-              echo "No full-market scan artifact for this date; reusing immutable report"
+              if python - "$report_path" <<'PY'
+          import sys
+          from pathlib import Path
+
+          from stock_daily_report.report.models import (
+              REPORT_RENDER_VERSION,
+              ReportDocument,
+          )
+
+          try:
+              report = ReportDocument.model_validate_json(
+                  Path(sys.argv[1]).read_text(encoding="utf-8")
+              )
+          except (OSError, ValueError):
+              raise SystemExit(1)
+
+          raise SystemExit(
+              0
+              if report.metadata.render_version == REPORT_RENDER_VERSION
+              else 1
+          )
+          PY
+              then
+                echo "No full-market scan artifact for this date; reusing immutable report"
+              else
+                reuse_report=false
+                reuse_snapshot=false
+                echo "Existing report uses an older renderer; regenerating"
+              fi
             fi
             # A changed or missing watchlist scan forces regeneration of the
             # self-selected deep-analysis section. The deep set itself changed,

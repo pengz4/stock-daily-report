@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from stock_daily_report.decision import DecisionLabel
 
 REPORT_SCHEMA_VERSION = 2
+REPORT_RENDER_VERSION = "cn-v2"
 
 
 class AnalyzerMetadata(BaseModel):
@@ -36,6 +37,7 @@ class ReportMetadata(BaseModel):
     quality_status: Literal["passed"]
     stock_count: int = Field(ge=1)
     analyzed_stock_count: int | None = Field(default=None, ge=0)
+    render_version: str | None = Field(default=None, min_length=1)
 
 
 class MarketSummary(BaseModel):
