@@ -165,7 +165,7 @@ def main(argv: list[str] | None = None) -> int:
                 report_date=args.date,
                 reuse_existing_snapshot=args.reuse_existing_snapshot,
                 overwrite_snapshot=args.overwrite_snapshot,
-                market_scan_settings=market_scan_settings,
+                market_scan_settings=market_scan_settings.market_state,
             )
             if settings.notifications.enabled_channels and not args.skip_notifications:
                 if args.report_url:

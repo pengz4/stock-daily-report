@@ -27,6 +27,7 @@ from stock_daily_report.market_scan.models import (
 from stock_daily_report.market_scan.report import write_scan_artifact
 from stock_daily_report.models import (
     DailyBar,
+    MarketScanSettings,
     MarketStateSettings,
     Settings,
     Watchlist,
@@ -354,6 +355,72 @@ def test_market_scan_is_published_in_json_markdown_and_html(
     assert "close_above_ma20" not in html
     assert "风险（elevated_volatility）" in html
     assert 'class="consensus-row"' in html
+
+
+def test_cli_daily_accepts_canonical_scan_and_retains_market_state(
+    tmp_path, fixture_settings, monkeypatch
+):
+    report_date = date(2026, 9, 4)
+    market_state = _market_state()
+    market_state_identity = build_market_state_identity(
+        MarketStateSettings(), market_state
+    )
+    artifact = _market_scan_artifact(report_date).model_copy(
+        update={
+            "market_state": market_state,
+            "market_state_identity": market_state_identity,
+        }
+    )
+    write_scan_artifact(tmp_path, artifact)
+    watchlist = Watchlist(stocks=[{"code": "600519", "name": "贵州茅台"}])
+    provider = RecordingProvider({"600519": make_bars("600519")})
+    scan_settings = MarketScanSettings(
+        rule_version="market-scan-v1",
+        trend_limit=30,
+        balanced_limit=30,
+        minimum_history_bars=120,
+        minimum_latest_amount=50_000_000,
+        minimum_coverage_ratio=0.80,
+        max_workers=16,
+        max_candidates=6_000,
+    )
+
+    monkeypatch.setattr(cli_module, "load_settings", lambda _path: fixture_settings)
+    monkeypatch.setattr(cli_module, "load_watchlist", lambda _path: watchlist)
+    monkeypatch.setattr(
+        cli_module,
+        "load_market_scan_settings",
+        lambda _path: scan_settings,
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "FixtureMarketDataProvider",
+        lambda _path: provider,
+    )
+
+    result = cli_module.main(
+        [
+            "daily",
+            "--date",
+            report_date.isoformat(),
+            "--fixture-directory",
+            str(tmp_path / "fixtures"),
+            "--output-root",
+            str(tmp_path),
+            "--skip-notifications",
+        ]
+    )
+
+    assert result == 0
+    report = json.loads(
+        (tmp_path / "reports" / report_date.isoformat() / "report.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert report["market_state"] == market_state.model_dump(mode="json")
+    assert report["market_state_identity"] == market_state_identity
+    assert report["market_rankings"]["status"] == "available"
+    assert report["market_rankings"]["trend"][0]["code"] == "600519"
 
 
 def test_legacy_market_scan_identity_migrates_and_converges_on_same_date(
