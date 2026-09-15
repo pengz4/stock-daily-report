@@ -169,6 +169,28 @@ def test_akshare_index_provider_contextualizes_fetcher_schema_errors(failure):
     assert raised.value.code == "provider_schema_invalid"
 
 
+@pytest.mark.parametrize(
+    "failure",
+    [KeyError("records"), AttributeError("malformed response")],
+)
+def test_akshare_index_provider_contextualizes_to_dict_schema_errors(failure):
+    class MalformedResponse:
+        def to_dict(self, orient):
+            assert orient == "records"
+            raise failure
+
+    provider = AkShareIndexProvider(fetcher=lambda **_: MalformedResponse())
+
+    with pytest.raises(
+        ProviderDataError,
+        match=r"akshare\[provider_schema_invalid\].*000001",
+    ) as raised:
+        provider.get_daily_bars("000001")
+
+    assert raised.value.provider == "akshare"
+    assert raised.value.code == "provider_schema_invalid"
+
+
 def test_akshare_index_provider_contextualizes_transport_errors_for_fallback():
     primary = AkShareIndexProvider(
         fetcher=lambda **_: (_ for _ in ()).throw(HTTPException("offline"))

@@ -130,7 +130,7 @@ class AkShareIndexProvider:
             )
         except ProviderError:
             raise
-        except (TypeError, ValueError) as error:
+        except _PROVIDER_SCHEMA_ERRORS as error:
             raise ProviderDataError(
                 self.name,
                 "provider_schema_invalid",
