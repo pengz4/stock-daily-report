@@ -82,6 +82,7 @@ def test_daily_workflow_reuse_requires_matching_market_state_fingerprint():
     assert "report.market_state is not None" in command
     assert "scan.market_state is not None" in command
     assert "report.market_state.rule_version == scan.market_state.rule_version" in command
+    assert "rankings.config_hash == scan.config_hash" in command
 
 
 def test_daily_workflow_compares_exact_deep_selection_metadata():
