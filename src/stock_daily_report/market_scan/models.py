@@ -256,14 +256,8 @@ class MarketIndexState(BaseModel):
             raise ValueError(
                 "available market index state requires complete market data"
             )
-        if (
-            self.status == "available"
-            and self.close is not None
-            and self.close <= 0
-        ):
-            raise ValueError(
-                "available market index close must be strictly positive"
-            )
+        if self.close is not None and self.close <= 0:
+            raise ValueError("market index close must be strictly positive")
         if self.status == "unavailable" and any(value is not None for value in values):
             raise ValueError(
                 "unavailable market index state must not include market data"

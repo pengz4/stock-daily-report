@@ -168,6 +168,17 @@ def test_market_index_state_rejects_non_positive_available_close(value):
         )
 
 
+@pytest.mark.parametrize("value", [0, -1])
+def test_market_index_state_rejects_non_positive_partial_close(value):
+    with pytest.raises(ValidationError, match="strictly positive"):
+        MarketIndexState(
+            **{
+                **_index(status="partial").model_dump(),
+                "close": value,
+            }
+        )
+
+
 @pytest.mark.parametrize(
     "field",
     [
