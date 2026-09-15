@@ -13,6 +13,7 @@ import pytest
 
 import stock_daily_report.cli as cli_module
 import stock_daily_report.pipeline as pipeline_module
+from stock_daily_report.market_scan.identity import build_market_state_identity
 from stock_daily_report.market_scan.models import (
     ConsensusRecord,
     MarketBreadth,
@@ -24,7 +25,12 @@ from stock_daily_report.market_scan.models import (
     ScanStatus,
 )
 from stock_daily_report.market_scan.report import write_scan_artifact
-from stock_daily_report.models import DailyBar, Settings, Watchlist
+from stock_daily_report.models import (
+    DailyBar,
+    MarketStateSettings,
+    Settings,
+    Watchlist,
+)
 from stock_daily_report.notify.base import (
     NotificationDeliveryError,
     NotificationOutcome,
@@ -348,6 +354,40 @@ def test_market_scan_is_published_in_json_markdown_and_html(
     assert "close_above_ma20" not in html
     assert "风险（elevated_volatility）" in html
     assert 'class="consensus-row"' in html
+
+
+def test_legacy_market_scan_identity_migrates_and_converges_on_same_date(
+    tmp_path, fixture_settings
+):
+    legacy_artifact = _market_scan_artifact().model_copy(
+        update={"market_state": _market_state(), "market_state_identity": None}
+    )
+    write_scan_artifact(tmp_path, legacy_artifact)
+    watchlist = Watchlist(stocks=[{"code": "600519", "name": "贵州茅台"}])
+    expected_identity = build_market_state_identity(
+        MarketStateSettings(), legacy_artifact.market_state
+    )
+
+    first = run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        report_date=date(2026, 9, 4),
+        now=lambda: datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
+    )
+    second = run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        report_date=date(2026, 9, 4),
+        now=lambda: datetime(2026, 9, 4, 10, 0, tzinfo=UTC),
+        reuse_existing_snapshot=True,
+    )
+
+    assert first.report.market_state_identity == expected_identity
+    assert second.report.market_state_identity == expected_identity
 
 
 def test_daily_pipeline_can_reuse_existing_snapshot_when_refreshing_scan(

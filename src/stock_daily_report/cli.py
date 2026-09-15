@@ -148,6 +148,9 @@ def main(argv: list[str] | None = None) -> int:
         try:
             settings = load_settings(args.settings)
             watchlist = load_watchlist(args.watchlist)
+            market_scan_settings = load_market_scan_settings(
+                _project_root() / "config/market_scan.yaml"
+            )
             provider = (
                 FixtureMarketDataProvider(args.fixture_directory)
                 if args.fixture_directory is not None
@@ -161,6 +164,7 @@ def main(argv: list[str] | None = None) -> int:
                 report_date=args.date,
                 reuse_existing_snapshot=args.reuse_existing_snapshot,
                 overwrite_snapshot=args.overwrite_snapshot,
+                market_scan_settings=market_scan_settings,
             )
             if settings.notifications.enabled_channels and not args.skip_notifications:
                 if args.report_url:

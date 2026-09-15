@@ -37,7 +37,13 @@ from stock_daily_report.market_scan.report import (
     MarketScanArtifactError,
     load_scan_artifact,
 )
-from stock_daily_report.models import DailyBar, Settings, Watchlist, WatchlistStock
+from stock_daily_report.models import (
+    DailyBar,
+    MarketStateSettings,
+    Settings,
+    Watchlist,
+    WatchlistStock,
+)
 from stock_daily_report.providers.akshare import AkShareMarketDataProvider
 from stock_daily_report.providers.base import MarketDataProvider, ProviderError
 from stock_daily_report.providers.fixture import FixtureMarketDataProvider
@@ -307,6 +313,7 @@ def run_daily_report(
     now: Callable[[], datetime] | None = None,
     reuse_existing_snapshot: bool = False,
     overwrite_snapshot: bool = False,
+    market_scan_settings: MarketStateSettings | None = None,
 ) -> ReportOutputs:
     """Fetch, validate, snapshot, analyze, and publish one daily report.
 
@@ -321,6 +328,7 @@ def run_daily_report(
         load_settings(settings) if isinstance(settings, (str, Path)) else settings
     )
     active_watchlist = watchlist or _load_default_watchlist()
+    active_market_scan_settings = market_scan_settings or MarketStateSettings()
     generated_at = _normalise_now(now)
     active_report_date = report_date or generated_at.date()
     if not isinstance(active_report_date, date) or isinstance(
@@ -521,6 +529,7 @@ def run_daily_report(
                         light_quote_error=light_quote_error,
                         scan_ranking=watchlist_scan_ranking,
                         watchlist_scan_info=watchlist_scan_info,
+                        market_state_settings=active_market_scan_settings,
                         overwrite_snapshot=overwrite_snapshot,
                         service=active_service,
                         json_path=json_path,
@@ -1487,6 +1496,7 @@ def _publish_report_transaction(
     light_quote_error: str | None,
     scan_ranking: Sequence[tuple[str, float]] | None,
     watchlist_scan_info: WatchlistScanInfo | None,
+    market_state_settings: MarketStateSettings,
     overwrite_snapshot: bool,
     service: MarketDataService | None,
     json_path: Path,
@@ -1514,9 +1524,21 @@ def _publish_report_transaction(
                 snapshot_target,
                 staged_snapshot,
             )
-        market_rankings = _load_market_rankings(root, report_date)
-        market_state = _load_market_state(root, report_date)
-        market_state_identity = _load_market_state_identity(root, report_date)
+        market_rankings = _load_market_rankings(
+            root,
+            report_date,
+            market_state_settings,
+        )
+        market_state = _load_market_state(
+            root,
+            report_date,
+            market_state_settings,
+        )
+        market_state_identity = _load_market_state_identity(
+            root,
+            report_date,
+            market_state_settings,
+        )
         report = _build_report(
             settings,
             watchlist,
@@ -2429,14 +2451,21 @@ def _build_pool_overview(
     )
 
 
-def _load_market_rankings(root: Path, report_date: date) -> MarketRankings:
+def _load_market_rankings(
+    root: Path,
+    report_date: date,
+    market_state_settings: MarketStateSettings,
+) -> MarketRankings:
     scan_path = root / "market-scans" / report_date.isoformat() / "scan.json"
     if not scan_path.exists():
         if _scan_progress_exists(root, report_date):
             return _unavailable_market_rankings("scan_incomplete")
         return _unavailable_market_rankings("scan_artifact_missing")
     try:
-        artifact = load_scan_artifact(scan_path)
+        artifact = load_scan_artifact(
+            scan_path,
+            market_state_settings=market_state_settings,
+        )
     except MarketScanArtifactError:
         return _unavailable_market_rankings("scan_artifact_invalid")
     if artifact.report_date != report_date:
@@ -2451,12 +2480,19 @@ def _load_market_rankings(root: Path, report_date: date) -> MarketRankings:
     return _market_rankings_from_artifact(artifact)
 
 
-def _load_market_state(root: Path, report_date: date) -> MarketState | None:
+def _load_market_state(
+    root: Path,
+    report_date: date,
+    market_state_settings: MarketStateSettings,
+) -> MarketState | None:
     scan_path = root / "market-scans" / report_date.isoformat() / "scan.json"
     if not scan_path.exists():
         return None
     try:
-        artifact = load_scan_artifact(scan_path)
+        artifact = load_scan_artifact(
+            scan_path,
+            market_state_settings=market_state_settings,
+        )
     except MarketScanArtifactError:
         return None
     if artifact.report_date != report_date:
@@ -2464,12 +2500,19 @@ def _load_market_state(root: Path, report_date: date) -> MarketState | None:
     return artifact.market_state
 
 
-def _load_market_state_identity(root: Path, report_date: date) -> str | None:
+def _load_market_state_identity(
+    root: Path,
+    report_date: date,
+    market_state_settings: MarketStateSettings,
+) -> str | None:
     scan_path = root / "market-scans" / report_date.isoformat() / "scan.json"
     if not scan_path.exists():
         return None
     try:
-        artifact = load_scan_artifact(scan_path)
+        artifact = load_scan_artifact(
+            scan_path,
+            market_state_settings=market_state_settings,
+        )
     except MarketScanArtifactError:
         return None
     if artifact.report_date != report_date:

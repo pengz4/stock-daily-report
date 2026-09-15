@@ -116,6 +116,7 @@ jobs:
           from stock_daily_report.market_scan.identity import (
               build_market_state_identity,
               canonical_market_state_payload,
+              resolve_market_state_identity,
           )
           from stock_daily_report.market_scan.report import load_scan_artifact
           from stock_daily_report.report.models import (
@@ -131,6 +132,16 @@ jobs:
               expected_report_date = date.fromisoformat(sys.argv[3])
               market_scan_settings = load_market_scan_settings(
                   "config/market_scan.yaml"
+              )
+              report_identity = resolve_market_state_identity(
+                  market_scan_settings.market_state,
+                  report.market_state,
+                  report.market_state_identity,
+              )
+              scan_identity = resolve_market_state_identity(
+                  market_scan_settings.market_state,
+                  scan.market_state,
+                  scan.market_state_identity,
               )
           except (OSError, ValueError):
               raise SystemExit(1)
@@ -149,16 +160,15 @@ jobs:
                   and
                   report.market_state.rule_version == scan.market_state.rule_version
                   and report_state.report_date == scan.report_date
-                  and report.market_state_identity is not None
-                  and scan.market_state_identity is not None
-                  and
-                  report.market_state_identity == scan.market_state_identity
+                  and report_identity is not None
+                  and scan_identity is not None
+                  and report_identity == scan_identity
                   and
                   build_market_state_identity(
                       market_scan_settings.market_state,
                       report.market_state,
                   )
-                  == report.market_state_identity
+                  == report_identity
                   and
                   canonical_market_state_payload(report.market_state)
                   == canonical_market_state_payload(scan.market_state)
@@ -186,7 +196,10 @@ jobs:
           from datetime import date
 
           from stock_daily_report.config import load_market_scan_settings
-          from stock_daily_report.market_scan.identity import build_market_state_identity
+          from stock_daily_report.market_scan.identity import (
+              build_market_state_identity,
+              resolve_market_state_identity,
+          )
           from stock_daily_report.report.models import (
               REPORT_RENDER_VERSION,
               ReportDocument,
@@ -200,6 +213,11 @@ jobs:
               market_scan_settings = load_market_scan_settings(
                   "config/market_scan.yaml"
               )
+              report_identity = resolve_market_state_identity(
+                  market_scan_settings.market_state,
+                  report.market_state,
+                  report.market_state_identity,
+              )
           except (OSError, ValueError):
               raise SystemExit(1)
 
@@ -208,14 +226,14 @@ jobs:
               if report.metadata.render_version == REPORT_RENDER_VERSION
               and report.metadata.report_date == expected_report_date
               and report.market_state is not None
-              and report.market_state_identity is not None
+              and report_identity is not None
               and report.market_state.report_date == report.metadata.report_date
               and
               build_market_state_identity(
                   market_scan_settings.market_state,
                   report.market_state,
               )
-              == report.market_state_identity
+              == report_identity
               else 1
           )
           PY

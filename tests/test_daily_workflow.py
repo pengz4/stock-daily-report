@@ -94,11 +94,10 @@ def test_daily_workflow_reuse_requires_matching_market_state_identity_and_payloa
         if step["name"] == "Generate report artifacts"
     )
 
-    assert "report.market_state_identity is not None" in command
-    assert "scan.market_state_identity is not None" in command
-    assert (
-        "report.market_state_identity == scan.market_state_identity" in command
-    )
+    assert "resolve_market_state_identity" in command
+    assert "report_identity is not None" in command
+    assert "scan_identity is not None" in command
+    assert "report_identity == scan_identity" in command
     assert "report.metadata.report_date == scan.report_date" in command
     assert "report_state.report_date == scan.report_date" in command
     assert "load_market_scan_settings" in command
@@ -117,7 +116,8 @@ def test_daily_workflow_no_scan_reuse_requires_current_market_state_identity():
     )
 
     assert "report.market_state is not None" in command
-    assert "report.market_state_identity is not None" in command
+    assert "resolve_market_state_identity" in command
+    assert "report_identity is not None" in command
     assert "report.market_state.report_date == report.metadata.report_date" in command
 
 
