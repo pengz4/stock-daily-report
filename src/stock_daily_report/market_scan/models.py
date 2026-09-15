@@ -10,6 +10,7 @@ from types import MappingProxyType
 from typing import Annotated, Literal
 
 from pydantic import (
+    AliasChoices,
     BaseModel,
     ConfigDict,
     Field,
@@ -188,6 +189,257 @@ class ScanStatus(BaseModel):
         return self
 
 
+MarketStateStatus = Literal["available", "partial", "unavailable"]
+
+
+class MarketIndexState(BaseModel):
+    """One configured index's normalized market-state observation."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    name: str = Field(min_length=1)
+    code: str = Field(pattern=r"^\d{6}$")
+    status: MarketStateStatus
+    latest_trade_date: date | None = None
+    close: float | None = None
+    change_pct: float | None = None
+    close_vs_ma20: str | None = Field(
+        default=None,
+        min_length=1,
+        validation_alias=AliasChoices("close_vs_ma20", "ma20_relation"),
+    )
+    close_vs_ma60: str | None = Field(
+        default=None,
+        min_length=1,
+        validation_alias=AliasChoices("close_vs_ma60", "ma60_relation"),
+    )
+    trend: str | None = Field(
+        default=None,
+        min_length=1,
+        validation_alias=AliasChoices("trend", "trend_label"),
+    )
+    provider: str | None = Field(
+        default=None,
+        min_length=1,
+        validation_alias=AliasChoices("provider", "provider_name"),
+    )
+    error_code: str | None = Field(default=None, min_length=1)
+    error_message: str | None = Field(default=None, min_length=1)
+
+    @field_validator("close", "change_pct", mode="before")
+    @classmethod
+    def require_finite_numbers(cls, value: object) -> object:
+        if value is None:
+            return value
+        if isinstance(value, bool):
+            raise ValueError("market index values must be numeric")  # noqa: TRY004
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return value
+        if not math.isfinite(number):
+            raise ValueError("market index values must be finite")
+        return value
+
+    @model_validator(mode="after")
+    def validate_state_fields(self) -> MarketIndexState:
+        values = (
+            self.latest_trade_date,
+            self.close,
+            self.change_pct,
+            self.close_vs_ma20,
+            self.close_vs_ma60,
+            self.trend,
+        )
+        if self.status == "available" and any(value is None for value in values):
+            raise ValueError(
+                "available market index state requires complete market data"
+            )
+        if self.status == "unavailable" and any(value is not None for value in values):
+            raise ValueError(
+                "unavailable market index state must not include market data"
+            )
+        if self.status == "unavailable" and not self.error_code:
+            raise ValueError(
+                "unavailable market index state requires an error_code"
+            )
+        return self
+
+    @property
+    def ma20_relation(self) -> str | None:
+        return self.close_vs_ma20
+
+    @property
+    def ma60_relation(self) -> str | None:
+        return self.close_vs_ma60
+
+    @property
+    def trend_label(self) -> str | None:
+        return self.trend
+
+    @property
+    def provider_name(self) -> str | None:
+        return self.provider
+
+
+class MarketBreadth(BaseModel):
+    """Normalized advancing/declining breadth for one quote snapshot."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    status: MarketStateStatus
+    advancing_count: int | None = Field(
+        default=None,
+        ge=0,
+        validation_alias=AliasChoices("advancing_count", "up_count"),
+    )
+    declining_count: int | None = Field(
+        default=None,
+        ge=0,
+        validation_alias=AliasChoices("declining_count", "down_count"),
+    )
+    unchanged_count: int | None = Field(
+        default=None,
+        ge=0,
+        validation_alias=AliasChoices("unchanged_count", "flat_count"),
+    )
+    advancing_ratio: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        validation_alias=AliasChoices("advancing_ratio", "up_ratio"),
+    )
+    declining_ratio: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        validation_alias=AliasChoices("declining_ratio", "down_ratio"),
+    )
+    advance_decline_ratio: float | None = Field(default=None, ge=0.0)
+    limit_up_count: int | None = Field(default=None, ge=0)
+    limit_down_count: int | None = Field(default=None, ge=0)
+    valid_count: int | None = Field(default=None, ge=0)
+    total_count: int | None = Field(default=None, ge=0)
+    provider: str | None = Field(
+        default=None,
+        min_length=1,
+        validation_alias=AliasChoices("provider", "provider_name"),
+    )
+    error_code: str | None = Field(default=None, min_length=1)
+    error_message: str | None = Field(default=None, min_length=1)
+
+    @field_validator(
+        "advancing_ratio",
+        "declining_ratio",
+        "advance_decline_ratio",
+        mode="before",
+    )
+    @classmethod
+    def require_finite_ratios(cls, value: object) -> object:
+        if value is None:
+            return value
+        if isinstance(value, bool):
+            raise ValueError("market breadth values must be numeric")  # noqa: TRY004
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return value
+        if not math.isfinite(number):
+            raise ValueError("market breadth values must be finite")
+        return value
+
+    @model_validator(mode="after")
+    def validate_counts(self) -> MarketBreadth:
+        if (
+            self.valid_count is not None
+            and self.total_count is not None
+            and self.valid_count > self.total_count
+        ):
+            raise ValueError("valid_count must not exceed total_count")
+        counts = (
+            self.advancing_count,
+            self.declining_count,
+            self.unchanged_count,
+            self.advancing_ratio,
+            self.declining_ratio,
+            self.advance_decline_ratio,
+            self.valid_count,
+            self.total_count,
+        )
+        if self.status == "available" and any(value is None for value in counts):
+            raise ValueError("available market breadth requires complete data")
+        if self.status == "unavailable" and any(value is not None for value in counts):
+            raise ValueError(
+                "unavailable market breadth must not include breadth data"
+            )
+        if self.status == "unavailable" and not self.error_code:
+            raise ValueError("unavailable market breadth requires an error_code")
+        return self
+
+    @property
+    def up_count(self) -> int | None:
+        return self.advancing_count
+
+    @property
+    def down_count(self) -> int | None:
+        return self.declining_count
+
+    @property
+    def flat_count(self) -> int | None:
+        return self.unchanged_count
+
+    @property
+    def up_ratio(self) -> float | None:
+        return self.advancing_ratio
+
+    @property
+    def down_ratio(self) -> float | None:
+        return self.declining_ratio
+
+    @property
+    def provider_name(self) -> str | None:
+        return self.provider
+
+
+class MarketState(BaseModel):
+    """Immutable, auditable index and breadth state for one report date."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    report_date: date
+    generated_at: datetime
+    rule_version: Literal["market-state-v1"]
+    indices: tuple[MarketIndexState, ...] = Field(
+        validation_alias=AliasChoices("indices", "index_states")
+    )
+    breadth: MarketBreadth
+    status: MarketStateStatus
+    conclusion: str = Field(min_length=1)
+
+    @field_validator("generated_at")
+    @classmethod
+    def require_aware_generated_at(cls, value: datetime) -> datetime:
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("generated_at must be timezone-aware")
+        return value.astimezone(UTC)
+
+    @model_validator(mode="after")
+    def validate_report_date(self) -> MarketState:
+        if any(
+            index.latest_trade_date is not None
+            and index.latest_trade_date > self.report_date
+            for index in self.indices
+        ):
+            raise ValueError(
+                "market index latest_trade_date must not exceed report_date"
+            )
+        return self
+
+    @property
+    def index_states(self) -> tuple[MarketIndexState, ...]:
+        return self.indices
+
+
 class MarketScanArtifact(BaseModel):
     """Complete schema-versioned output of one full-market scan."""
 
@@ -209,6 +461,7 @@ class MarketScanArtifact(BaseModel):
     config_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
     input_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
     provider_names: tuple[str, ...]
+    market_state: MarketState | None = None
 
     @field_validator("generated_at")
     @classmethod
@@ -254,6 +507,13 @@ class MarketScanArtifact(BaseModel):
 
     @model_validator(mode="after")
     def validate_artifact_consistency(self) -> MarketScanArtifact:
+        if (
+            self.market_state is not None
+            and self.market_state.report_date != self.report_date
+        ):
+            raise ValueError(
+                "market_state report_date must match artifact report_date"
+            )
         if not self.valid_count <= self.eligible_count <= self.universe_count:
             raise ValueError("scan counts must satisfy valid <= eligible <= universe")
         expected_coverage = (
@@ -393,7 +653,11 @@ class MarketScanArtifact(BaseModel):
 __all__ = [
     "SCAN_SCHEMA_VERSION",
     "ConsensusRecord",
+    "MarketBreadth",
+    "MarketIndexState",
     "MarketScanArtifact",
+    "MarketState",
+    "MarketStateStatus",
     "ProfileRankings",
     "RankingComponents",
     "RankingRecord",

@@ -6,3 +6,7 @@ minimum_latest_amount: 50000000
 minimum_coverage_ratio: 0.80
 max_workers: 16
 max_candidates: 6000
+market_state:
+  rule_version: market-state-v1
+  index_codes: ["000001", "399001", "399006", "000300", "000852"]
+  lookback_periods: [20, 60]

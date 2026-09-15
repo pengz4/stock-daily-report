@@ -9,6 +9,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    StrictInt,
     StringConstraints,
     field_validator,
     model_validator,
@@ -254,6 +255,51 @@ class BacktestSettings(BaseModel):
         return value
 
 
+MARKET_STATE_INDEX_CODES = (
+    "000001",
+    "399001",
+    "399006",
+    "000300",
+    "000852",
+)
+
+
+class MarketStateSettings(BaseModel):
+    """Immutable configuration for the index and breadth market state."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    rule_version: Literal["market-state-v1"] = "market-state-v1"
+    index_codes: tuple[str, ...] = MARKET_STATE_INDEX_CODES
+    lookback_periods: tuple[StrictInt, ...] = (20, 60)
+
+    @field_validator("index_codes")
+    @classmethod
+    def validate_index_codes(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        if value != MARKET_STATE_INDEX_CODES:
+            raise ValueError(
+                "index_codes must contain the five configured market indices "
+                "in canonical order"
+            )
+        return value
+
+    @field_validator("lookback_periods")
+    @classmethod
+    def validate_lookback_periods(
+        cls, value: tuple[StrictInt, ...]
+    ) -> tuple[StrictInt, ...]:
+        if (
+            len(value) != 2
+            or any(period < 1 for period in value)
+            or len(set(value)) != len(value)
+            or value[0] >= value[1]
+        ):
+            raise ValueError(
+                "lookback_periods must contain two distinct ascending periods"
+            )
+        return value
+
+
 class MarketScanSettings(BaseModel):
     """Versioned limits and eligibility thresholds for full-market scans."""
 
@@ -267,6 +313,7 @@ class MarketScanSettings(BaseModel):
     minimum_coverage_ratio: float = Field(gt=0.0, le=1.0)
     max_workers: int = Field(gt=0, strict=True)
     max_candidates: int = Field(gt=0, strict=True)
+    market_state: MarketStateSettings = Field(default_factory=MarketStateSettings)
 
     @field_validator(
         "minimum_latest_amount",
