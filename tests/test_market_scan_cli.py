@@ -14,7 +14,10 @@ from stock_daily_report.config import (
     load_settings,
 )
 from stock_daily_report.market_scan.models import (
+    MarketBreadth,
+    MarketIndexState,
     MarketScanArtifact,
+    MarketState,
     ProfileRankings,
 )
 from stock_daily_report.market_scan.report import write_scan_artifact
@@ -49,7 +52,13 @@ def _scan_config_hash(settings, data_settings=None) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def _empty_artifact(*, report_date: date, config_hash: str) -> MarketScanArtifact:
+def _empty_artifact(
+    *,
+    report_date: date,
+    config_hash: str,
+    market_state: MarketState | None = None,
+    market_state_identity: str | None = None,
+) -> MarketScanArtifact:
     return MarketScanArtifact(
         rule_version="market-scan-v1",
         report_date=report_date,
@@ -66,6 +75,32 @@ def _empty_artifact(*, report_date: date, config_hash: str) -> MarketScanArtifac
         config_hash=config_hash,
         input_hash="1" * 64,
         provider_names=("akshare-universe", "market-data-service"),
+        market_state=market_state,
+        market_state_identity=market_state_identity,
+    )
+
+
+def _unavailable_market_state() -> MarketState:
+    return MarketState(
+        report_date=REPORT_DATE,
+        generated_at=datetime(2026, 9, 11, 8, 0, tzinfo=UTC),
+        rule_version="market-state-v1",
+        indices=(
+            MarketIndexState(
+                name="上证指数",
+                code="000001",
+                status="unavailable",
+                error_code="offline",
+                error_message="fixture",
+            ),
+        ),
+        breadth=MarketBreadth(
+            status="unavailable",
+            error_code="offline",
+            error_message="fixture",
+        ),
+        status="unavailable",
+        conclusion="市场状态数据不足",
     )
 
 
@@ -536,6 +571,49 @@ def test_market_scan_cli_rejects_reuse_after_data_settings_change(
     captured = capsys.readouterr()
     assert result == 1
     assert "configuration does not match" in captured.err
+
+
+def test_market_scan_cli_rejects_wrong_market_state_identity(
+    monkeypatch, tmp_path, capsys
+):
+    settings = _scan_settings()
+    data_settings = load_settings(
+        Path(__file__).parents[1] / "config" / "settings.yaml"
+    )
+    artifact = _empty_artifact(
+        report_date=REPORT_DATE,
+        config_hash=_scan_config_hash(settings, data_settings),
+        market_state=_unavailable_market_state(),
+        market_state_identity="f" * 64,
+    )
+    artifact_path = tmp_path / "market-scans" / REPORT_DATE.isoformat() / "scan.json"
+    artifact_path.parent.mkdir(parents=True)
+    artifact_path.write_text(artifact.model_dump_json(), encoding="utf-8")
+
+    monkeypatch.setattr(cli_module, "_current_market_date", lambda: REPORT_DATE)
+    monkeypatch.setattr(cli_module, "load_market_scan_settings", lambda _path: settings)
+    monkeypatch.setattr(cli_module, "load_settings", lambda _path: data_settings)
+    monkeypatch.setattr(
+        cli_module,
+        "run_market_scan",
+        lambda *_args, **_kwargs: pytest.fail("mismatched artifact must not be reused"),
+    )
+
+    result = cli_module.main(
+        [
+            "market-scan",
+            "--date",
+            REPORT_DATE.isoformat(),
+            "--output-root",
+            str(tmp_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert result == 1
+    assert "Invalid market-state identity" in captured.err
+    assert "does not match the canonical" in captured.err
+    assert "Traceback" not in captured.err
 
 
 @pytest.mark.parametrize(

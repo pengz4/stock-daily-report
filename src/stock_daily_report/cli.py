@@ -28,6 +28,7 @@ from stock_daily_report.market_scan.runner import (
     market_scan_config_hash,
     run_market_scan,
 )
+from stock_daily_report.models import MarketStateSettings
 from stock_daily_report.notify import NotificationDeliveryError, NotificationService
 from stock_daily_report.pipeline import (
     PipelineError,
@@ -260,6 +261,7 @@ def main(argv: list[str] | None = None) -> int:
                     report_date=args.date,
                     expected_config_hash=configuration_hash,
                     expected_rule_version=settings.rule_version,
+                    market_state_settings=settings.market_state,
                 )
             elif args.resumable:
                 current_date = _current_market_date()
@@ -359,8 +361,12 @@ def _existing_scan_artifact(
     report_date: date,
     expected_config_hash: str,
     expected_rule_version: str,
+    market_state_settings: MarketStateSettings,
 ) -> Path:
-    artifact = load_scan_artifact(path)
+    artifact = load_scan_artifact(
+        path,
+        market_state_settings=market_state_settings,
+    )
     if artifact.report_date != report_date:
         raise MarketScanArtifactError(
             "Existing market scan artifact report_date does not match "
