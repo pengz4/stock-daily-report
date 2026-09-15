@@ -2,7 +2,7 @@ import threading
 import time
 from datetime import UTC, date, datetime, timedelta
 
-from stock_daily_report.models import DailyBar, MarketScanSettings
+from stock_daily_report.models import DailyBar, MarketScanSettings, MarketStateSettings
 from stock_daily_report.providers.base import ProviderAvailabilityError
 from stock_daily_report.providers.service import (
     AllProvidersFailedError,
@@ -34,7 +34,7 @@ def _codes(count: int) -> list[str]:
     return [f"600{index:03d}" for index in range(count)]
 
 
-def _quote(code: str) -> UniverseQuote:
+def _quote(code: str, change_pct: float | None = None) -> UniverseQuote:
     return UniverseQuote(
         code=code,
         name=f"Company {code}",
@@ -43,6 +43,7 @@ def _quote(code: str) -> UniverseQuote:
         volume=1_000_000.0,
         amount=100_000_000.0,
         quote_date=REPORT_DATE,
+        change_pct=change_pct,
     )
 
 
@@ -119,6 +120,31 @@ class FakeHistoryProvider:
                 self.active -= 1
 
 
+class FakeIndexProvider:
+    name = "fake-index"
+
+    def __init__(
+        self,
+        bars_by_code: dict[str, list[DailyBar]],
+        *,
+        failures: set[str] | None = None,
+    ) -> None:
+        self._bars_by_code = bars_by_code
+        self._failures = failures or set()
+
+    def get_daily_bars(
+        self,
+        code: str,
+        *,
+        start: date | None = None,
+        end: date | None = None,
+    ) -> list[DailyBar]:
+        del start, end
+        if code in self._failures:
+            raise ProviderAvailabilityError(self.name, "network_error", f"failed {code}")
+        return list(self._bars_by_code[code])
+
+
 class QualityRejectingHistoryProvider:
     name = "quality-rejecting-history"
 
@@ -179,12 +205,16 @@ def _scan(
 ):
     from stock_daily_report.market_scan.runner import scan_market
 
+    index_provider = setting_changes.pop("index_provider", None)
+    universe_quotes = setting_changes.pop("universe_quotes", None)
     return scan_market(
         _settings(**setting_changes),
         FakeUniverseProvider([_quote(code) for code in codes]),
         provider,
         report_date=REPORT_DATE,
         generated_at=GENERATED_AT,
+        index_provider=index_provider,
+        universe_quotes=universe_quotes,
     )
 
 
@@ -429,3 +459,91 @@ def test_rankings_are_limited_unique_and_consensus_is_exact_intersection():
     assert len(trend_codes) == len(set(trend_codes))
     assert len(balanced_codes) == len(set(balanced_codes))
     assert consensus_codes == set(trend_codes) & set(balanced_codes)
+
+
+def test_scan_persists_market_state_from_the_quote_snapshot():
+    from stock_daily_report.models import MARKET_STATE_INDEX_CODES
+
+    codes = _codes(3)
+    quotes = [
+        _quote(codes[0], 1.0),
+        _quote(codes[1], 0.0),
+        _quote(codes[2], -1.0),
+    ]
+    index_bars = {
+        code: _bars("600000")
+        for code in MARKET_STATE_INDEX_CODES
+    }
+
+    artifact = _scan(
+        codes,
+        FakeHistoryProvider({code: _bars(code) for code in codes}),
+        index_provider=FakeIndexProvider(index_bars),
+        universe_quotes=quotes,
+    )
+
+    assert artifact.market_state is not None
+    assert artifact.market_state.breadth.advancing_count == 1
+    assert artifact.market_state.breadth.declining_count == 1
+    assert artifact.market_state.breadth.unchanged_count == 1
+    assert [index.code for index in artifact.market_state.indices] == list(
+        MARKET_STATE_INDEX_CODES
+    )
+
+
+def test_index_provider_failures_are_isolated_from_the_scan():
+    from stock_daily_report.models import MARKET_STATE_INDEX_CODES
+
+    codes = _codes(1)
+    failed_code = MARKET_STATE_INDEX_CODES[1]
+    artifact = _scan(
+        codes,
+        FakeHistoryProvider({codes[0]: _bars(codes[0])}),
+        index_provider=FakeIndexProvider(
+            {
+                code: _bars("600000")
+                for code in MARKET_STATE_INDEX_CODES
+            },
+            failures={failed_code},
+        ),
+        universe_quotes=[_quote(codes[0], 1.0)],
+    )
+
+    assert artifact.valid_count == 1
+    assert artifact.market_state is not None
+    assert artifact.market_state.status == "partial"
+    failed = next(
+        index for index in artifact.market_state.indices if index.code == failed_code
+    )
+    assert failed.status == "unavailable"
+    assert failed.error_code == "network_error"
+
+
+def test_market_state_inputs_contribute_to_artifact_identity():
+    from stock_daily_report.models import MARKET_STATE_INDEX_CODES
+
+    code = _codes(1)[0]
+    history = FakeHistoryProvider({code: _bars(code)})
+    index_bars = {
+        index_code: _bars("600000")
+        for index_code in MARKET_STATE_INDEX_CODES
+    }
+    first = _scan(
+        [code],
+        history,
+        index_provider=FakeIndexProvider(index_bars),
+        universe_quotes=[_quote(code, 1.0)],
+    )
+    changed_settings = _settings(
+        market_state=MarketStateSettings(lookback_periods=(10, 30))
+    )
+    changed = _scan(
+        [code],
+        history,
+        index_provider=FakeIndexProvider(index_bars),
+        universe_quotes=[_quote(code, -1.0)],
+        **changed_settings.model_dump(),
+    )
+
+    assert first.config_hash != changed.config_hash
+    assert first.input_hash != changed.input_hash

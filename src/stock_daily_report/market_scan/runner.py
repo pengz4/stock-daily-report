@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import inspect
 import json
 import multiprocessing
 import time
@@ -23,6 +24,7 @@ from stock_daily_report.market_scan.filters import (
 from stock_daily_report.market_scan.models import (
     ConsensusRecord,
     MarketScanArtifact,
+    MarketState,
     ProfileRankings,
     RankingRecord,
     ScanStatus,
@@ -34,8 +36,13 @@ from stock_daily_report.market_scan.scoring import (
     rank_scores,
     score_candidate,
 )
+from stock_daily_report.market_scan.state import (
+    INDEX_DEFINITIONS,
+    calculate_breadth,
+    calculate_market_state,
+)
 from stock_daily_report.models import DailyBar, MarketDataSettings, MarketScanSettings
-from stock_daily_report.providers.base import ProviderError
+from stock_daily_report.providers.base import ProviderDataError, ProviderError
 from stock_daily_report.providers.service import (
     AllProvidersFailedError,
     DataQualityError,
@@ -168,6 +175,7 @@ def scan_market(
     report_date: date,
     generated_at: datetime | None = None,
     configuration_hash: str | None = None,
+    index_provider: object | None = None,
     universe_quotes: Sequence[UniverseQuote] | None = None,
     resume_from: Mapping[str, _CandidateResult] | None = None,
 ) -> MarketScanArtifact:
@@ -190,6 +198,18 @@ def scan_market(
         )
     quotes = tuple(universe_quotes)
     _require_unique_quotes(quotes)
+    market_state = (
+        _build_market_state(
+            settings,
+            index_provider,
+            quotes,
+            report_date=report_date,
+            generated_at=timestamp,
+            breadth_provider=_provider_name(universe_provider),
+        )
+        if index_provider is not None
+        else None
+    )
     exclusion_counts: Counter[str] = Counter()
     failure_counts: Counter[str] = Counter()
     statuses: dict[str, ScanStatus] = {}
@@ -289,6 +309,14 @@ def scan_market(
     }
     for result in results.values():
         provider_names.update(result.provider_names)
+    if market_state is not None:
+        provider_names.update(
+            index.provider
+            for index in market_state.indices
+            if index.provider is not None
+        )
+        if market_state.breadth.provider is not None:
+            provider_names.add(market_state.breadth.provider)
     normalized_statuses = tuple(statuses[code] for code in sorted(statuses))
     return MarketScanArtifact(
         rule_version=settings.rule_version,
@@ -304,8 +332,9 @@ def scan_market(
         consensus=consensus,
         statuses=normalized_statuses,
         config_hash=configuration_hash or market_scan_config_hash(settings),
-        input_hash=_input_hash(quotes, results, report_date),
+        input_hash=_input_hash(quotes, results, report_date, market_state),
         provider_names=tuple(sorted(name for name in provider_names if name)),
+        market_state=market_state,
     )
 
 
@@ -318,6 +347,7 @@ def run_market_scan(
     output_root: str | Path,
     generated_at: datetime | None = None,
     configuration_hash: str | None = None,
+    index_provider: object | None = None,
     directory: str | Path = "market-scans",
 ) -> Path:
     """Run one scan and persist its immutable date-partitioned artifact."""
@@ -329,6 +359,7 @@ def run_market_scan(
         report_date=report_date,
         generated_at=generated_at,
         configuration_hash=configuration_hash,
+        index_provider=index_provider,
     )
     return write_scan_artifact(output_root, artifact, directory=directory)
 
@@ -522,7 +553,16 @@ def _fetch_history(
 ) -> tuple[Sequence[DailyBar | Mapping[str, object]], str]:
     fetch = getattr(history_provider, "fetch", None)
     if callable(fetch):
-        fetched = fetch(code, end=report_date, as_of=report_date)
+        parameters = inspect.signature(fetch).parameters
+        accepts_as_of = "as_of" in parameters or any(
+            parameter.kind is inspect.Parameter.VAR_KEYWORD
+            for parameter in parameters.values()
+        )
+        fetched = (
+            fetch(code, end=report_date, as_of=report_date)
+            if accepts_as_of
+            else fetch(code, end=report_date)
+        )
         return fetched.bars, fetched.provider_name
     get_daily_bars = getattr(history_provider, "get_daily_bars", None)
     if not callable(get_daily_bars):
@@ -647,7 +687,12 @@ def _input_hash(
     quotes: Sequence[UniverseQuote],
     results: Mapping[str, _CandidateResult],
     report_date: date,
+    market_state: object | None,
 ) -> str:
+    state_payload = None
+    if market_state is not None:
+        state_payload = market_state.model_dump(mode="json")
+        state_payload.pop("generated_at", None)
     return _hash_json(
         {
             "report_date": report_date.isoformat(),
@@ -660,6 +705,7 @@ def _input_hash(
                     "volume": quote.volume,
                     "amount": quote.amount,
                     "quote_date": quote.quote_date.isoformat(),
+                    "change_pct": quote.change_pct,
                 }
                 for quote in quotes
             ],
@@ -672,7 +718,57 @@ def _input_hash(
                 }
                 for code, result in sorted(results.items())
             },
+            "market_state": state_payload,
         }
+    )
+
+
+def _build_market_state(
+    settings: MarketScanSettings,
+    index_provider: object,
+    quotes: Sequence[UniverseQuote],
+    *,
+    report_date: date,
+    generated_at: datetime,
+    breadth_provider: str,
+) -> MarketState:
+    """Build state from the exact quote snapshot and isolated index requests."""
+
+    index_bars: dict[str, Sequence[DailyBar] | BaseException] = {}
+    for code in settings.market_state.index_codes:
+        try:
+            raw_bars, _provider_name = _fetch_history_with_timeout(
+                index_provider,
+                code,
+                report_date,
+            )
+            index_bars[code] = tuple(_normalize_bar(bar) for bar in raw_bars)
+        except ProviderError as error:
+            index_bars[code] = error
+        except (KeyError, TypeError, ValueError, ValidationError) as error:
+            index_bars[code] = ProviderDataError(
+                _provider_name(index_provider),
+                "index_data_invalid",
+                str(error),
+            )
+        except Exception as error:  # noqa: BLE001
+            index_bars[code] = ProviderDataError(
+                _provider_name(index_provider),
+                "index_fetch_failed",
+                str(error),
+            )
+
+    names_by_code = {code: name for name, code in INDEX_DEFINITIONS}
+    definitions = tuple(
+        (names_by_code.get(code, code), code)
+        for code in settings.market_state.index_codes
+    )
+    return calculate_market_state(
+        report_date=report_date,
+        generated_at=generated_at,
+        breadth=calculate_breadth(quotes, provider=breadth_provider),
+        index_bars=index_bars,
+        index_definitions=definitions,
     )
 
 
@@ -750,6 +846,7 @@ def _quote_to_json(quote: UniverseQuote) -> dict[str, object]:
         "volume": quote.volume,
         "amount": quote.amount,
         "quote_date": quote.quote_date.isoformat(),
+        "change_pct": quote.change_pct,
     }
 
 
@@ -771,6 +868,7 @@ def _quote_from_json(document: Mapping[str, object]) -> UniverseQuote:
         volume=document.get("volume"),
         amount=document.get("amount"),
         quote_date=parsed_date,
+        change_pct=document.get("change_pct"),
     )
 
 

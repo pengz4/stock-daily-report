@@ -94,7 +94,7 @@ def load_checkpoint(
         ) from error
     try:
         checkpoint = ScanCheckpoint.model_validate(document)
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:
         raise CheckpointIntegrityError(
             f"Invalid checkpoint: {path}: {error}"
         ) from error
@@ -205,6 +205,7 @@ def manifest_hash_for(quotes: Iterable[UniverseQuote]) -> str:
                 "volume": quote.volume,
                 "amount": quote.amount,
                 "quote_date": quote.quote_date.isoformat(),
+                "change_pct": quote.change_pct,
             }
             for quote in sorted(quotes, key=lambda quote: quote.code)
         ]
@@ -215,7 +216,23 @@ def manifest_hash_for_documents(documents: Iterable[Mapping[str, object]]) -> st
     """Hash already-normalized universe quote documents from a checkpoint."""
 
     normalized = sorted(
-        ({key: value for key, value in document.items()} for document in documents),
+        (
+            {
+                key: document[key]
+                for key in (
+                    "code",
+                    "name",
+                    "market",
+                    "latest_price",
+                    "volume",
+                    "amount",
+                    "quote_date",
+                    "change_pct",
+                )
+                if key in document
+            }
+            for document in documents
+        ),
         key=lambda document: str(document.get("code", "")),
     )
     return _hash_json(normalized)

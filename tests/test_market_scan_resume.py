@@ -44,7 +44,7 @@ def _settings(**changes: object) -> MarketScanSettings:
     return MarketScanSettings(**values)
 
 
-def _quote(code: str) -> UniverseQuote:
+def _quote(code: str, change_pct: float | None = None) -> UniverseQuote:
     return UniverseQuote(
         code=code,
         name=f"Company {code}",
@@ -53,6 +53,7 @@ def _quote(code: str) -> UniverseQuote:
         volume=1_000_000.0,
         amount=100_000_000.0,
         quote_date=REPORT_DATE,
+        change_pct=change_pct,
     )
 
 
@@ -103,6 +104,23 @@ class FakeHistoryProvider:
     ) -> list[DailyBar]:
         del start, end
         self.requested.append(code)
+        return list(self._bars_by_code[code])
+
+
+class FakeIndexProvider:
+    name = "fake-index"
+
+    def __init__(self, bars_by_code: dict[str, list[DailyBar]]) -> None:
+        self._bars_by_code = bars_by_code
+
+    def get_daily_bars(
+        self,
+        code: str,
+        *,
+        start: date | None = None,
+        end: date | None = None,
+    ) -> list[DailyBar]:
+        del start, end
         return list(self._bars_by_code[code])
 
 
@@ -348,6 +366,97 @@ def test_resumable_scan_resumes_without_refetching(tmp_path):
     )
 
     assert len(history.requested) == 2
+
+
+def test_resumable_scan_preserves_market_state_from_checkpoint_snapshot(tmp_path):
+    from stock_daily_report.market_scan.models import MarketScanArtifact
+    from stock_daily_report.models import MARKET_STATE_INDEX_CODES
+
+    codes = _codes(2)
+    quotes = [_quote(codes[0], 1.0), _quote(codes[1], -1.0)]
+    universe = FakeUniverseProvider(quotes)
+    history = FakeHistoryProvider({code: _bars(code) for code in codes})
+    index = FakeIndexProvider(
+        {code: _bars("600000") for code in MARKET_STATE_INDEX_CODES}
+    )
+    settings = _settings(max_candidates=2)
+
+    assert (
+        run_resumable_scan(
+            settings,
+            universe,
+            history,
+            index_provider=index,
+            report_date=REPORT_DATE,
+            output_root=tmp_path,
+            max_batches=1,
+            batch_size=1,
+        )
+        is None
+    )
+
+    universe._quotes = [_quote(codes[0], -1.0), _quote(codes[1], 1.0)]
+
+    path = run_resumable_scan(
+        settings,
+        universe,
+        history,
+        index_provider=index,
+        report_date=REPORT_DATE,
+        output_root=tmp_path,
+    )
+
+    assert path is not None
+    artifact = MarketScanArtifact.model_validate_json(path.read_text(encoding="utf-8"))
+    assert artifact.market_state is not None
+    assert artifact.market_state.breadth.advancing_count == 1
+    assert artifact.market_state.breadth.declining_count == 1
+
+
+def test_resumable_scan_archives_checkpoint_when_market_state_configuration_changes(
+    tmp_path,
+):
+    from stock_daily_report.models import MARKET_STATE_INDEX_CODES, MarketStateSettings
+
+    codes = _codes(2)
+    quotes = [_quote(code) for code in codes]
+    universe = FakeUniverseProvider(quotes)
+    history = FakeHistoryProvider({code: _bars(code) for code in codes})
+    index = FakeIndexProvider(
+        {code: _bars("600000") for code in MARKET_STATE_INDEX_CODES}
+    )
+    settings = _settings(max_candidates=2)
+
+    run_resumable_scan(
+        settings,
+        universe,
+        history,
+        index_provider=index,
+        report_date=REPORT_DATE,
+        output_root=tmp_path,
+        max_batches=1,
+        batch_size=1,
+    )
+
+    changed = settings.model_copy(
+        update={
+            "market_state": MarketStateSettings(lookback_periods=(10, 30)),
+        }
+    )
+    path = run_resumable_scan(
+        changed,
+        universe,
+        history,
+        index_provider=index,
+        report_date=REPORT_DATE,
+        output_root=tmp_path,
+    )
+
+    archive_dir = (
+        tmp_path / "market-scans" / REPORT_DATE.isoformat() / "progress-archive"
+    )
+    assert path is not None
+    assert len(list(archive_dir.glob("*.json"))) == 1
 
 
 def test_resumable_scan_archives_stale_scoring_hash(tmp_path):

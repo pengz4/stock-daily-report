@@ -37,6 +37,7 @@ from stock_daily_report.pipeline import (
 )
 from stock_daily_report.providers.base import ProviderError
 from stock_daily_report.providers.fixture import FixtureMarketDataProvider
+from stock_daily_report.providers.index import AkShareIndexProvider
 from stock_daily_report.providers.service import CacheRollbackError
 from stock_daily_report.providers.universe import (
     AkShareUniverseProvider,
@@ -234,6 +235,9 @@ def main(argv: list[str] | None = None) -> int:
             directory = (
                 "watchlist-scans" if args.scope == "watchlist" else "market-scans"
             )
+            index_provider = (
+                AkShareIndexProvider() if directory == "market-scans" else None
+            )
             if args.scope == "watchlist":
                 universe_provider: object = WatchlistUniverseProvider(
                     (stock.code for stock in load_watchlist(args.watchlist).stocks),
@@ -271,6 +275,7 @@ def main(argv: list[str] | None = None) -> int:
                     report_date=args.date,
                     output_root=args.output_root,
                     configuration_hash=configuration_hash,
+                    index_provider=index_provider,
                     max_batches=args.max_batches,
                     directory=directory,
                 )
@@ -300,6 +305,7 @@ def main(argv: list[str] | None = None) -> int:
                         report_date=args.date,
                         output_root=args.output_root,
                         configuration_hash=configuration_hash,
+                        index_provider=index_provider,
                     )
                 else:
                     artifact_path = run_market_scan(

@@ -53,6 +53,7 @@ def run_resumable_scan(
     output_root: str | Path,
     generated_at: datetime | None = None,
     configuration_hash: str | None = None,
+    index_provider: object | None = None,
     source_revision: str = "",
     max_batches: int | None = None,
     batch_size: int | None = None,
@@ -92,6 +93,7 @@ def run_resumable_scan(
                 output_root,
                 generated_at,
                 configuration_hash,
+                index_provider,
                 directory=directory,
             )
     else:
@@ -189,6 +191,7 @@ def run_resumable_scan(
         output_root,
         generated_at,
         configuration_hash,
+        index_provider,
         directory=directory,
     )
 
@@ -304,6 +307,7 @@ def _finalize(
     output_root: str | Path,
     generated_at: datetime | None,
     configuration_hash: str | None,
+    index_provider: object | None,
     directory: str | Path = "market-scans",
 ) -> Path:
     """Rebuild the immutable artifact from completed results via ``scan_market``."""
@@ -317,6 +321,7 @@ def _finalize(
         report_date=report_date,
         generated_at=generated_at,
         configuration_hash=configuration_hash,
+        index_provider=index_provider,
         universe_quotes=quotes,
         resume_from=completed,
     )

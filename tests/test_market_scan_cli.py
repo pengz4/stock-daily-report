@@ -76,6 +76,7 @@ def test_market_scan_cli_accepts_date_settings_and_output_root(
     data_settings = SimpleNamespace(market_data=object())
     universe_provider = object()
     history_service = object()
+    index_provider = object()
     settings_path = tmp_path / "market-scan.yaml"
     data_settings_path = tmp_path / "settings.yaml"
     output_root = tmp_path / "output"
@@ -99,6 +100,12 @@ def test_market_scan_cli_accepts_date_settings_and_output_root(
         cli_module,
         "AkShareUniverseProvider",
         lambda: universe_provider,
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "AkShareIndexProvider",
+        lambda: index_provider,
+        raising=False,
     )
 
     def fake_build_market_data_service(configured_settings, *, output_root):
@@ -132,6 +139,7 @@ def test_market_scan_cli_accepts_date_settings_and_output_root(
         report_date,
         output_root: Path,
         configuration_hash,
+        index_provider,
     ):
         calls.append(
             (
@@ -141,6 +149,7 @@ def test_market_scan_cli_accepts_date_settings_and_output_root(
                 report_date,
                 output_root,
                 configuration_hash,
+                index_provider,
             )
         )
         return artifact_path
@@ -170,8 +179,87 @@ def test_market_scan_cli_accepts_date_settings_and_output_root(
             REPORT_DATE,
             output_root,
             "a" * 64,
+            index_provider,
         )
     ]
+    assert capsys.readouterr().out == f"{artifact_path}\n"
+
+
+def test_market_scan_cli_wires_index_provider_for_market_scope(
+    monkeypatch, tmp_path, capsys
+):
+    settings = object()
+    data_settings = SimpleNamespace(market_data=object())
+    universe_provider = object()
+    history_service = object()
+    index_provider = object()
+    artifact_path = tmp_path / "market-scans" / "2026-09-11" / "scan.json"
+    observed = {}
+
+    monkeypatch.setattr(cli_module, "_current_market_date", lambda: REPORT_DATE)
+    monkeypatch.setattr(cli_module, "load_market_scan_settings", lambda _path: settings)
+    monkeypatch.setattr(cli_module, "load_settings", lambda _path: data_settings)
+    monkeypatch.setattr(cli_module, "AkShareUniverseProvider", lambda: universe_provider)
+    monkeypatch.setattr(
+        cli_module,
+        "AkShareIndexProvider",
+        lambda: index_provider,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "build_market_data_service",
+        lambda _settings, *, output_root: history_service,
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "market_scan_config_hash",
+        lambda _scan, _data: "a" * 64,
+    )
+
+    def fake_run_market_scan(
+        configured_settings,
+        configured_universe_provider,
+        configured_history_provider,
+        *,
+        report_date,
+        output_root,
+        configuration_hash,
+        index_provider,
+    ):
+        observed.update(
+            settings=configured_settings,
+            universe=configured_universe_provider,
+            history=configured_history_provider,
+            date=report_date,
+            root=output_root,
+            config=configuration_hash,
+            index=index_provider,
+        )
+        return artifact_path
+
+    monkeypatch.setattr(cli_module, "run_market_scan", fake_run_market_scan)
+
+    result = cli_module.main(
+        [
+            "market-scan",
+            "--date",
+            REPORT_DATE.isoformat(),
+            "--output-root",
+            str(tmp_path),
+        ]
+    )
+
+    assert result == 0
+    assert observed == {
+        "settings": settings,
+        "universe": universe_provider,
+        "history": history_service,
+        "date": REPORT_DATE,
+        "root": tmp_path,
+        "config": "a" * 64,
+        "index": index_provider,
+    }
     assert capsys.readouterr().out == f"{artifact_path}\n"
 
 
@@ -284,7 +372,9 @@ def test_market_scan_cli_uses_configured_fallback_and_report_date(
         report_date,
         output_root,
         configuration_hash,
+        index_provider,
     ):
+        assert index_provider is not None
         assert isinstance(history_provider, MarketDataService)
         fetched = history_provider.fetch(
             "600519",
