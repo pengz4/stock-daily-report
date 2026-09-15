@@ -74,6 +74,34 @@ def test_breadth_counts_quotes_by_change_pct_and_ignores_missing_values():
     assert breadth.advance_decline_ratio == 1.0
 
 
+def test_breadth_treats_non_finite_changes_as_missing():
+    breadth = calculate_breadth(
+        [_quote(1.2), _quote(float("nan")), _quote(float("inf")), _quote(-float("inf"))]
+    )
+
+    assert breadth.advancing_count == 1
+    assert breadth.declining_count == 0
+    assert breadth.unchanged_count == 0
+    assert breadth.valid_count == 1
+    assert breadth.total_count == 4
+    assert breadth.status == "partial"
+
+
+def test_non_finite_changes_do_not_drive_market_classification():
+    bullish = calculate_index_state(
+        name="上证指数",
+        code="000001",
+        bars=_bars([100.0] * 59 + [120.0]),
+        report_date=REPORT_DATE,
+        generated_at=GENERATED_AT,
+    )
+    breadth = calculate_breadth(
+        [_quote(float("nan")), _quote(float("inf")), _quote(-float("inf"))]
+    )
+
+    assert classify_market_state([bullish], breadth) == "insufficient"
+
+
 def test_market_state_classification_identifies_aligned_directions():
     bullish = calculate_index_state(
         name="上证指数",

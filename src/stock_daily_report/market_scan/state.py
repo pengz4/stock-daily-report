@@ -98,10 +98,12 @@ def calculate_breadth(
     """Count advancing, declining, and unchanged quotes with valid changes."""
 
     snapshot = tuple(quotes)
-    valid = tuple(
-        quote for quote in snapshot if quote.change_pct is not None
+    valid_changes = tuple(
+        numeric_change
+        for quote in snapshot
+        if (numeric_change := _finite_numeric_change(quote.change_pct)) is not None
     )
-    if not valid:
+    if not valid_changes:
         return MarketBreadth(
             status="unavailable",
             provider=provider,
@@ -109,9 +111,9 @@ def calculate_breadth(
             error_message="quote snapshot contains no valid change_pct values",
         )
 
-    advancing = sum(quote.change_pct > 0 for quote in valid)
-    declining = sum(quote.change_pct < 0 for quote in valid)
-    unchanged = len(valid) - advancing - declining
+    advancing = sum(change > 0 for change in valid_changes)
+    declining = sum(change < 0 for change in valid_changes)
+    unchanged = len(valid_changes) - advancing - declining
     advance_decline_ratio = advancing / declining if declining else None
     status = "available" if advance_decline_ratio is not None else "partial"
     return MarketBreadth(
@@ -119,12 +121,12 @@ def calculate_breadth(
         advancing_count=advancing,
         declining_count=declining,
         unchanged_count=unchanged,
-        advancing_ratio=advancing / len(valid),
-        declining_ratio=declining / len(valid),
+        advancing_ratio=advancing / len(valid_changes),
+        declining_ratio=declining / len(valid_changes),
         advance_decline_ratio=advance_decline_ratio,
         limit_up_count=None,
         limit_down_count=None,
-        valid_count=len(valid),
+        valid_count=len(valid_changes),
         total_count=len(snapshot),
         provider=provider,
     )
@@ -273,6 +275,16 @@ def _index_result(
 
 def _mean(values: Sequence[float]) -> float:
     return sum(values) / len(values)
+
+
+def _finite_numeric_change(value: object) -> float | None:
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        numeric_value = float(value)
+    except (TypeError, ValueError):
+        return None
+    return numeric_value if math.isfinite(numeric_value) else None
 
 
 def _relation(close: float, moving_average: float | None) -> str | None:

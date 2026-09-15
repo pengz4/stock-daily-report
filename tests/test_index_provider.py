@@ -1,4 +1,5 @@
 from datetime import UTC, date, datetime
+from http.client import HTTPException
 
 import pytest
 
@@ -77,6 +78,48 @@ def test_akshare_index_provider_truncates_rows_after_end_date():
     ]
 
 
+def test_akshare_index_provider_filters_rows_before_start_date():
+    bars = AkShareIndexProvider(
+        fetcher=lambda **_: [
+            _row("2026-09-09"),
+            _row("2026-09-10"),
+            _row("2026-09-11"),
+            _row("2026-09-12"),
+        ]
+    ).get_daily_bars(
+        "399001",
+        start=date(2026, 9, 10),
+        end=date(2026, 9, 11),
+    )
+
+    assert [bar.trade_date for bar in bars] == [
+        date(2026, 9, 10),
+        date(2026, 9, 11),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("start", "end"),
+    [
+        (datetime(2026, 9, 10, tzinfo=UTC), None),
+        ("2026-09-10", None),
+        (None, datetime(2026, 9, 11, tzinfo=UTC)),
+        (None, "2026-09-11"),
+        (date(2026, 9, 12), date(2026, 9, 11)),
+    ],
+)
+def test_akshare_index_provider_rejects_invalid_date_arguments(start, end):
+    with pytest.raises(
+        ProviderDataError,
+        match=r"akshare\[invalid_date_range\]",
+    ):
+        AkShareIndexProvider(fetcher=lambda **_: []).get_daily_bars(
+            "000001",
+            start=start,
+            end=end,
+        )
+
+
 @pytest.mark.parametrize(
     ("record", "detail"),
     [
@@ -108,6 +151,54 @@ def test_akshare_index_provider_surfaces_availability_error():
         match=r"akshare\[network_error\]: offline",
     ):
         provider.get_daily_bars("000001")
+
+
+@pytest.mark.parametrize("failure", [ValueError("bad response"), TypeError("bad type")])
+def test_akshare_index_provider_contextualizes_fetcher_schema_errors(failure):
+    provider = AkShareIndexProvider(
+        fetcher=lambda **_: (_ for _ in ()).throw(failure)
+    )
+
+    with pytest.raises(
+        ProviderDataError,
+        match=r"akshare\[provider_schema_invalid\].*bad",
+    ) as raised:
+        provider.get_daily_bars("000001")
+
+    assert raised.value.provider == "akshare"
+    assert raised.value.code == "provider_schema_invalid"
+
+
+def test_akshare_index_provider_contextualizes_transport_errors_for_fallback():
+    primary = AkShareIndexProvider(
+        fetcher=lambda **_: (_ for _ in ()).throw(HTTPException("offline"))
+    )
+    fallback = AkShareIndexProvider(fetcher=lambda **_: [_row()])
+
+    fetched = IndexHistoryService(
+        {"primary": primary, "fallback": fallback},
+        primary_provider="primary",
+        fallback_provider="fallback",
+    ).fetch("000001")
+
+    assert fetched.provider_name == "fallback"
+
+
+def test_index_history_service_does_not_fallback_for_schema_fetch_errors():
+    primary = AkShareIndexProvider(
+        fetcher=lambda **_: (_ for _ in ()).throw(ValueError("bad response"))
+    )
+    fallback = AkShareIndexProvider(fetcher=lambda **_: [_row()])
+
+    with pytest.raises(
+        ProviderDataError,
+        match=r"akshare\[provider_schema_invalid\].*bad response",
+    ):
+        IndexHistoryService(
+            {"primary": primary, "fallback": fallback},
+            primary_provider="primary",
+            fallback_provider="fallback",
+        ).fetch("000001")
 
 
 def test_index_history_service_falls_back_only_for_availability_errors():
