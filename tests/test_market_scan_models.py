@@ -107,6 +107,11 @@ def test_market_state_preserves_index_and_breadth_fields():
     assert state.breadth.limit_up_count is None
 
 
+def test_market_state_rejects_empty_indices():
+    with pytest.raises(ValidationError, match="indices"):
+        _state(indices=())
+
+
 @pytest.mark.parametrize("status", ["partial", "unavailable"])
 def test_market_state_supports_stable_degraded_states(status):
     state = _state(
@@ -118,6 +123,28 @@ def test_market_state_supports_stable_degraded_states(status):
     assert state.status == status
 
 
+@pytest.mark.parametrize(
+    ("status", "index_status", "breadth_status"),
+    [
+        ("available", "unavailable", "available"),
+        ("available", "available", "unavailable"),
+        ("partial", "available", "available"),
+        ("unavailable", "available", "available"),
+        ("unavailable", "unavailable", "partial"),
+        ("partial", "unavailable", "unavailable"),
+    ],
+)
+def test_market_state_rejects_contradictory_aggregate_status(
+    status, index_status, breadth_status
+):
+    with pytest.raises(ValidationError, match="status"):
+        _state(
+            status=status,
+            indices=(_index(status=index_status),),
+            breadth=_breadth(status=breadth_status),
+        )
+
+
 @pytest.mark.parametrize("field", ["close", "change_pct"])
 @pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
 def test_market_index_state_rejects_non_finite_numbers(field, value):
@@ -126,6 +153,39 @@ def test_market_index_state_rejects_non_finite_numbers(field, value):
             **{
                 **_index().model_dump(),
                 field: value,
+            }
+        )
+
+
+@pytest.mark.parametrize("value", [0, -1])
+def test_market_index_state_rejects_non_positive_available_close(value):
+    with pytest.raises(ValidationError, match="strictly positive"):
+        MarketIndexState(
+            **{
+                **_index().model_dump(),
+                "close": value,
+            }
+        )
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "advancing_count",
+        "declining_count",
+        "unchanged_count",
+        "limit_up_count",
+        "limit_down_count",
+        "valid_count",
+        "total_count",
+    ],
+)
+def test_market_breadth_rejects_boolean_counts(field):
+    with pytest.raises(ValidationError):
+        MarketBreadth(
+            **{
+                **_breadth().model_dump(),
+                field: True,
             }
         )
 
@@ -144,6 +204,28 @@ def test_market_scan_artifact_rejects_market_state_for_another_report_date():
         _artifact(
             market_state=_state(report_date=date(2026, 9, 10)),
         )
+
+
+@pytest.mark.parametrize("field", ["indices", "breadth"])
+def test_market_scan_artifact_rejects_unlisted_market_state_provider(field):
+    state = _state()
+    if field == "indices":
+        state = state.model_copy(
+            update={
+                "indices": (
+                    state.indices[0].model_copy(update={"provider": "other"}),
+                )
+            }
+        )
+    else:
+        state = state.model_copy(
+            update={
+                "breadth": state.breadth.model_copy(update={"provider": "other"})
+            }
+        )
+
+    with pytest.raises(ValidationError, match="provider_names"):
+        _artifact(market_state=state)
 
 
 def test_market_scan_artifact_loads_without_optional_market_state():

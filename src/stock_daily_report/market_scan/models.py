@@ -15,6 +15,7 @@ from pydantic import (
     ConfigDict,
     Field,
     PlainSerializer,
+    StrictInt,
     field_validator,
     model_validator,
 )
@@ -255,6 +256,14 @@ class MarketIndexState(BaseModel):
             raise ValueError(
                 "available market index state requires complete market data"
             )
+        if (
+            self.status == "available"
+            and self.close is not None
+            and self.close <= 0
+        ):
+            raise ValueError(
+                "available market index close must be strictly positive"
+            )
         if self.status == "unavailable" and any(value is not None for value in values):
             raise ValueError(
                 "unavailable market index state must not include market data"
@@ -288,17 +297,17 @@ class MarketBreadth(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     status: MarketStateStatus
-    advancing_count: int | None = Field(
+    advancing_count: StrictInt | None = Field(
         default=None,
         ge=0,
         validation_alias=AliasChoices("advancing_count", "up_count"),
     )
-    declining_count: int | None = Field(
+    declining_count: StrictInt | None = Field(
         default=None,
         ge=0,
         validation_alias=AliasChoices("declining_count", "down_count"),
     )
-    unchanged_count: int | None = Field(
+    unchanged_count: StrictInt | None = Field(
         default=None,
         ge=0,
         validation_alias=AliasChoices("unchanged_count", "flat_count"),
@@ -316,10 +325,10 @@ class MarketBreadth(BaseModel):
         validation_alias=AliasChoices("declining_ratio", "down_ratio"),
     )
     advance_decline_ratio: float | None = Field(default=None, ge=0.0)
-    limit_up_count: int | None = Field(default=None, ge=0)
-    limit_down_count: int | None = Field(default=None, ge=0)
-    valid_count: int | None = Field(default=None, ge=0)
-    total_count: int | None = Field(default=None, ge=0)
+    limit_up_count: StrictInt | None = Field(default=None, ge=0)
+    limit_down_count: StrictInt | None = Field(default=None, ge=0)
+    valid_count: StrictInt | None = Field(default=None, ge=0)
+    total_count: StrictInt | None = Field(default=None, ge=0)
     provider: str | None = Field(
         default=None,
         min_length=1,
@@ -425,6 +434,8 @@ class MarketState(BaseModel):
 
     @model_validator(mode="after")
     def validate_report_date(self) -> MarketState:
+        if not self.indices:
+            raise ValueError("market state indices must not be empty")
         if any(
             index.latest_trade_date is not None
             and index.latest_trade_date > self.report_date
@@ -432,6 +443,18 @@ class MarketState(BaseModel):
         ):
             raise ValueError(
                 "market index latest_trade_date must not exceed report_date"
+            )
+        component_statuses = [index.status for index in self.indices]
+        component_statuses.append(self.breadth.status)
+        if all(status == "available" for status in component_statuses):
+            expected_status = "available"
+        elif all(status == "unavailable" for status in component_statuses):
+            expected_status = "unavailable"
+        else:
+            expected_status = "partial"
+        if self.status != expected_status:
+            raise ValueError(
+                "market state status must match index and breadth statuses"
             )
         return self
 
@@ -643,6 +666,14 @@ class MarketScanArtifact(BaseModel):
         referenced_providers.update(
             record.provider_name for record in self.consensus
         )
+        if self.market_state is not None:
+            referenced_providers.update(
+                index.provider
+                for index in self.market_state.indices
+                if index.provider is not None
+            )
+            if self.market_state.breadth.provider is not None:
+                referenced_providers.add(self.market_state.breadth.provider)
         if not referenced_providers.issubset(self.provider_names):
             raise ValueError(
                 "provider_names must include all referenced providers"
