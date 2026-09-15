@@ -474,6 +474,8 @@ def run_daily_report(
                         PipelineFailure(stock.code, str(error), tuple(issue_codes))
                     )
             if not fetched:
+                if failures:
+                    raise PipelineError(failures)
                 raise PipelineError(
                     [
                         PipelineFailure(
@@ -1500,11 +1502,17 @@ def _publish_report_transaction(
         )
         staged_snapshot = load_snapshot(staged_snapshot_path)
         snapshot_target = root / "snapshots" / report_date.isoformat() / "input.json"
-        snapshot = _resolve_snapshot_for_publication(
-            snapshot_target,
-            staged_snapshot,
-            overwrite=overwrite_snapshot,
-        )
+        if overwrite_snapshot:
+            snapshot = _resolve_snapshot_for_publication(
+                snapshot_target,
+                staged_snapshot,
+                overwrite=True,
+            )
+        else:
+            snapshot = _resolve_snapshot_for_publication(
+                snapshot_target,
+                staged_snapshot,
+            )
         market_rankings = _load_market_rankings(root, report_date)
         report = _build_report(
             settings,

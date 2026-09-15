@@ -140,6 +140,7 @@ jobs:
           )
           PY
               then
+                echo "Report already exists with current scan; reusing immutable artifacts"
                 echo "Report matches the current full-market scan"
               else
                 reuse_report=false

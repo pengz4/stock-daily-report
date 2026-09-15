@@ -288,18 +288,29 @@ def main(argv: list[str] | None = None) -> int:
                         f"Asia/Shanghai date {current_date.isoformat()}; "
                         f"requested {args.date.isoformat()}."
                     )
-                artifact_path = run_market_scan(
-                    settings,
-                    universe_provider,
-                    build_market_data_service(
-                        data_settings,
-                        output_root=args.output_root,
-                    ),
-                    report_date=args.date,
+                history_service = build_market_data_service(
+                    data_settings,
                     output_root=args.output_root,
-                    configuration_hash=configuration_hash,
-                    directory=directory,
                 )
+                if directory == "market-scans":
+                    artifact_path = run_market_scan(
+                        settings,
+                        universe_provider,
+                        history_service,
+                        report_date=args.date,
+                        output_root=args.output_root,
+                        configuration_hash=configuration_hash,
+                    )
+                else:
+                    artifact_path = run_market_scan(
+                        settings,
+                        universe_provider,
+                        history_service,
+                        report_date=args.date,
+                        output_root=args.output_root,
+                        configuration_hash=configuration_hash,
+                        directory=directory,
+                    )
         except (
             ConfigurationError,
             CheckpointError,
