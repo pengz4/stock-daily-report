@@ -562,7 +562,11 @@ def _pool_has_scan_ranking(pool: PoolOverview) -> bool:
 def _render_pool_overview_html(pool: PoolOverview | None) -> str:
     """Render the lightweight full-pool overview section for the HTML page."""
     if pool is None:
-        return ""
+        unavailable_message = "全池速览不可用：未提供全池快照"
+        return f"""<section class="pool-overview unavailable">
+      <h2>全池速览</h2>
+      <p class="empty-state">{_html(unavailable_message)}</p>
+    </section>"""
     unavailable_html = (
         f'\n      <p class="pool-overview-warning">行情快照不可用：'
         f"{_html(reason_label(pool.unavailable_reason))}</p>"

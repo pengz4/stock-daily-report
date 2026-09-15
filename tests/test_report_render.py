@@ -1042,6 +1042,22 @@ def test_missing_market_state_is_explicitly_unavailable_in_markdown_and_html():
     assert "市场状态不可用" in html
 
 
+def test_missing_pool_overview_is_explicitly_unavailable_in_html():
+    document = _document(name="visible", market_rankings=_market_rankings())
+
+    root = _html_tree(render_html(document))
+    pool_panel = next(
+        panel
+        for panel in root.select("details.mobile-panel")
+        if panel.attrs.get("id") == "panel-pool"
+    )
+
+    assert len(root.select("details.mobile-panel")) == 6
+    unavailable = _require_one(pool_panel, "section.pool-overview.unavailable")
+    message = _require_one(unavailable, "p.empty-state")
+    assert message.normalized_text() == "全池速览不可用：未提供全池快照"
+
+
 def test_market_state_names_and_providers_remain_escaped():
     document = _document_with_market_state(escaped=True)
 
