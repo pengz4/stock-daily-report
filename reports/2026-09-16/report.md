@@ -1,13 +1,13 @@
 # A股每日研报 — 2026\-09\-16
 
-- 生成时间: 2026\-09\-16T08:38:54\.845475\+00:00
-- 最新数据时间: 2026\-09\-16T08:38:54\.845475\+00:00
+- 生成时间: 2026\-09\-16T13:39:01\.379907\+00:00
+- 最新数据时间: 2026\-09\-16T13:39:01\.379907\+00:00
 - 数据质量: 通过
 - 自选股数量: 513
 - 深度分析数量: 1
 - 数据源: sina
 - 输入快照: `snapshots/2026\-09\-16/input\.json`
-- 快照哈希: `cd5b895104b4b0dd5ce72ffb60a270152e488d5cff0620279e2c888f7daa8d1f`
+- 快照哈希: `c26032dc1665e77e4ad9b1af5750212215fb12bfe43c272ecf8f65094948fecc`
 - 配置哈希: `35a5a3eda61ccb84176125bfe14dff9cfd55d59a0951a3f9985b7b69efbd39d1`
 - 分析器版本: simplified\-v1
 
@@ -32,7 +32,7 @@
 
 ## 市场摘要
 
-Broad\-market data unavailable; validated watchlist only: count=1, average\_latest\_return=\-1\.16%, up=0, down=1, unchanged=0, latest\_source=2026\-09\-16T08:38:54\.845475\+00:00\.
+Broad\-market data unavailable; validated watchlist only: count=1, average\_latest\_return=\-1\.16%, up=0, down=1, unchanged=0, latest\_source=2026\-09\-16T13:39:01\.379907\+00:00\.
 
 ## 全市场排名
 
@@ -55,7 +55,7 @@ Broad\-market data unavailable; validated watchlist only: count=1, average\_late
 - 计算排名: 未纳入本次排名
 - 数据源: sina
 - 最新交易日: 2026\-09\-16
-- 最新数据时间: 2026\-09\-16T08:38:54\.845475\+00:00
+- 最新数据时间: 2026\-09\-16T13:39:01\.379907\+00:00
 - K线数量: 168
 - 数据质量: 通过
 - 决策: **观察**
