@@ -36,6 +36,7 @@ def test_daily_workflow_passes_repository_configuration_paths():
 
     assert "--settings config/settings.yaml" in command
     assert "--watchlist config/watchlist.yaml" in command
+    assert "--market-scan-settings config/market_scan.yaml" in command
 
 
 def test_daily_workflow_reuses_an_existing_immutable_report():
@@ -68,6 +69,57 @@ def test_daily_workflow_regenerates_when_a_new_scan_is_available():
     assert "market_rankings" in command
     assert "--reuse-existing-snapshot" in command
     assert "Report already exists with current scan; reusing immutable artifacts" in command
+
+
+def test_daily_workflow_reuse_requires_matching_market_state_fingerprint():
+    workflow = _workflow()
+    steps = workflow["jobs"]["generate"]["steps"]
+    command = next(
+        step["run"]
+        for step in steps
+        if step["name"] == "Generate report artifacts"
+    )
+
+    assert "report.market_state is not None" in command
+    assert "scan.market_state is not None" in command
+    assert "report.market_state.rule_version == scan.market_state.rule_version" in command
+    assert "rankings.config_hash == scan.config_hash" in command
+
+
+def test_daily_workflow_reuse_requires_matching_market_state_identity_and_payload():
+    workflow = _workflow()
+    steps = workflow["jobs"]["generate"]["steps"]
+    command = next(
+        step["run"]
+        for step in steps
+        if step["name"] == "Generate report artifacts"
+    )
+
+    assert "resolve_market_state_identity" in command
+    assert "report_identity is not None" in command
+    assert "scan_identity is not None" in command
+    assert "report_identity == scan_identity" in command
+    assert "report.metadata.report_date == scan.report_date" in command
+    assert "report_state.report_date == scan.report_date" in command
+    assert "load_market_scan_settings" in command
+    assert "build_market_state_identity" in command
+    assert "canonical_market_state_payload(report.market_state)" in command
+    assert "canonical_market_state_payload(scan.market_state)" in command
+
+
+def test_daily_workflow_no_scan_reuse_requires_current_market_state_identity():
+    workflow = _workflow()
+    steps = workflow["jobs"]["generate"]["steps"]
+    command = next(
+        step["run"]
+        for step in steps
+        if step["name"] == "Generate report artifacts"
+    )
+
+    assert "report.market_state is not None" in command
+    assert "resolve_market_state_identity" in command
+    assert "report_identity is not None" in command
+    assert "report.market_state.report_date == report.metadata.report_date" in command
 
 
 def test_daily_workflow_compares_exact_deep_selection_metadata():

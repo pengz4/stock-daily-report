@@ -7,6 +7,11 @@ from typing import ClassVar
 import pytest
 
 import stock_daily_report.report.models as report_models
+from stock_daily_report.market_scan.models import (
+    MarketBreadth,
+    MarketIndexState,
+    MarketState,
+)
 from stock_daily_report.report.labels import (
     metric_label,
     reason_label,
@@ -362,6 +367,68 @@ def _market_rankings_no_consensus():
     )
 
 
+def _market_state(*, escaped: bool = False) -> MarketState:
+    indices = tuple(
+        MarketIndexState(
+            name=(
+                "上证 <script>alert(20)</script>"
+                if escaped and index == 0
+                else name
+            ),
+            code=code,
+            status="available",
+            latest_trade_date=date(2026, 9, 4),
+            close=3000.0 + index,
+            change_pct=1.2 - index * 0.1,
+            close_vs_ma20="above",
+            close_vs_ma60="above",
+            trend="bullish",
+            provider=(
+                "provider <img src=x onerror=alert(21)>"
+                if escaped and index == 0
+                else "fixture"
+            ),
+        )
+        for index, (name, code) in enumerate(
+            (
+                ("上证指数", "000001"),
+                ("深证成指", "399001"),
+                ("创业板指", "399006"),
+                ("沪深300", "000300"),
+                ("中证1000", "000852"),
+            )
+        )
+    )
+    return MarketState(
+        report_date=date(2026, 9, 4),
+        generated_at=datetime(2026, 9, 4, 8, 30, tzinfo=UTC),
+        rule_version="market-state-v1",
+        indices=indices,
+        breadth=MarketBreadth(
+            status="available",
+            advancing_count=60,
+            declining_count=30,
+            unchanged_count=10,
+            advancing_ratio=0.6,
+            declining_ratio=0.3,
+            advance_decline_ratio=2.0,
+            valid_count=100,
+            total_count=100,
+            provider="fake-universe",
+        ),
+        status="available",
+        conclusion="指数与市场广度方向一致",
+    )
+
+
+def _document_with_market_state(*, escaped: bool = False) -> ReportDocument:
+    document = _document(name="visible", market_rankings=_market_rankings()).model_dump(
+        mode="python"
+    )
+    document["market_state"] = _market_state(escaped=escaped)
+    return ReportDocument.model_validate(document)
+
+
 def test_market_rankings_no_consensus_fixture_is_isolated_and_valid():
     rankings = _market_rankings_no_consensus()
 
@@ -425,6 +492,14 @@ def _document(
     if market_rankings is not None:
         document["market_rankings"] = market_rankings
     return ReportDocument.model_validate(document)
+
+
+def test_report_model_loads_legacy_documents_without_market_state_identity():
+    document = _document().model_dump(mode="python")
+
+    loaded = ReportDocument.model_validate(document)
+
+    assert loaded.market_state_identity is None
 
 
 @dataclass
@@ -902,6 +977,112 @@ def test_renderers_escape_untrusted_markdown_and_html_text():
     assert r"safe \[evidence\]" in markdown
     assert "<script>alert(1)</script>" not in html
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
+
+
+def test_market_state_precedes_rankings_and_watchlist_in_markdown():
+    document = _document_with_market_state()
+
+    markdown = render_markdown(document)
+
+    assert "## 市场状态" in markdown
+    assert "上证指数" in markdown
+    assert "市场广度" in markdown
+    assert markdown.index("## 市场状态") < markdown.index("## 全市场排名")
+    assert markdown.index("## 全市场排名") < markdown.index("## 自选股追踪")
+
+
+def test_market_breadth_renders_percentages_and_plain_advance_decline_ratio():
+    document = _document_with_market_state()
+
+    markdown = render_markdown(document)
+    html = render_html(document)
+
+    assert (
+        r"上涨 60 （60\.00%），下跌 30 （30\.00%），平盘 10；涨跌比 2\.00。"
+        in markdown
+    )
+    assert r"涨跌比 200\.00%" not in markdown
+    assert "上涨 60（60.00%），" in html
+    assert "下跌 30（30.00%），" in html
+    assert "涨跌比 2.00。" in html
+    assert "涨跌比 200.00%" not in html
+
+
+def test_html_renders_six_ordered_mobile_panels_with_only_market_open():
+    document = _document_with_market_state()
+
+    root = _html_tree(render_html(document))
+    navigation = _require_one(root, "nav.report-panels")
+    links = navigation.select("a")
+    panels = root.select("details.mobile-panel")
+    expected = (
+        ("大盘", "#panel-market"),
+        ("多策略共识", "#panel-consensus"),
+        ("趋势策略", "#panel-trend"),
+        ("均衡策略", "#panel-balanced"),
+        ("自选股追踪", "#panel-watchlist"),
+        ("全池速览", "#panel-pool"),
+    )
+
+    assert [(link.normalized_text(), link.attrs.get("href")) for link in links] == list(
+        expected
+    )
+    assert len(panels) == 6
+    assert [panel.attrs.get("id") for panel in panels] == [href[1:] for _, href in expected]
+    assert [panel.attrs.get("open") is not None for panel in panels] == [
+        True,
+        False,
+        False,
+        False,
+        False,
+        False,
+    ]
+    assert all(re.fullmatch(r"#panel-[a-z0-9-]+", href or "") for _, href in expected)
+
+
+def test_missing_market_state_is_explicitly_unavailable_in_markdown_and_html():
+    document = _document(name="visible", market_rankings=_market_rankings())
+
+    markdown = render_markdown(document)
+    html = render_html(document)
+
+    assert "市场状态不可用" in markdown
+    assert "市场状态不可用" in html
+
+
+def test_market_state_layout_uses_a_new_renderer_version():
+    assert report_models.REPORT_RENDER_VERSION == "cn-v3"
+
+
+def test_missing_pool_overview_is_explicitly_unavailable_in_html():
+    document = _document(name="visible", market_rankings=_market_rankings())
+
+    root = _html_tree(render_html(document))
+    pool_panel = next(
+        panel
+        for panel in root.select("details.mobile-panel")
+        if panel.attrs.get("id") == "panel-pool"
+    )
+
+    assert len(root.select("details.mobile-panel")) == 6
+    unavailable = _require_one(pool_panel, "section.pool-overview.unavailable")
+    message = _require_one(unavailable, "p.empty-state")
+    assert message.normalized_text() == "全池速览不可用：未提供全池快照"
+
+
+def test_market_state_names_and_providers_remain_escaped():
+    document = _document_with_market_state(escaped=True)
+
+    markdown = render_markdown(document)
+    html = render_html(document)
+
+    assert "<script>" not in markdown
+    assert "上证 \\<script\\>alert\\(20\\)\\</script\\>" in markdown
+    assert "provider \\<img src=x onerror=alert\\(21\\)\\>" in markdown
+    assert "<script>alert(20)</script>" not in html
+    assert "<img src=x onerror=alert(21)>" not in html
+    assert "上证 &lt;script&gt;alert(20)&lt;/script&gt;" in html
+    assert "provider &lt;img src=x onerror=alert(21)&gt;" in html
 
 
 def test_markdown_normalizes_newlines_in_untrusted_watchlist_text():
@@ -1553,7 +1734,16 @@ def test_market_scan_html_contract_escapes_static_controls_and_legacy_fallback()
     summaries = root.select("summary")
     assert details
     assert summaries
-    assert all("open" not in detail.attrs for detail in details)
+    assert all(
+        "open" not in detail.attrs
+        for detail in details
+        if "mobile-panel" not in detail.attrs.get("class", "").split()
+    )
+    assert root.select("details.mobile-panel")[0].attrs.get("open") is not None
+    assert all(
+        detail.attrs.get("open") is None
+        for detail in root.select("details.mobile-panel")[1:]
+    )
     assert root.select("script") == []
     details_text = " ".join(detail.normalized_text() for detail in details)
     assert re.search(r"证据\W+None", details_text)

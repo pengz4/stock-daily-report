@@ -24,6 +24,7 @@ from stock_daily_report.providers.base import (
     ProviderDataError,
     ProviderError,
 )
+from stock_daily_report.providers.index import IndexHistoryProvider
 from stock_daily_report.quality.checks import (
     BarInput,
     DataQualityIssue,
@@ -112,6 +113,67 @@ class FetchedBars:
     bars: tuple[DailyBar, ...]
     quality: DataQualityResult
     from_cache: bool
+
+
+@dataclass(frozen=True)
+class FetchedIndexBars:
+    """Index history plus provider provenance."""
+
+    code: str
+    provider_name: str
+    bars: tuple[DailyBar, ...]
+
+
+class IndexHistoryService:
+    """Select and retrieve dedicated index-history providers."""
+
+    def __init__(
+        self,
+        providers: Mapping[str, IndexHistoryProvider],
+        *,
+        primary_provider: str,
+        fallback_provider: str | None = None,
+    ) -> None:
+        selection = (
+            (primary_provider,)
+            if fallback_provider is None
+            else (primary_provider, fallback_provider)
+        )
+        if len(selection) == 2 and selection[0] == selection[1]:
+            raise ConfigurationError("primary and fallback providers must differ")
+        for provider_name in selection:
+            if provider_name not in providers:
+                raise ConfigurationError(
+                    f"Configured provider is unavailable: {provider_name}"
+                )
+        self._providers = dict(providers)
+        self._selection = selection
+
+    def fetch(
+        self,
+        code: str,
+        *,
+        start: date | None = None,
+        end: date | None = None,
+    ) -> FetchedIndexBars:
+        failures: list[ProviderAvailabilityError] = []
+        for provider_name in self._selection:
+            try:
+                bars = self._providers[provider_name].get_daily_bars(
+                    code, start=start, end=end
+                )
+            except ProviderAvailabilityError as error:
+                failures.append(error)
+                continue
+            return FetchedIndexBars(
+                code=code,
+                provider_name=provider_name,
+                bars=tuple(bars),
+            )
+        raise AllProvidersFailedError(failures)
+
+
+IndexDataService = IndexHistoryService
 
 
 class RawResponseCache:

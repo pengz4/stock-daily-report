@@ -14,7 +14,10 @@ from stock_daily_report.config import (
     load_settings,
 )
 from stock_daily_report.market_scan.models import (
+    MarketBreadth,
+    MarketIndexState,
     MarketScanArtifact,
+    MarketState,
     ProfileRankings,
 )
 from stock_daily_report.market_scan.report import write_scan_artifact
@@ -24,6 +27,63 @@ from stock_daily_report.providers.service import MarketDataService
 from stock_daily_report.providers.universe import AkShareUniverseProvider
 
 REPORT_DATE = date(2026, 9, 11)
+
+
+def _stub_daily_cli(monkeypatch, *, market_scan_path):
+    settings = SimpleNamespace(notifications=SimpleNamespace(enabled_channels=()))
+    watchlist = object()
+    market_scan_settings = SimpleNamespace(market_state=object())
+    loaded_paths = []
+
+    monkeypatch.setattr(cli_module, "load_settings", lambda path: settings)
+    monkeypatch.setattr(cli_module, "load_watchlist", lambda path: watchlist)
+
+    def load_scan_settings(path):
+        loaded_paths.append(path)
+        return market_scan_settings
+
+    monkeypatch.setattr(cli_module, "load_market_scan_settings", load_scan_settings)
+    monkeypatch.setattr(
+        cli_module,
+        "run_daily_report",
+        lambda *args, **kwargs: SimpleNamespace(html_path=Path("report.html")),
+    )
+
+    assert (
+        cli_module.main(
+            [
+                "daily",
+                "--date",
+                REPORT_DATE.isoformat(),
+                *(
+                    ["--market-scan-settings", str(market_scan_path)]
+                    if market_scan_path is not None
+                    else []
+                ),
+            ]
+        )
+        == 0
+    )
+    return loaded_paths
+
+
+def test_daily_cli_uses_explicit_market_scan_settings_path(monkeypatch, tmp_path):
+    market_scan_path = tmp_path / "config" / "market_scan.yaml"
+
+    loaded_paths = _stub_daily_cli(
+        monkeypatch,
+        market_scan_path=market_scan_path,
+    )
+
+    assert loaded_paths == [market_scan_path]
+
+
+def test_daily_cli_defaults_market_scan_settings_to_project_root(monkeypatch):
+    loaded_paths = _stub_daily_cli(monkeypatch, market_scan_path=None)
+
+    assert loaded_paths == [
+        cli_module._project_root() / "config" / "market_scan.yaml"
+    ]
 
 
 def _scan_settings():
@@ -49,7 +109,13 @@ def _scan_config_hash(settings, data_settings=None) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def _empty_artifact(*, report_date: date, config_hash: str) -> MarketScanArtifact:
+def _empty_artifact(
+    *,
+    report_date: date,
+    config_hash: str,
+    market_state: MarketState | None = None,
+    market_state_identity: str | None = None,
+) -> MarketScanArtifact:
     return MarketScanArtifact(
         rule_version="market-scan-v1",
         report_date=report_date,
@@ -66,6 +132,32 @@ def _empty_artifact(*, report_date: date, config_hash: str) -> MarketScanArtifac
         config_hash=config_hash,
         input_hash="1" * 64,
         provider_names=("akshare-universe", "market-data-service"),
+        market_state=market_state,
+        market_state_identity=market_state_identity,
+    )
+
+
+def _unavailable_market_state() -> MarketState:
+    return MarketState(
+        report_date=REPORT_DATE,
+        generated_at=datetime(2026, 9, 11, 8, 0, tzinfo=UTC),
+        rule_version="market-state-v1",
+        indices=(
+            MarketIndexState(
+                name="上证指数",
+                code="000001",
+                status="unavailable",
+                error_code="offline",
+                error_message="fixture",
+            ),
+        ),
+        breadth=MarketBreadth(
+            status="unavailable",
+            error_code="offline",
+            error_message="fixture",
+        ),
+        status="unavailable",
+        conclusion="市场状态数据不足",
     )
 
 
@@ -76,6 +168,7 @@ def test_market_scan_cli_accepts_date_settings_and_output_root(
     data_settings = SimpleNamespace(market_data=object())
     universe_provider = object()
     history_service = object()
+    index_provider = object()
     settings_path = tmp_path / "market-scan.yaml"
     data_settings_path = tmp_path / "settings.yaml"
     output_root = tmp_path / "output"
@@ -99,6 +192,12 @@ def test_market_scan_cli_accepts_date_settings_and_output_root(
         cli_module,
         "AkShareUniverseProvider",
         lambda: universe_provider,
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "AkShareIndexProvider",
+        lambda: index_provider,
+        raising=False,
     )
 
     def fake_build_market_data_service(configured_settings, *, output_root):
@@ -132,6 +231,7 @@ def test_market_scan_cli_accepts_date_settings_and_output_root(
         report_date,
         output_root: Path,
         configuration_hash,
+        index_provider,
     ):
         calls.append(
             (
@@ -141,6 +241,7 @@ def test_market_scan_cli_accepts_date_settings_and_output_root(
                 report_date,
                 output_root,
                 configuration_hash,
+                index_provider,
             )
         )
         return artifact_path
@@ -170,8 +271,104 @@ def test_market_scan_cli_accepts_date_settings_and_output_root(
             REPORT_DATE,
             output_root,
             "a" * 64,
+            index_provider,
         )
     ]
+    assert capsys.readouterr().out == f"{artifact_path}\n"
+
+
+def test_market_scan_cli_rejects_non_positive_max_batches(capsys):
+    result = cli_module.main(
+        [
+            "market-scan",
+            "--date",
+            REPORT_DATE.isoformat(),
+            "--resumable",
+            "--max-batches",
+            "0",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert result == 1
+    assert captured.err == "--max-batches must be a positive integer\n"
+
+
+def test_market_scan_cli_wires_index_provider_for_market_scope(
+    monkeypatch, tmp_path, capsys
+):
+    settings = object()
+    data_settings = SimpleNamespace(market_data=object())
+    universe_provider = object()
+    history_service = object()
+    index_provider = object()
+    artifact_path = tmp_path / "market-scans" / "2026-09-11" / "scan.json"
+    observed = {}
+
+    monkeypatch.setattr(cli_module, "_current_market_date", lambda: REPORT_DATE)
+    monkeypatch.setattr(cli_module, "load_market_scan_settings", lambda _path: settings)
+    monkeypatch.setattr(cli_module, "load_settings", lambda _path: data_settings)
+    monkeypatch.setattr(cli_module, "AkShareUniverseProvider", lambda: universe_provider)
+    monkeypatch.setattr(
+        cli_module,
+        "AkShareIndexProvider",
+        lambda: index_provider,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "build_market_data_service",
+        lambda _settings, *, output_root: history_service,
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "market_scan_config_hash",
+        lambda _scan, _data: "a" * 64,
+    )
+
+    def fake_run_market_scan(
+        configured_settings,
+        configured_universe_provider,
+        configured_history_provider,
+        *,
+        report_date,
+        output_root,
+        configuration_hash,
+        index_provider,
+    ):
+        observed.update(
+            settings=configured_settings,
+            universe=configured_universe_provider,
+            history=configured_history_provider,
+            date=report_date,
+            root=output_root,
+            config=configuration_hash,
+            index=index_provider,
+        )
+        return artifact_path
+
+    monkeypatch.setattr(cli_module, "run_market_scan", fake_run_market_scan)
+
+    result = cli_module.main(
+        [
+            "market-scan",
+            "--date",
+            REPORT_DATE.isoformat(),
+            "--output-root",
+            str(tmp_path),
+        ]
+    )
+
+    assert result == 0
+    assert observed == {
+        "settings": settings,
+        "universe": universe_provider,
+        "history": history_service,
+        "date": REPORT_DATE,
+        "root": tmp_path,
+        "config": "a" * 64,
+        "index": index_provider,
+    }
     assert capsys.readouterr().out == f"{artifact_path}\n"
 
 
@@ -284,7 +481,9 @@ def test_market_scan_cli_uses_configured_fallback_and_report_date(
         report_date,
         output_root,
         configuration_hash,
+        index_provider,
     ):
+        assert index_provider is not None
         assert isinstance(history_provider, MarketDataService)
         fetched = history_provider.fetch(
             "600519",
@@ -429,6 +628,49 @@ def test_market_scan_cli_rejects_reuse_after_data_settings_change(
     captured = capsys.readouterr()
     assert result == 1
     assert "configuration does not match" in captured.err
+
+
+def test_market_scan_cli_rejects_wrong_market_state_identity(
+    monkeypatch, tmp_path, capsys
+):
+    settings = _scan_settings()
+    data_settings = load_settings(
+        Path(__file__).parents[1] / "config" / "settings.yaml"
+    )
+    artifact = _empty_artifact(
+        report_date=REPORT_DATE,
+        config_hash=_scan_config_hash(settings, data_settings),
+        market_state=_unavailable_market_state(),
+        market_state_identity="f" * 64,
+    )
+    artifact_path = tmp_path / "market-scans" / REPORT_DATE.isoformat() / "scan.json"
+    artifact_path.parent.mkdir(parents=True)
+    artifact_path.write_text(artifact.model_dump_json(), encoding="utf-8")
+
+    monkeypatch.setattr(cli_module, "_current_market_date", lambda: REPORT_DATE)
+    monkeypatch.setattr(cli_module, "load_market_scan_settings", lambda _path: settings)
+    monkeypatch.setattr(cli_module, "load_settings", lambda _path: data_settings)
+    monkeypatch.setattr(
+        cli_module,
+        "run_market_scan",
+        lambda *_args, **_kwargs: pytest.fail("mismatched artifact must not be reused"),
+    )
+
+    result = cli_module.main(
+        [
+            "market-scan",
+            "--date",
+            REPORT_DATE.isoformat(),
+            "--output-root",
+            str(tmp_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert result == 1
+    assert "Invalid market-state identity" in captured.err
+    assert "does not match the canonical" in captured.err
+    assert "Traceback" not in captured.err
 
 
 @pytest.mark.parametrize(
