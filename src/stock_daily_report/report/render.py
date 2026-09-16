@@ -5,6 +5,7 @@ from __future__ import annotations
 import html
 from collections.abc import Sequence
 
+from stock_daily_report.market_scan.models import MarketIndexState, MarketState
 from stock_daily_report.report.labels import (
     component_label,
     evidence_label,
@@ -64,11 +65,16 @@ def render_markdown(report: ReportDocument) -> str:
         f"- 配置哈希: `{metadata.config_hash}`",
         f"- 分析器版本: {_md(metadata.analyzer_versions.structural)}",
         "",
-        "## 市场摘要",
-        "",
-        _md(report.market_summary.text),
-        "",
     ]
+    lines.extend(_render_market_state_markdown(report.market_state))
+    lines.extend(
+        [
+            "## 市场摘要",
+            "",
+            _md(report.market_summary.text),
+            "",
+        ]
+    )
     lines.extend(_render_market_rankings_markdown(report.market_rankings))
     lines.extend(
         [
@@ -88,12 +94,27 @@ def render_html(report: ReportDocument) -> str:
     metadata = report.metadata
     title = _html(f"A股每日研报 — {metadata.report_date.isoformat()}")
     header = _render_report_header(report, report.market_rankings)
+    market_state = _render_market_state_html(report.market_state)
     market_summary = _render_market_summary_html(report)
-    market_rankings = _render_market_rankings_html(report.market_rankings)
-    pool_overview = _render_pool_overview_html(report.pool_overview)
+    consensus_panel = _render_consensus_panel_html(report.market_rankings)
+    trend_panel = _render_profile_panel_html(
+        "trend",
+        "趋势策略",
+        report.market_rankings,
+    )
+    balanced_panel = _render_profile_panel_html(
+        "balanced",
+        "均衡策略",
+        report.market_rankings,
+    )
     stock_sections = "\n".join(
         _render_watchlist_card(stock) for stock in _stocks_for_display(report.stocks)
     )
+    watchlist_panel = f"""<section>
+      <h2>自选股跟踪</h2>
+      {stock_sections}
+    </section>"""
+    pool_panel = _render_pool_overview_html(report.pool_overview)
     return f"""<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -106,17 +127,243 @@ def render_html(report: ReportDocument) -> str:
   <main class="report-page">
     <h1>{title}</h1>
     {header}
-    {market_summary}
-    {market_rankings}
-    <section>
-      <h2>自选股跟踪</h2>
-      {stock_sections}
-    </section>
-    {pool_overview}
+    {_render_panel_navigation()}
+    {_render_mobile_panel("panel-market", "大盘", market_state + market_summary, open=True)}
+    {_render_mobile_panel("panel-consensus", "多策略共识", consensus_panel)}
+    {_render_mobile_panel("panel-trend", "趋势策略", trend_panel)}
+    {_render_mobile_panel("panel-balanced", "均衡策略", balanced_panel)}
+    {_render_mobile_panel("panel-watchlist", "自选股追踪", watchlist_panel)}
+    {_render_mobile_panel("panel-pool", "全池速览", pool_panel)}
   </main>
 </body>
 </html>
 """
+
+
+def _render_market_state_markdown(state: MarketState | None) -> list[str]:
+    lines = ["## 市场状态", ""]
+    if state is None:
+        lines.extend(["市场状态不可用：未提供市场扫描状态。", ""])
+        return lines
+    lines.extend(
+        [
+            f"- 状态: {_md(_market_state_status_label(state.status))}",
+            f"- 结论: {_md(state.conclusion)}",
+            f"- 规则版本: {_md(state.rule_version)}",
+            "",
+            "| 指数 | 代码 | 收盘价 | 日涨跌 | 20日均线关系 | 60日均线关系 | 趋势 | 数据源 |",
+            "| --- | --- | ---: | ---: | --- | --- | --- | --- |",
+        ]
+    )
+    if state.status == "unavailable":
+        lines.insert(2, "市场状态不可用：指数与市场广度均未提供有效数据。")
+    for index in state.indices:
+        lines.append(
+            "| "
+            + " | ".join(
+                (
+                    _md(index.name),
+                    _md(index.code),
+                    _md(_format_market_number(index.close)),
+                    _md(_format_market_change(index.change_pct)),
+                    _md(_market_relation_label(index.close_vs_ma20)),
+                    _md(_market_relation_label(index.close_vs_ma60)),
+                    _md(_market_trend_label(index.trend)),
+                    _md(index.provider or "未提供"),
+                )
+            )
+            + " |"
+        )
+    breadth = state.breadth
+    lines.extend(
+        [
+            "",
+            "### 市场广度",
+            "",
+            (
+                f"上涨 {_md(_format_market_count(breadth.advancing_count))} "
+                f"（{_md(_format_market_ratio(breadth.advancing_ratio))}），"
+                f"下跌 {_md(_format_market_count(breadth.declining_count))} "
+                f"（{_md(_format_market_ratio(breadth.declining_ratio))}），"
+                f"平盘 {_md(_format_market_count(breadth.unchanged_count))}；"
+                f"涨跌比 {_md(_format_market_number(breadth.advance_decline_ratio))}。"
+            ),
+            (
+                f"有效样本 {_md(_format_market_count(breadth.valid_count))} / "
+                f"{_md(_format_market_count(breadth.total_count))}，"
+                f"数据源 {_md(breadth.provider or '未提供')}。"
+            ),
+            "",
+        ]
+    )
+    return lines
+
+
+def _render_market_state_html(state: MarketState | None) -> str:
+    if state is None:
+        return """<section class="market-state unavailable">
+      <h2>市场状态</h2>
+      <p class="empty-state">市场状态不可用：未提供市场扫描状态。</p>
+    </section>"""
+    rows = "\n".join(_render_market_index_row(index) for index in state.indices)
+    breadth = state.breadth
+    state_class = (
+        "market-state unavailable"
+        if state.status == "unavailable"
+        else "market-state"
+    )
+    unavailable_message = (
+        '<p class="empty-state">市场状态不可用：指数与市场广度均未提供有效数据。</p>'
+        if state.status == "unavailable"
+        else ""
+    )
+    return f"""<section class="{state_class}">
+      <h2>市场状态</h2>
+      {unavailable_message}
+      <p class="market-state__conclusion"><strong>{_html(_market_state_status_label(state.status))}</strong>：{_html(state.conclusion)}</p>
+      <p class="market-state__rule">规则版本：{_html(state.rule_version)}</p>
+      <div class="market-index-table-wrap">
+        <table class="market-index-table">
+          <thead>
+            <tr><th>指数</th><th>代码</th><th>收盘价</th><th>日涨跌</th><th>20日均线</th><th>60日均线</th><th>趋势</th><th>数据源</th></tr>
+          </thead>
+          <tbody>
+            {rows}
+          </tbody>
+        </table>
+      </div>
+      <section class="market-breadth">
+        <h3>市场广度</h3>
+        <p>
+          上涨 {_html(_format_market_count(breadth.advancing_count))}（{_html(_format_market_ratio(breadth.advancing_ratio))}），
+          下跌 {_html(_format_market_count(breadth.declining_count))}（{_html(_format_market_ratio(breadth.declining_ratio))}），
+          平盘 {_html(_format_market_count(breadth.unchanged_count))}；
+          涨跌比 {_html(_format_market_number(breadth.advance_decline_ratio))}。
+        </p>
+        <p>有效样本 {_html(_format_market_count(breadth.valid_count))} / {_html(_format_market_count(breadth.total_count))}；数据源 {_html(breadth.provider or "未提供")}。</p>
+      </section>
+    </section>"""
+
+
+def _render_market_index_row(index: MarketIndexState) -> str:
+    return (
+        "<tr>"
+        f"<td>{_html(index.name)}</td>"
+        f"<td>{_html(index.code)}</td>"
+        f'<td class="numeric">{_html(_format_market_number(index.close))}</td>'
+        f'<td class="numeric">{_html(_format_market_change(index.change_pct))}</td>'
+        f"<td>{_html(_market_relation_label(index.close_vs_ma20))}</td>"
+        f"<td>{_html(_market_relation_label(index.close_vs_ma60))}</td>"
+        f"<td>{_html(_market_trend_label(index.trend))}</td>"
+        f"<td>{_html(index.provider or '未提供')}</td>"
+        "</tr>"
+    )
+
+
+def _render_panel_navigation() -> str:
+    entries = (
+        ("大盘", "panel-market"),
+        ("多策略共识", "panel-consensus"),
+        ("趋势策略", "panel-trend"),
+        ("均衡策略", "panel-balanced"),
+        ("自选股追踪", "panel-watchlist"),
+        ("全池速览", "panel-pool"),
+    )
+    links = "\n".join(
+        f'      <a href="#{anchor}">{_html(label)}</a>' for label, anchor in entries
+    )
+    return f"""<nav class="report-panels" aria-label="报告分区">
+{links}
+</nav>"""
+
+
+def _render_mobile_panel(
+    panel_id: str,
+    label: str,
+    body: str,
+    *,
+    open: bool = False,
+) -> str:
+    open_attribute = " open" if open else ""
+    return f"""<details id="{_html(panel_id)}" class="mobile-panel"{open_attribute}>
+      <summary>{_html(label)}</summary>
+      {body}
+    </details>"""
+
+
+def _render_consensus_panel_html(rankings: MarketRankings) -> str:
+    warning = _render_ranking_warning(rankings)
+    if rankings.status == "unavailable":
+        warning_html = f"\n      {warning}" if warning else ""
+        return f"""<section class="market-rankings unavailable">
+      <h2>多策略共识</h2>{warning_html}
+      <p>全市场排名不可用。</p>
+      <p><strong>原因：</strong> {_html(reason_label(rankings.unavailable_reason or "not_provided"))}</p>
+    </section>"""
+    warning_html = f"\n      {warning}" if warning else ""
+    return f"""<section class="market-rankings">
+      <h2>多策略共识</h2>{warning_html}
+      {_render_consensus_cards(rankings.consensus)}
+    </section>"""
+
+
+def _render_profile_panel_html(
+    profile: str,
+    label: str,
+    rankings: MarketRankings,
+) -> str:
+    if rankings.status == "unavailable":
+        return f"""<section class="market-rankings unavailable">
+      <h2>{_html(label)}</h2>
+      <p class="empty-state">{_html(label)}排名不可用。</p>
+    </section>"""
+    records = rankings.trend if profile == "trend" else rankings.balanced
+    consensus_by_code = {record.code: record for record in rankings.consensus}
+    return f"""<section class="market-rankings">
+      <h2>{_html(label)}</h2>
+      {_render_ranking_profile(profile, records, consensus_by_code)}
+    </section>"""
+
+
+def _format_market_count(value: int | None) -> str:
+    return "未提供" if value is None else str(value)
+
+
+def _format_market_number(value: float | None) -> str:
+    return "未提供" if value is None else f"{value:.2f}"
+
+
+def _format_market_change(value: float | None) -> str:
+    return "未提供" if value is None else f"{value:+.2f}%"
+
+
+def _format_market_ratio(value: float | None, *, digits: int = 2) -> str:
+    return "未提供" if value is None else f"{value:.{digits}%}"
+
+
+def _market_relation_label(value: str | None) -> str:
+    return {
+        "above": "高于",
+        "below": "低于",
+        "equal": "接近",
+    }.get(value or "", "未提供")
+
+
+def _market_trend_label(value: str | None) -> str:
+    return {
+        "bullish": "偏强",
+        "bearish": "偏弱",
+        "neutral": "中性",
+        "insufficient": "数据不足",
+    }.get(value or "", "未提供")
+
+
+def _market_state_status_label(value: str) -> str:
+    return {
+        "available": "可用",
+        "partial": "部分可用",
+        "unavailable": "不可用",
+    }.get(value, status_label(value))
 
 
 def _render_market_rankings_markdown(rankings: MarketRankings) -> list[str]:
@@ -315,7 +562,11 @@ def _pool_has_scan_ranking(pool: PoolOverview) -> bool:
 def _render_pool_overview_html(pool: PoolOverview | None) -> str:
     """Render the lightweight full-pool overview section for the HTML page."""
     if pool is None:
-        return ""
+        unavailable_message = "全池速览不可用：未提供全池快照"
+        return f"""<section class="pool-overview unavailable">
+      <h2>全池速览</h2>
+      <p class="empty-state">{_html(unavailable_message)}</p>
+    </section>"""
     unavailable_html = (
         f'\n      <p class="pool-overview-warning">行情快照不可用：'
         f"{_html(reason_label(pool.unavailable_reason))}</p>"

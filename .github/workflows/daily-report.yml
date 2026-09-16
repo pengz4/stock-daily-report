@@ -107,10 +107,17 @@ jobs:
           if [ -f "$report_path" ] && [ -f "$snapshot_path" ]; then
             reuse_report=true
             if [ -f "$scan_path" ]; then
-              if python - "$report_path" "$scan_path" <<'PY'
+              if python - "$report_path" "$scan_path" "$report_date" <<'PY'
           import sys
+          from datetime import date
           from pathlib import Path
 
+          from stock_daily_report.config import load_market_scan_settings
+          from stock_daily_report.market_scan.identity import (
+              build_market_state_identity,
+              canonical_market_state_payload,
+              resolve_market_state_identity,
+          )
           from stock_daily_report.market_scan.report import load_scan_artifact
           from stock_daily_report.report.models import (
               REPORT_RENDER_VERSION,
@@ -122,14 +129,49 @@ jobs:
                   Path(sys.argv[1]).read_text(encoding="utf-8")
               )
               scan = load_scan_artifact(sys.argv[2])
+              expected_report_date = date.fromisoformat(sys.argv[3])
+              market_scan_settings = load_market_scan_settings(
+                  "config/market_scan.yaml"
+              )
+              report_identity = resolve_market_state_identity(
+                  market_scan_settings.market_state,
+                  report.market_state,
+                  report.market_state_identity,
+              )
+              scan_identity = resolve_market_state_identity(
+                  market_scan_settings.market_state,
+                  scan.market_state,
+                  scan.market_state_identity,
+              )
           except (OSError, ValueError):
               raise SystemExit(1)
 
           rankings = report.market_rankings
+          report_state = report.market_state
+          scan_state = scan.market_state
           raise SystemExit(
               0
               if (
                   report.metadata.render_version == REPORT_RENDER_VERSION
+                  and report.metadata.report_date == expected_report_date
+                  and report.metadata.report_date == scan.report_date
+                  and report.market_state is not None
+                  and scan.market_state is not None
+                  and
+                  report.market_state.rule_version == scan.market_state.rule_version
+                  and report_state.report_date == scan.report_date
+                  and report_identity is not None
+                  and scan_identity is not None
+                  and report_identity == scan_identity
+                  and
+                  build_market_state_identity(
+                      market_scan_settings.market_state,
+                      report.market_state,
+                  )
+                  == report_identity
+                  and
+                  canonical_market_state_payload(report.market_state)
+                  == canonical_market_state_payload(scan.market_state)
                   and
                   rankings.scan_date == scan.report_date
                   and rankings.rule_version == scan.rule_version
@@ -148,10 +190,16 @@ jobs:
                 echo "Existing report does not include the current scan; regenerating"
               fi
             else
-              if python - "$report_path" <<'PY'
+              if python - "$report_path" "$report_date" <<'PY'
           import sys
           from pathlib import Path
+          from datetime import date
 
+          from stock_daily_report.config import load_market_scan_settings
+          from stock_daily_report.market_scan.identity import (
+              build_market_state_identity,
+              resolve_market_state_identity,
+          )
           from stock_daily_report.report.models import (
               REPORT_RENDER_VERSION,
               ReportDocument,
@@ -161,12 +209,31 @@ jobs:
               report = ReportDocument.model_validate_json(
                   Path(sys.argv[1]).read_text(encoding="utf-8")
               )
+              expected_report_date = date.fromisoformat(sys.argv[2])
+              market_scan_settings = load_market_scan_settings(
+                  "config/market_scan.yaml"
+              )
+              report_identity = resolve_market_state_identity(
+                  market_scan_settings.market_state,
+                  report.market_state,
+                  report.market_state_identity,
+              )
           except (OSError, ValueError):
               raise SystemExit(1)
 
           raise SystemExit(
               0
               if report.metadata.render_version == REPORT_RENDER_VERSION
+              and report.metadata.report_date == expected_report_date
+              and report.market_state is not None
+              and report_identity is not None
+              and report.market_state.report_date == report.metadata.report_date
+              and
+              build_market_state_identity(
+                  market_scan_settings.market_state,
+                  report.market_state,
+              )
+              == report_identity
               else 1
           )
           PY
@@ -283,6 +350,7 @@ jobs:
               --date "$report_date" \
               --settings config/settings.yaml \
               --watchlist config/watchlist.yaml \
+              --market-scan-settings config/market_scan.yaml \
               --output-root . \
               --skip-notifications \
               "${refresh_args[@]}"

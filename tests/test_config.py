@@ -11,6 +11,7 @@ from stock_daily_report.config import (
     load_settings,
     load_watchlist,
 )
+from stock_daily_report.models import MarketStateSettings
 
 VALID_MARKET_SCAN_YAML = (
     "rule_version: market-scan-v1\n"
@@ -576,6 +577,69 @@ def test_load_market_scan_settings_rejects_arbitrary_yaml_objects(tmp_path):
     path.write_text("!!python/object/apply:os.system ['echo unsafe']\n", encoding="utf-8")
 
     with pytest.raises(ConfigurationError, match="Invalid YAML"):
+        load_market_scan_settings(path)
+
+
+def test_shipped_market_scan_config_contains_the_five_market_state_indices():
+    settings = load_market_scan_settings(
+        PROJECT_ROOT / "config/market_scan.yaml"
+    )
+
+    assert isinstance(settings.market_state, MarketStateSettings)
+    assert settings.market_state.index_codes == (
+        "000001",
+        "399001",
+        "399006",
+        "000300",
+        "000852",
+    )
+    assert settings.market_state.lookback_periods == (20, 60)
+    assert settings.market_state.rule_version == "market-state-v1"
+
+
+def test_market_state_settings_reject_unknown_keys(tmp_path):
+    path = tmp_path / "market_scan.yaml"
+    path.write_text(
+        VALID_MARKET_SCAN_YAML
+        + "market_state:\n"
+        "  rule_version: market-state-v1\n"
+        '  index_codes: ["000001", "399001", "399006", "000300", "000852"]\n'
+        "  lookback_periods: [20, 60]\n"
+        "  unexpected: true\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ConfigurationError, match="Extra inputs are not permitted"):
+        load_market_scan_settings(path)
+
+
+def test_market_state_settings_reject_invalid_index_configuration(tmp_path):
+    path = tmp_path / "market_scan.yaml"
+    path.write_text(
+        VALID_MARKET_SCAN_YAML
+        + "market_state:\n"
+        "  rule_version: market-state-v1\n"
+        '  index_codes: ["000001", "000001", "399006", "000300"]\n'
+        "  lookback_periods: [60, 20]\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ConfigurationError, match="index_codes"):
+        load_market_scan_settings(path)
+
+
+def test_market_state_settings_reject_unsupported_lookback_periods(tmp_path):
+    path = tmp_path / "market_scan.yaml"
+    path.write_text(
+        VALID_MARKET_SCAN_YAML
+        + "market_state:\n"
+        "  rule_version: market-state-v1\n"
+        '  index_codes: ["000001", "399001", "399006", "000300", "000852"]\n'
+        "  lookback_periods: [10, 30]\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ConfigurationError, match=r"exactly \(20, 60\)"):
         load_market_scan_settings(path)
 
 

@@ -13,15 +13,25 @@ import pytest
 
 import stock_daily_report.cli as cli_module
 import stock_daily_report.pipeline as pipeline_module
+from stock_daily_report.market_scan.identity import build_market_state_identity
 from stock_daily_report.market_scan.models import (
     ConsensusRecord,
+    MarketBreadth,
+    MarketIndexState,
     MarketScanArtifact,
+    MarketState,
     ProfileRankings,
     RankingRecord,
     ScanStatus,
 )
 from stock_daily_report.market_scan.report import write_scan_artifact
-from stock_daily_report.models import DailyBar, Settings, Watchlist
+from stock_daily_report.models import (
+    DailyBar,
+    MarketScanSettings,
+    MarketStateSettings,
+    Settings,
+    Watchlist,
+)
 from stock_daily_report.notify.base import (
     NotificationDeliveryError,
     NotificationOutcome,
@@ -207,6 +217,51 @@ def _market_scan_artifact(
     )
 
 
+def _market_state() -> MarketState:
+    return MarketState(
+        report_date=date(2026, 9, 4),
+        generated_at=datetime(2026, 9, 4, 8, 30, tzinfo=UTC),
+        rule_version="market-state-v1",
+        indices=tuple(
+            MarketIndexState(
+                name=name,
+                code=code,
+                status="available",
+                latest_trade_date=date(2026, 9, 4),
+                close=3000.0 + index,
+                change_pct=1.2 - index * 0.1,
+                close_vs_ma20="above",
+                close_vs_ma60="above",
+                trend="bullish",
+                provider="fixture",
+            )
+            for index, (name, code) in enumerate(
+                (
+                    ("上证指数", "000001"),
+                    ("深证成指", "399001"),
+                    ("创业板指", "399006"),
+                    ("沪深300", "000300"),
+                    ("中证1000", "000852"),
+                )
+            )
+        ),
+        breadth=MarketBreadth(
+            status="available",
+            advancing_count=60,
+            declining_count=30,
+            unchanged_count=10,
+            advancing_ratio=0.6,
+            declining_ratio=0.3,
+            advance_decline_ratio=2.0,
+            valid_count=100,
+            total_count=100,
+            provider="fake-universe",
+        ),
+        status="available",
+        conclusion="指数与市场广度方向一致",
+    )
+
+
 @pytest.fixture
 def fixture_settings() -> Settings:
     return Settings(
@@ -253,7 +308,8 @@ def test_daily_pipeline_writes_json_markdown_and_html(tmp_path, fixture_settings
 def test_market_scan_is_published_in_json_markdown_and_html(
     tmp_path, fixture_settings
 ):
-    write_scan_artifact(tmp_path, _market_scan_artifact())
+    artifact = _market_scan_artifact().model_copy(update={"market_state": _market_state()})
+    write_scan_artifact(tmp_path, artifact)
 
     outputs = run_daily_report(
         fixture_settings,
@@ -276,6 +332,13 @@ def test_market_scan_is_published_in_json_markdown_and_html(
     assert rankings["universe_count"] == 2
     assert rankings["eligible_count"] == 1
     assert rankings["valid_count"] == 1
+    assert document["market_state"]["status"] == "available"
+    assert document["market_state"]["breadth"]["advancing_count"] == 60
+    assert outputs.report.market_state is not None
+    assert outputs.report.market_state.conclusion == "指数与市场广度方向一致"
+    assert "## 市场状态" in markdown
+    assert markdown.index("## 市场状态") < markdown.index("## 全市场排名")
+    assert "市场状态" in html
     assert rankings["provider_names"] == ["fake-universe", "fixture"]
     assert rankings["trend"][0]["components"]["trend"] == 90.0
     assert rankings["trend"][0]["evidence_codes"] == ["close_above_ma20"]
@@ -292,6 +355,106 @@ def test_market_scan_is_published_in_json_markdown_and_html(
     assert "close_above_ma20" not in html
     assert "风险（elevated_volatility）" in html
     assert 'class="consensus-row"' in html
+
+
+def test_cli_daily_accepts_canonical_scan_and_retains_market_state(
+    tmp_path, fixture_settings, monkeypatch
+):
+    report_date = date(2026, 9, 4)
+    market_state = _market_state()
+    market_state_identity = build_market_state_identity(
+        MarketStateSettings(), market_state
+    )
+    artifact = _market_scan_artifact(report_date).model_copy(
+        update={
+            "market_state": market_state,
+            "market_state_identity": market_state_identity,
+        }
+    )
+    write_scan_artifact(tmp_path, artifact)
+    watchlist = Watchlist(stocks=[{"code": "600519", "name": "贵州茅台"}])
+    provider = RecordingProvider({"600519": make_bars("600519")})
+    scan_settings = MarketScanSettings(
+        rule_version="market-scan-v1",
+        trend_limit=30,
+        balanced_limit=30,
+        minimum_history_bars=120,
+        minimum_latest_amount=50_000_000,
+        minimum_coverage_ratio=0.80,
+        max_workers=16,
+        max_candidates=6_000,
+    )
+
+    monkeypatch.setattr(cli_module, "load_settings", lambda _path: fixture_settings)
+    monkeypatch.setattr(cli_module, "load_watchlist", lambda _path: watchlist)
+    monkeypatch.setattr(
+        cli_module,
+        "load_market_scan_settings",
+        lambda _path: scan_settings,
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "FixtureMarketDataProvider",
+        lambda _path: provider,
+    )
+
+    result = cli_module.main(
+        [
+            "daily",
+            "--date",
+            report_date.isoformat(),
+            "--fixture-directory",
+            str(tmp_path / "fixtures"),
+            "--output-root",
+            str(tmp_path),
+            "--skip-notifications",
+        ]
+    )
+
+    assert result == 0
+    report = json.loads(
+        (tmp_path / "reports" / report_date.isoformat() / "report.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert report["market_state"] == market_state.model_dump(mode="json")
+    assert report["market_state_identity"] == market_state_identity
+    assert report["market_rankings"]["status"] == "available"
+    assert report["market_rankings"]["trend"][0]["code"] == "600519"
+
+
+def test_legacy_market_scan_identity_migrates_and_converges_on_same_date(
+    tmp_path, fixture_settings
+):
+    legacy_artifact = _market_scan_artifact().model_copy(
+        update={"market_state": _market_state(), "market_state_identity": None}
+    )
+    write_scan_artifact(tmp_path, legacy_artifact)
+    watchlist = Watchlist(stocks=[{"code": "600519", "name": "贵州茅台"}])
+    expected_identity = build_market_state_identity(
+        MarketStateSettings(), legacy_artifact.market_state
+    )
+
+    first = run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        report_date=date(2026, 9, 4),
+        now=lambda: datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
+    )
+    second = run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        report_date=date(2026, 9, 4),
+        now=lambda: datetime(2026, 9, 4, 10, 0, tzinfo=UTC),
+        reuse_existing_snapshot=True,
+    )
+
+    assert first.report.market_state_identity == expected_identity
+    assert second.report.market_state_identity == expected_identity
 
 
 def test_daily_pipeline_can_reuse_existing_snapshot_when_refreshing_scan(

@@ -28,6 +28,7 @@ from stock_daily_report.market_scan.runner import (
     market_scan_config_hash,
     run_market_scan,
 )
+from stock_daily_report.models import MarketStateSettings
 from stock_daily_report.notify import NotificationDeliveryError, NotificationService
 from stock_daily_report.pipeline import (
     PipelineError,
@@ -37,6 +38,7 @@ from stock_daily_report.pipeline import (
 )
 from stock_daily_report.providers.base import ProviderError
 from stock_daily_report.providers.fixture import FixtureMarketDataProvider
+from stock_daily_report.providers.index import AkShareIndexProvider
 from stock_daily_report.providers.service import CacheRollbackError
 from stock_daily_report.providers.universe import (
     AkShareUniverseProvider,
@@ -57,6 +59,11 @@ def main(argv: list[str] | None = None) -> int:
     daily.add_argument("--date", required=True, type=date.fromisoformat)
     daily.add_argument("--settings", type=Path, default=_project_root() / "config/settings.yaml")
     daily.add_argument("--watchlist", type=Path, default=_project_root() / "config/watchlist.yaml")
+    daily.add_argument(
+        "--market-scan-settings",
+        type=Path,
+        default=_project_root() / "config/market_scan.yaml",
+    )
     daily.add_argument("--output-root", type=Path, default=Path.cwd())
     daily.add_argument("--fixture-directory", type=Path)
     daily.add_argument(
@@ -147,6 +154,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             settings = load_settings(args.settings)
             watchlist = load_watchlist(args.watchlist)
+            market_scan_settings = load_market_scan_settings(args.market_scan_settings)
             provider = (
                 FixtureMarketDataProvider(args.fixture_directory)
                 if args.fixture_directory is not None
@@ -160,6 +168,7 @@ def main(argv: list[str] | None = None) -> int:
                 report_date=args.date,
                 reuse_existing_snapshot=args.reuse_existing_snapshot,
                 overwrite_snapshot=args.overwrite_snapshot,
+                market_scan_settings=market_scan_settings.market_state,
             )
             if settings.notifications.enabled_channels and not args.skip_notifications:
                 if args.report_url:
@@ -225,6 +234,10 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "market-scan":
         try:
+            if args.max_batches is not None and args.max_batches <= 0:
+                raise _MarketScanCliError(
+                    "--max-batches must be a positive integer"
+                )
             settings = load_market_scan_settings(args.settings)
             data_settings = load_settings(args.data_settings)
             configuration_hash = market_scan_config_hash(
@@ -233,6 +246,9 @@ def main(argv: list[str] | None = None) -> int:
             )
             directory = (
                 "watchlist-scans" if args.scope == "watchlist" else "market-scans"
+            )
+            index_provider = (
+                AkShareIndexProvider() if directory == "market-scans" else None
             )
             if args.scope == "watchlist":
                 universe_provider: object = WatchlistUniverseProvider(
@@ -248,6 +264,7 @@ def main(argv: list[str] | None = None) -> int:
                     report_date=args.date,
                     expected_config_hash=configuration_hash,
                     expected_rule_version=settings.rule_version,
+                    market_state_settings=settings.market_state,
                 )
             elif args.resumable:
                 current_date = _current_market_date()
@@ -271,6 +288,7 @@ def main(argv: list[str] | None = None) -> int:
                     report_date=args.date,
                     output_root=args.output_root,
                     configuration_hash=configuration_hash,
+                    index_provider=index_provider,
                     max_batches=args.max_batches,
                     directory=directory,
                 )
@@ -300,6 +318,7 @@ def main(argv: list[str] | None = None) -> int:
                         report_date=args.date,
                         output_root=args.output_root,
                         configuration_hash=configuration_hash,
+                        index_provider=index_provider,
                     )
                 else:
                     artifact_path = run_market_scan(
@@ -345,8 +364,12 @@ def _existing_scan_artifact(
     report_date: date,
     expected_config_hash: str,
     expected_rule_version: str,
+    market_state_settings: MarketStateSettings,
 ) -> Path:
-    artifact = load_scan_artifact(path)
+    artifact = load_scan_artifact(
+        path,
+        market_state_settings=market_state_settings,
+    )
     if artifact.report_date != report_date:
         raise MarketScanArtifactError(
             "Existing market scan artifact report_date does not match "

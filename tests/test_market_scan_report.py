@@ -3,10 +3,14 @@ from datetime import UTC, date, datetime
 
 import pytest
 
+from stock_daily_report.market_scan.identity import build_market_state_identity
 from stock_daily_report.market_scan.models import (
     SCAN_SCHEMA_VERSION,
     ConsensusRecord,
+    MarketBreadth,
+    MarketIndexState,
     MarketScanArtifact,
+    MarketState,
     ProfileRankings,
     RankingRecord,
     ScanStatus,
@@ -17,6 +21,7 @@ from stock_daily_report.market_scan.report import (
     load_scan_artifact,
     write_scan_artifact,
 )
+from stock_daily_report.models import MarketStateSettings
 
 
 def _ranking(profile: str, score: float) -> RankingRecord:
@@ -44,6 +49,8 @@ def _artifact(
     *,
     generated_at: datetime,
     input_hash: str = "1" * 64,
+    market_state: MarketState | None = None,
+    market_state_identity: str | None = None,
 ) -> MarketScanArtifact:
     trend = _ranking("trend", 82.0)
     balanced = _ranking("balanced", 75.0)
@@ -83,6 +90,32 @@ def _artifact(
         config_hash="0" * 64,
         input_hash=input_hash,
         provider_names=("fake-universe", "fixture"),
+        market_state=market_state,
+        market_state_identity=market_state_identity,
+    )
+
+
+def _market_state(generated_at: datetime) -> MarketState:
+    return MarketState(
+        report_date=date(2026, 9, 11),
+        generated_at=generated_at,
+        rule_version="market-state-v1",
+        indices=(
+            MarketIndexState(
+                name="上证指数",
+                code="000001",
+                status="unavailable",
+                error_code="offline",
+                error_message="fixture",
+            ),
+        ),
+        breadth=MarketBreadth(
+            status="unavailable",
+            error_code="offline",
+            error_message="fixture",
+        ),
+        status="unavailable",
+        conclusion="市场状态数据不足",
     )
 
 
@@ -137,6 +170,104 @@ def test_same_date_identical_artifact_is_reused_without_changing_bytes(tmp_path)
     assert reused_path == path
     assert path.read_bytes() == original_bytes
     assert load_scan_artifact(path).generated_at == first.generated_at
+
+
+def test_same_date_artifact_reuse_ignores_market_state_observation_timestamp(tmp_path):
+    first = _artifact(
+        generated_at=datetime(2026, 9, 11, 8, 0, tzinfo=UTC),
+        market_state=_market_state(datetime(2026, 9, 11, 8, 0, tzinfo=UTC)),
+    )
+    rerun = _artifact(
+        generated_at=datetime(2026, 9, 11, 9, 0, tzinfo=UTC),
+        market_state=_market_state(datetime(2026, 9, 11, 9, 0, tzinfo=UTC)),
+    )
+
+    path = write_scan_artifact(tmp_path, first)
+    reused_path = write_scan_artifact(tmp_path, rerun)
+
+    assert reused_path == path
+    assert load_scan_artifact(path).market_state == first.market_state
+
+
+def test_legacy_market_state_artifact_is_reused_by_a_canonical_rerun(tmp_path):
+    state = _market_state(datetime(2026, 9, 11, 8, 0, tzinfo=UTC))
+    legacy = _artifact(
+        generated_at=datetime(2026, 9, 11, 8, 0, tzinfo=UTC),
+        market_state=state,
+    )
+    canonical = legacy.model_copy(
+        update={
+            "generated_at": datetime(2026, 9, 11, 9, 0, tzinfo=UTC),
+            "market_state_identity": build_market_state_identity(
+                MarketStateSettings(), state
+            ),
+        }
+    )
+
+    path = write_scan_artifact(tmp_path, legacy)
+
+    assert write_scan_artifact(tmp_path, canonical) == path
+    assert load_scan_artifact(path).market_state_identity is None
+
+
+def test_loading_a_legacy_artifact_migrates_its_identity_in_memory(tmp_path):
+    state = _market_state(datetime(2026, 9, 11, 8, 0, tzinfo=UTC))
+    artifact = _artifact(
+        generated_at=datetime(2026, 9, 11, 8, 0, tzinfo=UTC),
+        market_state=state,
+    )
+    path = write_scan_artifact(tmp_path, artifact)
+
+    loaded = load_scan_artifact(
+        path,
+        market_state_settings=MarketStateSettings(),
+    )
+
+    assert loaded.market_state_identity == build_market_state_identity(
+        MarketStateSettings(), state
+    )
+
+
+def test_same_date_artifact_rejects_a_mismatched_stored_identity(tmp_path):
+    state = _market_state(datetime(2026, 9, 11, 8, 0, tzinfo=UTC))
+    mismatched = _artifact(
+        generated_at=datetime(2026, 9, 11, 8, 0, tzinfo=UTC),
+        market_state=state,
+        market_state_identity="f" * 64,
+    )
+    canonical = mismatched.model_copy(
+        update={
+            "market_state_identity": build_market_state_identity(
+                MarketStateSettings(), state
+            )
+        }
+    )
+    write_scan_artifact(tmp_path, mismatched)
+
+    with pytest.raises(
+        MarketScanConflictError,
+        match="mismatched market-state identity",
+    ):
+        write_scan_artifact(tmp_path, canonical)
+
+
+def test_loading_an_artifact_rejects_a_mismatched_identity(tmp_path):
+    state = _market_state(datetime(2026, 9, 11, 8, 0, tzinfo=UTC))
+    artifact = _artifact(
+        generated_at=datetime(2026, 9, 11, 8, 0, tzinfo=UTC),
+        market_state=state,
+        market_state_identity="f" * 64,
+    )
+    path = write_scan_artifact(tmp_path, artifact)
+
+    with pytest.raises(
+        MarketScanArtifactError,
+        match="Invalid market-state identity",
+    ):
+        load_scan_artifact(
+            path,
+            market_state_settings=MarketStateSettings(),
+        )
 
 
 def test_same_date_different_artifact_raises_explicit_conflict(tmp_path):

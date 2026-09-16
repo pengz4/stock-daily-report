@@ -14,12 +14,14 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from stock_daily_report.market_scan.models import MarketState
 from stock_daily_report.market_scan.resume import (
     ScanCheckpoint,
+    _checkpoint_lock,
     archive_checkpoint,
     build_checkpoint,
     checkpoint_completed,
@@ -29,8 +31,10 @@ from stock_daily_report.market_scan.resume import (
     save_checkpoint,
 )
 from stock_daily_report.market_scan.runner import (
+    _build_market_state,
     _CandidateResult,
     _collect_with_timeout,
+    _normalize_timestamp,
     _process_candidate,
     _provider_name,
     scan_market,
@@ -53,6 +57,7 @@ def run_resumable_scan(
     output_root: str | Path,
     generated_at: datetime | None = None,
     configuration_hash: str | None = None,
+    index_provider: object | None = None,
     source_revision: str = "",
     max_batches: int | None = None,
     batch_size: int | None = None,
@@ -65,6 +70,40 @@ def run_resumable_scan(
     a later run. The checkpoint is persisted after every batch.
     """
 
+    if max_batches is not None and max_batches <= 0:
+        raise ValueError("max_batches must be a positive integer")
+    with _checkpoint_lock(output_root, report_date, directory=directory):
+        return _run_resumable_scan(
+            settings,
+            universe_provider,
+            history_provider,
+            report_date=report_date,
+            output_root=output_root,
+            generated_at=generated_at,
+            configuration_hash=configuration_hash,
+            index_provider=index_provider,
+            source_revision=source_revision,
+            max_batches=max_batches,
+            batch_size=batch_size,
+            directory=directory,
+        )
+
+
+def _run_resumable_scan(
+    settings: MarketScanSettings,
+    universe_provider: object,
+    history_provider: object,
+    *,
+    report_date: date,
+    output_root: str | Path,
+    generated_at: datetime | None = None,
+    configuration_hash: str | None = None,
+    index_provider: object | None = None,
+    source_revision: str = "",
+    max_batches: int | None = None,
+    batch_size: int | None = None,
+    directory: str | Path = "market-scans",
+) -> Path | None:
     semantic_hash = scoring_config_hash(settings)
     per_batch = batch_size or settings.max_candidates
     execution_date = _current_shanghai_date()
@@ -78,6 +117,7 @@ def run_resumable_scan(
 
     if checkpoint is not None:
         quotes = checkpoint_quotes(checkpoint)
+        market_state = checkpoint.market_state
         manifest_hash = manifest_hash_for(quotes)
         completed = checkpoint_completed(checkpoint)
         last_batch = checkpoint.last_batch
@@ -88,19 +128,34 @@ def run_resumable_scan(
                 history_provider,
                 quotes,
                 completed,
+                market_state,
                 report_date,
                 output_root,
                 generated_at,
                 configuration_hash,
+                index_provider,
                 directory=directory,
             )
     else:
         quotes = tuple(
             sorted(universe_provider.get_quotes(), key=lambda quote: quote.code)
         )
+        market_state = None
         manifest_hash = manifest_hash_for(quotes)
         completed = {}
         last_batch = 0
+
+    if market_state is None and index_provider is not None:
+        market_state = _build_market_state(
+            settings,
+            index_provider,
+            quotes,
+            report_date=report_date,
+            generated_at=_normalize_timestamp(
+                generated_at or datetime.now(UTC)
+            ),
+            breadth_provider=_provider_name(universe_provider),
+        )
 
     eligible = _eligible_quotes(quotes, report_date, settings)
     eligible_codes = {quote.code for quote in eligible}
@@ -125,6 +180,7 @@ def run_resumable_scan(
                     manifest_hash,
                     quotes,
                     completed,
+                    market_state,
                     "running",
                     source_revision,
                     batch_number,
@@ -150,6 +206,7 @@ def run_resumable_scan(
                 manifest_hash,
                 quotes,
                 completed,
+                market_state,
                 "complete" if not pending else "running",
                 source_revision,
                 batch_number,
@@ -172,6 +229,7 @@ def run_resumable_scan(
             manifest_hash,
             quotes,
             completed,
+            market_state,
             "running",
             source_revision,
             batch_number,
@@ -185,10 +243,12 @@ def run_resumable_scan(
         history_provider,
         quotes,
         completed,
+        market_state,
         report_date,
         output_root,
         generated_at,
         configuration_hash,
+        index_provider,
         directory=directory,
     )
 
@@ -202,6 +262,7 @@ def run_resumable_scan(
             manifest_hash,
             quotes,
             completed,
+            market_state,
             "complete",
             source_revision,
             batch_number,
@@ -232,6 +293,7 @@ def _make_checkpoint(
     manifest_hash: str,
     quotes: list[UniverseQuote],
     completed: Mapping[str, _CandidateResult],
+    market_state: MarketState | None,
     state: str,
     source_revision: str,
     batch_number: int,
@@ -244,6 +306,7 @@ def _make_checkpoint(
         manifest_hash=manifest_hash,
         universe_quotes=quotes,
         completed=completed.values(),
+        market_state=market_state,
         state=state,  # type: ignore[arg-type]
         source_revision=source_revision,
         last_batch=batch_number,
@@ -300,10 +363,12 @@ def _finalize(
     history_provider: object,
     quotes: list[UniverseQuote],
     completed: Mapping[str, _CandidateResult],
+    market_state: MarketState | None,
     report_date: date,
     output_root: str | Path,
     generated_at: datetime | None,
     configuration_hash: str | None,
+    index_provider: object | None,
     directory: str | Path = "market-scans",
 ) -> Path:
     """Rebuild the immutable artifact from completed results via ``scan_market``."""
@@ -317,6 +382,8 @@ def _finalize(
         report_date=report_date,
         generated_at=generated_at,
         configuration_hash=configuration_hash,
+        index_provider=index_provider,
+        market_state=market_state,
         universe_quotes=quotes,
         resume_from=completed,
     )

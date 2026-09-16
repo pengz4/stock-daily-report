@@ -11,7 +11,12 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 
+from stock_daily_report.market_scan.identity import (
+    MarketStateIdentityError,
+    resolve_market_state_identity,
+)
 from stock_daily_report.market_scan.models import MarketScanArtifact
+from stock_daily_report.models import MarketStateSettings
 
 
 class MarketScanArtifactError(ValueError):
@@ -42,7 +47,16 @@ def write_scan_artifact(
             if path.exists():
                 existing = load_scan_artifact(path)
                 if _identity_payload(existing) == _identity_payload(artifact):
-                    return path
+                    if (
+                        existing.market_state_identity is None
+                        or existing.market_state_identity
+                        == artifact.market_state_identity
+                    ):
+                        return path
+                    raise MarketScanConflictError(
+                        "Refusing to reuse market scan with mismatched "
+                        f"market-state identity: {path}"
+                    )
                 raise MarketScanConflictError(
                     "Refusing to overwrite immutable market scan with different "
                     f"content: {path}"
@@ -55,8 +69,17 @@ def write_scan_artifact(
     return path
 
 
-def load_scan_artifact(path: str | Path) -> MarketScanArtifact:
-    """Load and validate a market-scan artifact."""
+def load_scan_artifact(
+    path: str | Path,
+    *,
+    market_state_settings: MarketStateSettings | None = None,
+) -> MarketScanArtifact:
+    """Load and validate a market-scan artifact.
+
+    When market-state settings are supplied, legacy artifacts without an
+    identity are migrated in memory and stored identities are checked against
+    their canonical payload.
+    """
 
     artifact_path = Path(path)
     try:
@@ -78,16 +101,35 @@ def load_scan_artifact(path: str | Path) -> MarketScanArtifact:
             f"Could not read market scan artifact: {artifact_path}"
         ) from error
     try:
-        return MarketScanArtifact.model_validate(document)
+        artifact = MarketScanArtifact.model_validate(document)
     except ValidationError as error:
         raise MarketScanArtifactError(
             f"Invalid market scan artifact: {artifact_path}: {error}"
         ) from error
+    if market_state_settings is None:
+        return artifact
+    try:
+        identity = resolve_market_state_identity(
+            market_state_settings,
+            artifact.market_state,
+            artifact.market_state_identity,
+        )
+    except MarketStateIdentityError as error:
+        raise MarketScanArtifactError(
+            f"Invalid market-state identity: {artifact_path}: {error}"
+        ) from error
+    if identity == artifact.market_state_identity:
+        return artifact
+    return artifact.model_copy(update={"market_state_identity": identity})
 
 
 def _identity_payload(artifact: MarketScanArtifact) -> dict[str, object]:
     payload = artifact.model_dump(mode="json")
     payload.pop("generated_at")
+    payload.pop("market_state_identity", None)
+    market_state = payload.get("market_state")
+    if isinstance(market_state, dict):
+        market_state.pop("generated_at", None)
     return payload
 
 

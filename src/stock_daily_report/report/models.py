@@ -8,9 +8,10 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from stock_daily_report.decision import DecisionLabel
+from stock_daily_report.market_scan.models import MarketState
 
 REPORT_SCHEMA_VERSION = 2
-REPORT_RENDER_VERSION = "cn-v2"
+REPORT_RENDER_VERSION = "cn-v3"
 
 
 class AnalyzerMetadata(BaseModel):
@@ -366,9 +367,22 @@ class ReportDocument(BaseModel):
     schema_version: Literal[1, REPORT_SCHEMA_VERSION] = REPORT_SCHEMA_VERSION
     metadata: ReportMetadata
     market_summary: MarketSummary
+    market_state: MarketState | None = None
+    market_state_identity: str | None = Field(
+        default=None,
+        pattern=r"^[0-9a-f]{64}$",
+    )
     market_rankings: MarketRankings
     stocks: tuple[StockReport, ...]
     pool_overview: PoolOverview | None = None
+
+    @model_validator(mode="after")
+    def validate_market_state_identity(self) -> ReportDocument:
+        if self.market_state_identity is not None and self.market_state is None:
+            raise ValueError(
+                "market_state_identity requires a market_state payload"
+            )
+        return self
 
 
 __all__ = [
@@ -380,6 +394,7 @@ __all__ = [
     "MarketRankings",
     "MarketRankingsUnavailableReason",
     "MarketScanReasonCount",
+    "MarketState",
     "MarketSummary",
     "PoolOverview",
     "PoolOverviewRow",
