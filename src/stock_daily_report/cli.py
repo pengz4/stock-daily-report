@@ -59,6 +59,11 @@ def main(argv: list[str] | None = None) -> int:
     daily.add_argument("--date", required=True, type=date.fromisoformat)
     daily.add_argument("--settings", type=Path, default=_project_root() / "config/settings.yaml")
     daily.add_argument("--watchlist", type=Path, default=_project_root() / "config/watchlist.yaml")
+    daily.add_argument(
+        "--market-scan-settings",
+        type=Path,
+        default=_project_root() / "config/market_scan.yaml",
+    )
     daily.add_argument("--output-root", type=Path, default=Path.cwd())
     daily.add_argument("--fixture-directory", type=Path)
     daily.add_argument(
@@ -149,9 +154,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             settings = load_settings(args.settings)
             watchlist = load_watchlist(args.watchlist)
-            market_scan_settings = load_market_scan_settings(
-                _project_root() / "config/market_scan.yaml"
-            )
+            market_scan_settings = load_market_scan_settings(args.market_scan_settings)
             provider = (
                 FixtureMarketDataProvider(args.fixture_directory)
                 if args.fixture_directory is not None

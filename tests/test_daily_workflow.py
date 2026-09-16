@@ -36,6 +36,7 @@ def test_daily_workflow_passes_repository_configuration_paths():
 
     assert "--settings config/settings.yaml" in command
     assert "--watchlist config/watchlist.yaml" in command
+    assert "--market-scan-settings config/market_scan.yaml" in command
 
 
 def test_daily_workflow_reuses_an_existing_immutable_report():

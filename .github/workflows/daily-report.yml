@@ -350,6 +350,7 @@ jobs:
               --date "$report_date" \
               --settings config/settings.yaml \
               --watchlist config/watchlist.yaml \
+              --market-scan-settings config/market_scan.yaml \
               --output-root . \
               --skip-notifications \
               "${refresh_args[@]}"

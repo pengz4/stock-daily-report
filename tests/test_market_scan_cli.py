@@ -29,6 +29,63 @@ from stock_daily_report.providers.universe import AkShareUniverseProvider
 REPORT_DATE = date(2026, 9, 11)
 
 
+def _stub_daily_cli(monkeypatch, *, market_scan_path):
+    settings = SimpleNamespace(notifications=SimpleNamespace(enabled_channels=()))
+    watchlist = object()
+    market_scan_settings = SimpleNamespace(market_state=object())
+    loaded_paths = []
+
+    monkeypatch.setattr(cli_module, "load_settings", lambda path: settings)
+    monkeypatch.setattr(cli_module, "load_watchlist", lambda path: watchlist)
+
+    def load_scan_settings(path):
+        loaded_paths.append(path)
+        return market_scan_settings
+
+    monkeypatch.setattr(cli_module, "load_market_scan_settings", load_scan_settings)
+    monkeypatch.setattr(
+        cli_module,
+        "run_daily_report",
+        lambda *args, **kwargs: SimpleNamespace(html_path=Path("report.html")),
+    )
+
+    assert (
+        cli_module.main(
+            [
+                "daily",
+                "--date",
+                REPORT_DATE.isoformat(),
+                *(
+                    ["--market-scan-settings", str(market_scan_path)]
+                    if market_scan_path is not None
+                    else []
+                ),
+            ]
+        )
+        == 0
+    )
+    return loaded_paths
+
+
+def test_daily_cli_uses_explicit_market_scan_settings_path(monkeypatch, tmp_path):
+    market_scan_path = tmp_path / "config" / "market_scan.yaml"
+
+    loaded_paths = _stub_daily_cli(
+        monkeypatch,
+        market_scan_path=market_scan_path,
+    )
+
+    assert loaded_paths == [market_scan_path]
+
+
+def test_daily_cli_defaults_market_scan_settings_to_project_root(monkeypatch):
+    loaded_paths = _stub_daily_cli(monkeypatch, market_scan_path=None)
+
+    assert loaded_paths == [
+        cli_module._project_root() / "config" / "market_scan.yaml"
+    ]
+
+
 def _scan_settings():
     return load_market_scan_settings(
         Path(__file__).parents[1] / "config" / "market_scan.yaml"
