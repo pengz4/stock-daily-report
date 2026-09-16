@@ -25,6 +25,7 @@ from stock_daily_report.market_scan.runner import (
     scoring_config_hash,
 )
 from stock_daily_report.models import DailyBar, MarketScanSettings
+from stock_daily_report.providers.base import ProviderError
 from stock_daily_report.providers.universe import UniverseQuote
 
 REPORT_DATE = date(2026, 9, 11)
@@ -369,6 +370,76 @@ def test_resumable_scan_resumes_without_refetching(tmp_path):
     )
 
     assert len(history.requested) == 2
+
+
+def test_resumable_scan_retries_history_failures_three_times_per_run(tmp_path):
+    code = _codes(1)[0]
+    quotes = [_quote(code)]
+    universe = FakeUniverseProvider(quotes)
+
+    class FlakyHistoryProvider(FakeHistoryProvider):
+        def __init__(self):
+            super().__init__({code: _bars(code)})
+            self.failures_remaining = 2
+
+        def get_daily_bars(self, requested_code, *, start=None, end=None):
+            self.requested.append(requested_code)
+            if self.failures_remaining:
+                self.failures_remaining -= 1
+                raise ProviderError("flaky-history", "network_error", "try again")
+            return list(self._bars_by_code[requested_code])
+
+    history = FlakyHistoryProvider()
+    path = run_resumable_scan(
+        _settings(minimum_coverage_ratio=0.1),
+        universe,
+        history,
+        report_date=REPORT_DATE,
+        output_root=tmp_path,
+    )
+
+    assert path is not None
+    assert history.requested == [code, code, code]
+
+    from stock_daily_report.market_scan.report import load_scan_artifact
+
+    artifact = load_scan_artifact(path)
+    assert artifact.valid_count == 1
+
+
+def test_resumable_scan_retries_completed_history_failures_on_next_run(tmp_path):
+    code = _codes(1)[0]
+    quotes = [_quote(code)]
+    universe = FakeUniverseProvider(quotes)
+
+    class FailingHistoryProvider(FakeHistoryProvider):
+        def get_daily_bars(self, requested_code, *, start=None, end=None):
+            self.requested.append(requested_code)
+            raise ProviderError("failing-history", "network_error", "offline")
+
+    history = FailingHistoryProvider({code: _bars(code)})
+    settings = _settings(minimum_coverage_ratio=0.1)
+    first_path = run_resumable_scan(
+        settings,
+        universe,
+        history,
+        report_date=REPORT_DATE,
+        output_root=tmp_path,
+    )
+    assert first_path is not None
+    assert history.requested == [code, code, code]
+
+    history.requested.clear()
+    second_path = run_resumable_scan(
+        settings,
+        universe,
+        history,
+        report_date=REPORT_DATE,
+        output_root=tmp_path,
+    )
+
+    assert second_path is not None
+    assert history.requested == [code, code, code]
 
 
 def test_resumable_scan_preserves_market_state_from_checkpoint_snapshot(tmp_path):

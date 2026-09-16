@@ -3,7 +3,9 @@
 Implements the same-day checkpoint/resume lifecycle: eligible candidates are
 processed in batches, each batch is persisted to ``progress.json``, and a later
 run for the *same* Asia/Shanghai day resumes instead of restarting. Forward
-adjusted history is never reused across calendar days.
+adjusted history is never reused across calendar days. Candidates that finish
+with ``history_failed`` are retried up to three times per run and remain
+eligible for retry on a later run.
 
 The final immutable ``scan.json`` artifact is only written once every eligible
 candidate has been attempted and coverage reaches the configured threshold,
@@ -44,6 +46,7 @@ from stock_daily_report.models import MarketScanSettings
 from stock_daily_report.providers.universe import UniverseQuote
 
 _SHANGHAI = ZoneInfo("Asia/Shanghai")
+HISTORY_FAILURE_ATTEMPTS = 3
 
 __all__ = ["run_resumable_scan"]
 
@@ -121,21 +124,6 @@ def _run_resumable_scan(
         manifest_hash = manifest_hash_for(quotes)
         completed = checkpoint_completed(checkpoint)
         last_batch = checkpoint.last_batch
-        if checkpoint.state == "complete":
-            return _finalize(
-                settings,
-                universe_provider,
-                history_provider,
-                quotes,
-                completed,
-                market_state,
-                report_date,
-                output_root,
-                generated_at,
-                configuration_hash,
-                index_provider,
-                directory=directory,
-            )
     else:
         quotes = tuple(
             sorted(universe_provider.get_quotes(), key=lambda quote: quote.code)
@@ -160,7 +148,9 @@ def _run_resumable_scan(
     eligible = _eligible_quotes(quotes, report_date, settings)
     eligible_codes = {quote.code for quote in eligible}
     completed = {
-        code: result for code, result in completed.items() if code in eligible_codes
+        code: result
+        for code, result in completed.items()
+        if code in eligible_codes and result.status.status != "history_failed"
     }
 
     pending = [quote for quote in eligible if quote.code not in completed]
@@ -338,7 +328,7 @@ def _process_batch(
     try:
         futures = {
             executor.submit(
-                _process_candidate,
+                _process_candidate_with_retries,
                 quote,
                 history_provider,
                 report_date,
@@ -355,6 +345,20 @@ def _process_batch(
     finally:
         executor.shutdown(wait=False, cancel_futures=True)
     return results
+
+
+def _process_candidate_with_retries(
+    quote: UniverseQuote,
+    history_provider: object,
+    report_date: date,
+    settings: MarketScanSettings,
+) -> _CandidateResult:
+    result = _process_candidate(quote, history_provider, report_date, settings)
+    for _ in range(1, HISTORY_FAILURE_ATTEMPTS):
+        if result.status.status != "history_failed":
+            break
+        result = _process_candidate(quote, history_provider, report_date, settings)
+    return result
 
 
 def _finalize(
