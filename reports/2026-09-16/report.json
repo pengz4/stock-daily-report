@@ -2,10 +2,10 @@
   "schema_version": 2,
   "metadata": {
     "report_date": "2026-09-16",
-    "generated_at": "2026-09-16T07:39:36.671920Z",
-    "latest_source_timestamp": "2026-09-16T07:39:36.671920Z",
+    "generated_at": "2026-09-16T07:50:00.570827Z",
+    "latest_source_timestamp": "2026-09-16T07:50:00.570827Z",
     "snapshot_path": "snapshots/2026-09-16/input.json",
-    "snapshot_hash": "8773c79f55dbbf055564298786ba47c6d56809a74a805efc6de79a0a8b9d2fae",
+    "snapshot_hash": "75b004c1c80babb30e875f1337cabbce3472e87570a923f55e0cdece47462724",
     "provider_names": [
       "akshare"
     ],
@@ -20,7 +20,7 @@
   },
   "market_summary": {
     "status": "validated_watchlist",
-    "text": "Broad-market data unavailable; validated watchlist only: count=1, average_latest_return=-1.16%, up=0, down=1, unchanged=0, latest_source=2026-09-16T07:39:36.671920+00:00."
+    "text": "Broad-market data unavailable; validated watchlist only: count=1, average_latest_return=-1.16%, up=0, down=1, unchanged=0, latest_source=2026-09-16T07:50:00.570827+00:00."
   },
   "market_state": {
     "report_date": "2026-09-16",
@@ -180,7 +180,7 @@
       "scan_score": null,
       "provider_name": "akshare",
       "latest_trade_date": "2026-09-16",
-      "latest_source_timestamp": "2026-09-16T07:39:36.671920Z",
+      "latest_source_timestamp": "2026-09-16T07:50:00.570827Z",
       "bar_count": 168,
       "quality_status": "passed",
       "quality_issues": [],
