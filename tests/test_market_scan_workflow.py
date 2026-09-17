@@ -87,6 +87,23 @@ def test_watchlist_scan_merges_history_and_serializes_history_writers():
     }
 
 
+def test_history_publish_retries_fail_the_job_when_push_never_succeeds():
+    _, workflow = _workflow()
+
+    for job_name, step_name in (
+        ("watchlist-scan", "Persist watchlist scan history"),
+        ("market-scan", "Persist market scan history"),
+    ):
+        step = next(
+            step["run"]
+            for step in workflow["jobs"][job_name]["steps"]
+            if step["name"] == step_name
+        )
+        assert "push_succeeded=false" in step
+        assert 'if [ "$push_succeeded" != true ]; then' in step
+        assert "exit 1" in step
+
+
 def test_daily_workflow_restores_same_date_market_scan_history_when_available():
     workflow = _daily_workflow()
     steps = workflow["jobs"]["generate"]["steps"]

@@ -294,6 +294,108 @@ def test_market_scan_cli_rejects_non_positive_max_batches(capsys):
     assert captured.err == "--max-batches must be a positive integer\n"
 
 
+def test_market_scan_cli_resumes_existing_artifact_when_requested(
+    monkeypatch, tmp_path, capsys
+):
+    settings = _scan_settings()
+    data_settings = SimpleNamespace(market_data=object())
+    universe_provider = object()
+    history_service = object()
+    index_provider = object()
+    artifact_path = tmp_path / "market-scans" / REPORT_DATE.isoformat() / "scan.json"
+    artifact_path.parent.mkdir(parents=True)
+    artifact_path.write_text("existing", encoding="utf-8")
+    observed = {}
+
+    monkeypatch.setattr(cli_module, "_current_market_date", lambda: REPORT_DATE)
+    monkeypatch.setattr(cli_module, "load_market_scan_settings", lambda _path: settings)
+    monkeypatch.setattr(cli_module, "load_settings", lambda _path: data_settings)
+    monkeypatch.setattr(
+        cli_module,
+        "AkShareUniverseProvider",
+        lambda: universe_provider,
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "AkShareIndexProvider",
+        lambda: index_provider,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "market_scan_config_hash",
+        lambda _scan, _data: "a" * 64,
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "_existing_scan_artifact",
+        lambda path, **_kwargs: path,
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "build_market_data_service",
+        lambda _settings, *, output_root: history_service,
+    )
+
+    from stock_daily_report.market_scan import resumable as resumable_module
+
+    def fake_run_resumable_scan(
+        configured_settings,
+        configured_universe_provider,
+        configured_history_provider,
+        *,
+        report_date,
+        output_root,
+        configuration_hash,
+        index_provider,
+        directory,
+        max_batches,
+    ):
+        observed.update(
+            settings=configured_settings,
+            universe=configured_universe_provider,
+            history=configured_history_provider,
+            date=report_date,
+            root=output_root,
+            config=configuration_hash,
+            index=index_provider,
+            directory=directory,
+            max_batches=max_batches,
+        )
+        return artifact_path
+
+    monkeypatch.setattr(
+        resumable_module,
+        "run_resumable_scan",
+        fake_run_resumable_scan,
+    )
+
+    result = cli_module.main(
+        [
+            "market-scan",
+            "--date",
+            REPORT_DATE.isoformat(),
+            "--resumable",
+            "--output-root",
+            str(tmp_path),
+        ]
+    )
+
+    assert result == 0
+    assert observed == {
+        "settings": settings,
+        "universe": universe_provider,
+        "history": history_service,
+        "date": REPORT_DATE,
+        "root": tmp_path,
+        "config": "a" * 64,
+        "index": index_provider,
+        "directory": "market-scans",
+        "max_batches": None,
+    }
+    assert capsys.readouterr().out == f"{artifact_path}\n"
+
+
 def test_market_scan_cli_wires_index_provider_for_market_scope(
     monkeypatch, tmp_path, capsys
 ):

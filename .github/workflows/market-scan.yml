@@ -74,15 +74,20 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p .report-history
-          if [ ! -d .report-history/.git ]; then
+          auth_header="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
+          if [ ! -e .report-history/.git ]; then
             git -C .report-history init
             git -C .report-history remote add origin \
               "https://github.com/${GITHUB_REPOSITORY}.git"
           fi
           git -C .report-history config user.name "github-actions[bot]"
           git -C .report-history config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git -C .report-history pull --rebase --autostash origin reports-history \
-            || git -C .report-history fetch origin reports-history
+          git -C .report-history -c \
+            http.extraheader="AUTHORIZATION: basic ${auth_header}" \
+            pull --rebase --autostash origin reports-history \
+            || git -C .report-history -c \
+              http.extraheader="AUTHORIZATION: basic ${auth_header}" \
+              fetch origin reports-history
           git -C .report-history reset --hard origin/reports-history 2>/dev/null || true
           mkdir -p .report-history/watchlist-scans
           if [ -d watchlist-scans ]; then
@@ -92,16 +97,24 @@ jobs:
           git -C .report-history add watchlist-scans
           if ! git -C .report-history diff --cached --quiet; then
             git -C .report-history commit -m "chore: publish watchlist scan history"
+            push_succeeded=false
             for attempt in 1 2 3; do
               if git -C .report-history -c \
-                http.extraheader="AUTHORIZATION: bearer ${GITHUB_TOKEN}" \
+                http.extraheader="AUTHORIZATION: basic ${auth_header}" \
                 push origin HEAD:refs/heads/reports-history; then
+                push_succeeded=true
                 break
               fi
               if [ "$attempt" -lt 3 ]; then
-                git -C .report-history pull --rebase --autostash origin reports-history
+                git -C .report-history -c \
+                  http.extraheader="AUTHORIZATION: basic ${auth_header}" \
+                  pull --rebase --autostash origin reports-history
               fi
             done
+            if [ "$push_succeeded" != true ]; then
+              echo "Failed to publish watchlist scan history after 3 attempts" >&2
+              exit 1
+            fi
           fi
 
   market-scan:
@@ -165,7 +178,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ ! -d .report-history/.git ]; then
+          auth_header="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
+          if [ ! -e .report-history/.git ]; then
             mkdir -p .report-history
             git -C .report-history init
             git -C .report-history remote add origin \
@@ -179,17 +193,24 @@ jobs:
           git -C .report-history add market-scans
           if ! git -C .report-history diff --cached --quiet; then
             git -C .report-history commit -m "chore: publish market scan history"
+            push_succeeded=false
             for attempt in 1 2 3; do
               if git -C .report-history -c \
-                http.extraheader="AUTHORIZATION: bearer ${GITHUB_TOKEN}" \
+                http.extraheader="AUTHORIZATION: basic ${auth_header}" \
                 push origin HEAD:refs/heads/reports-history; then
+                push_succeeded=true
                 break
               fi
               if [ "$attempt" -lt 3 ]; then
-                git -C .report-history pull --rebase --autostash origin \
-                  reports-history
+                git -C .report-history -c \
+                  http.extraheader="AUTHORIZATION: basic ${auth_header}" \
+                  pull --rebase --autostash origin reports-history
               fi
             done
+            if [ "$push_succeeded" != true ]; then
+              echo "Failed to publish market scan history after 3 attempts" >&2
+              exit 1
+            fi
           fi
       - name: Upload market scan artifact
         uses: actions/upload-artifact@v4

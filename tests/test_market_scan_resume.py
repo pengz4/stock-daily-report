@@ -442,6 +442,48 @@ def test_resumable_scan_retries_completed_history_failures_on_next_run(tmp_path)
     assert history.requested == [code, code, code]
 
 
+def test_resumable_scan_replaces_artifact_when_retry_recovers_failure(tmp_path):
+    code = _codes(1)[0]
+    quotes = [_quote(code)]
+    universe = FakeUniverseProvider(quotes)
+
+    class RecoveringHistoryProvider(FakeHistoryProvider):
+        def __init__(self):
+            super().__init__({code: _bars(code)})
+            self.failures_remaining = 3
+
+        def get_daily_bars(self, requested_code, *, start=None, end=None):
+            self.requested.append(requested_code)
+            if self.failures_remaining:
+                self.failures_remaining -= 1
+                raise ProviderError("recovering-history", "network_error", "offline")
+            return list(self._bars_by_code[requested_code])
+
+    history = RecoveringHistoryProvider()
+    settings = _settings(minimum_coverage_ratio=0.1)
+    first_path = run_resumable_scan(
+        settings,
+        universe,
+        history,
+        report_date=REPORT_DATE,
+        output_root=tmp_path,
+    )
+    assert first_path is not None
+
+    second_path = run_resumable_scan(
+        settings,
+        universe,
+        history,
+        report_date=REPORT_DATE,
+        output_root=tmp_path,
+    )
+
+    assert second_path == first_path
+    from stock_daily_report.market_scan.report import load_scan_artifact
+
+    assert load_scan_artifact(second_path).valid_count == 1
+
+
 def test_resumable_scan_preserves_market_state_from_checkpoint_snapshot(tmp_path):
     from stock_daily_report.market_scan.models import MarketScanArtifact
     from stock_daily_report.models import MARKET_STATE_INDEX_CODES

@@ -391,7 +391,12 @@ def _finalize(
         universe_quotes=quotes,
         resume_from=completed,
     )
-    return write_scan_artifact(output_root, artifact, directory=directory)
+    return write_scan_artifact(
+        output_root,
+        artifact,
+        directory=directory,
+        replace_existing=True,
+    )
 
 
 def _current_shanghai_date() -> date:
