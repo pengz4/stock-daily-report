@@ -1,6 +1,7 @@
 """AkShare adapter for discovering the supported full A-share universe."""
 
 import math
+import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime
@@ -54,16 +55,48 @@ class WatchlistUniverseProvider:
     The scan algorithm and its checkpoint/resume lifecycle are unchanged; only
     the universe shrinks, which keeps a watchlist-scoped scan cheap enough to
     run alongside the full-market scan.
+
+    The bulk snapshot is a single point of failure for the whole watchlist
+    scan: if the upstream provider is briefly unavailable, the entire scan
+    aborts. To absorb transient provider outages (which would otherwise fail
+    the whole ``watchlist-scan`` CI job), the snapshot is retried a few times
+    when the failure is availability-related. Deterministic data/schema errors
+    are never retried because retrying cannot fix them.
     """
 
-    def __init__(self, codes: Iterable[str], delegate: object) -> None:
+    def __init__(
+        self,
+        codes: Iterable[str],
+        delegate: object,
+        *,
+        retries: int = 2,
+        retry_delay_seconds: float = 2.0,
+    ) -> None:
+        if isinstance(retries, bool) or not isinstance(retries, int) or retries < 0:
+            raise ValueError("retries must be a non-negative integer")
+        if retry_delay_seconds < 0:
+            raise ValueError("retry_delay_seconds must be non-negative")
         self.codes = frozenset(codes)
         self.delegate = delegate
+        self._retries = retries
+        self._retry_delay_seconds = retry_delay_seconds
 
     def get_quotes(self) -> list[UniverseQuote]:
-        return [
-            quote for quote in self.delegate.get_quotes() if quote.code in self.codes
-        ]
+        last_error: ProviderAvailabilityError | None = None
+        for attempt in range(self._retries + 1):
+            try:
+                return [
+                    quote
+                    for quote in self.delegate.get_quotes()
+                    if quote.code in self.codes
+                ]
+            except ProviderAvailabilityError as error:
+                last_error = error
+                if attempt >= self._retries:
+                    break
+                time.sleep(self._retry_delay_seconds)
+        assert last_error is not None
+        raise last_error
 
 
 class AkShareUniverseProvider:
