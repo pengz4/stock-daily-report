@@ -258,7 +258,8 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 universe_provider = AkShareUniverseProvider()
             artifact_path = _scan_artifact_path(args.output_root, args.date, directory)
-            if artifact_path.exists():
+            artifact_exists = artifact_path.exists()
+            if artifact_exists:
                 artifact_path = _existing_scan_artifact(
                     artifact_path,
                     report_date=args.date,
@@ -266,7 +267,7 @@ def main(argv: list[str] | None = None) -> int:
                     expected_rule_version=settings.rule_version,
                     market_state_settings=settings.market_state,
                 )
-            elif args.resumable:
+            if args.resumable:
                 current_date = _current_market_date()
                 if args.date != current_date:
                     raise _MarketScanCliError(
@@ -298,7 +299,7 @@ def main(argv: list[str] | None = None) -> int:
                         file=sys.stderr,
                     )
                     return 0
-            else:
+            elif not artifact_exists:
                 current_date = _current_market_date()
                 if args.date != current_date:
                     raise _MarketScanCliError(

@@ -32,8 +32,9 @@ def write_scan_artifact(
     artifact: MarketScanArtifact,
     *,
     directory: str | Path = "market-scans",
+    replace_existing: bool = False,
 ) -> Path:
-    """Persist one immutable artifact, reusing a semantically identical rerun."""
+    """Persist an artifact, optionally replacing a resumable rerun's output."""
 
     path = (
         Path(root_directory)
@@ -57,10 +58,23 @@ def write_scan_artifact(
                         "Refusing to reuse market scan with mismatched "
                         f"market-state identity: {path}"
                     )
-                raise MarketScanConflictError(
-                    "Refusing to overwrite immutable market scan with different "
-                    f"content: {path}"
-                )
+                if (
+                    existing.market_state_identity is not None
+                    and existing.market_state_identity
+                    != artifact.market_state_identity
+                ):
+                    raise MarketScanConflictError(
+                        "Refusing to overwrite market scan with mismatched "
+                        f"market-state identity: {path}"
+                    )
+                if not replace_existing:
+                    raise MarketScanConflictError(
+                        "Refusing to overwrite immutable market scan with different "
+                        f"content: {path}"
+                    )
+            if path.exists() and replace_existing:
+                _atomic_write(path, _canonical_json(artifact))
+                return path
             _atomic_write(path, _canonical_json(artifact))
     except OSError as error:
         raise MarketScanArtifactError(

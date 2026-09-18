@@ -359,7 +359,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ ! -d .report-history/.git ]; then
+          auth_header="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
+          if [ ! -e .report-history/.git ]; then
             mkdir -p .report-history
             git -C .report-history init
             git -C .report-history remote add origin \
@@ -375,7 +376,7 @@ jobs:
           if ! git -C .report-history diff --cached --quiet; then
             git -C .report-history commit -m "chore: publish report history"
             git -C .report-history -c \
-              http.extraheader="AUTHORIZATION: bearer ${GITHUB_TOKEN}" \
+              http.extraheader="AUTHORIZATION: basic ${auth_header}" \
               push origin HEAD:refs/heads/reports-history
           fi
       - name: Stage Pages artifact

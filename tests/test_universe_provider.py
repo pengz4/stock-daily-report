@@ -802,3 +802,104 @@ def test_watchlist_universe_provider_returns_empty_without_matching_codes():
             return []
 
     assert WatchlistUniverseProvider(set(), Delegate()).get_quotes() == []
+
+
+def _quote(code="000001"):
+    return UniverseQuote(
+        code=code,
+        name="平安银行",
+        market="SZ",
+        latest_price=10.5,
+        volume=1.0,
+        amount=2.0,
+        quote_date=date(2026, 9, 11),
+    )
+
+
+def test_watchlist_universe_provider_retries_transient_availability_errors(
+    monkeypatch,
+):
+    calls = []
+
+    class FlakyDelegate:
+        def get_quotes(self):
+            calls.append("get_quotes")
+            if len(calls) == 1:
+                raise ProviderAvailabilityError(
+                    "akshare", "network_error", "transient"
+                )
+            return [_quote()]
+
+    monkeypatch.setattr(
+        "stock_daily_report.providers.universe.time.sleep", lambda _: None
+    )
+    quotes = WatchlistUniverseProvider({"000001"}, FlakyDelegate()).get_quotes()
+
+    assert [quote.code for quote in quotes] == ["000001"]
+    assert len(calls) == 2
+
+
+def test_watchlist_universe_provider_raises_after_retries_exhausted(monkeypatch):
+    calls = []
+
+    class AlwaysDownDelegate:
+        def get_quotes(self):
+            calls.append("get_quotes")
+            raise ProviderAvailabilityError(
+                "akshare", "all_endpoints_unavailable", "down"
+            )
+
+    monkeypatch.setattr(
+        "stock_daily_report.providers.universe.time.sleep", lambda _: None
+    )
+    with pytest.raises(ProviderAvailabilityError):
+        WatchlistUniverseProvider({"000001"}, AlwaysDownDelegate()).get_quotes()
+
+    # default retries=2 means 3 total attempts
+    assert len(calls) == 3
+
+
+def test_watchlist_universe_provider_does_not_retry_data_errors(monkeypatch):
+    calls = []
+
+    class BrokenDelegate:
+        def get_quotes(self):
+            calls.append("get_quotes")
+            raise ProviderDataError("akshare", "provider_schema_invalid", "bad")
+
+    monkeypatch.setattr(
+        "stock_daily_report.providers.universe.time.sleep", lambda _: None
+    )
+    with pytest.raises(ProviderDataError):
+        WatchlistUniverseProvider({"000001"}, BrokenDelegate()).get_quotes()
+
+    assert len(calls) == 1
+
+
+def test_watchlist_universe_provider_zero_retries_disables_retry():
+    calls = []
+
+    class DownDelegate:
+        def get_quotes(self):
+            calls.append("get_quotes")
+            raise ProviderAvailabilityError("akshare", "network_error", "down")
+
+    with pytest.raises(ProviderAvailabilityError):
+        WatchlistUniverseProvider(
+            {"000001"}, DownDelegate(), retries=0
+        ).get_quotes()
+
+    assert len(calls) == 1
+
+
+def test_watchlist_universe_provider_rejects_invalid_retry_args():
+    class Delegate:
+        def get_quotes(self):
+            return []
+
+    with pytest.raises(ValueError):
+        WatchlistUniverseProvider({"000001"}, Delegate(), retries=-1)
+    with pytest.raises(ValueError):
+        WatchlistUniverseProvider(
+            {"000001"}, Delegate(), retry_delay_seconds=-1.0
+        )
