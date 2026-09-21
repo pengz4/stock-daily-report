@@ -1,7 +1,7 @@
 {
   "config_hash": "5ef5d52df395dc1f192a5940cd4af4fc3a2b6d106f42d53a79f1a6d76678e6c5",
   "consensus": [],
-  "coverage": 0.1455387615797172,
+  "coverage": 0.1901511457825451,
   "eligible_count": 4102,
   "exclusion_counts": {
     "data_quality_rejected": 8,
@@ -12,10 +12,10 @@
     "suspended_quote": 12
   },
   "failure_counts": {
-    "fetch_timeout": 3497
+    "fetch_timeout": 3314
   },
-  "generated_at": "2026-09-21T08:02:43.918424Z",
-  "input_hash": "8f80b4ece4418c6cd8fd8a0d20a7bf1ee643e710ff8accaa07e39f859d272ed8",
+  "generated_at": "2026-09-21T14:12:56.511196Z",
+  "input_hash": "9e91a815a43e0ab5c28a5be81a2534ce62fda2aed1dcaf41de3f58477f907455",
   "market_state": {
     "breadth": {
       "advance_decline_ratio": 4.84508547008547,
@@ -6418,22 +6418,18 @@
     {
       "code": "002225",
       "name": "濮耐股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002226",
       "name": "江南化工",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002227",
@@ -6449,52 +6445,42 @@
     {
       "code": "002228",
       "name": "合兴包装",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002229",
       "name": "鸿博股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002230",
       "name": "科大讯飞",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002232",
       "name": "启明信息",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002233",
       "name": "塔牌集团",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002234",
@@ -6509,32 +6495,26 @@
     {
       "code": "002235",
       "name": "安妮股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002236",
       "name": "大华股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002237",
       "name": "恒邦股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002238",
@@ -6549,82 +6529,66 @@
     {
       "code": "002239",
       "name": "奥特佳",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002240",
       "name": "盛新锂能",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002241",
       "name": "歌尔股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002242",
       "name": "九阳股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002243",
       "name": "力合科创",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002244",
       "name": "滨江集团",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002245",
       "name": "蔚蓝锂芯",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002246",
       "name": "北化股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002247",
@@ -6639,52 +6603,42 @@
     {
       "code": "002248",
       "name": "华东数控",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002249",
       "name": "大洋电机",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002250",
       "name": "联化科技",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002251",
       "name": "步步高",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002252",
       "name": "上海莱士",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002253",
@@ -6699,12 +6653,10 @@
     {
       "code": "002254",
       "name": "泰和新材",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002255",
@@ -6719,92 +6671,74 @@
     {
       "code": "002256",
       "name": "兆新股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002258",
       "name": "利尔化学",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002259",
       "name": "升达林业",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002261",
       "name": "拓维信息",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002262",
       "name": "恩华药业",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002263",
       "name": "大东南",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002264",
       "name": "新 华 都",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002265",
       "name": "建设工业",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002266",
       "name": "浙富控股",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002267",
@@ -6819,72 +6753,58 @@
     {
       "code": "002268",
       "name": "电科网安",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002269",
       "name": "美邦服饰",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002270",
       "name": "华明装备",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002271",
       "name": "东方雨虹",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002272",
       "name": "川润股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002273",
       "name": "水晶光电",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002274",
       "name": "华昌化工",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002275",
@@ -6899,52 +6819,42 @@
     {
       "code": "002276",
       "name": "万马股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002277",
       "name": "友阿股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002278",
       "name": "神开股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002279",
       "name": "久其软件",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002281",
       "name": "光迅科技",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002282",
@@ -6959,42 +6869,34 @@
     {
       "code": "002283",
       "name": "天润工业",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002284",
       "name": "亚太股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002285",
       "name": "世联行",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002286",
       "name": "保龄宝",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002287",
@@ -7009,42 +6911,34 @@
     {
       "code": "002289",
       "name": "宇顺电子",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002290",
       "name": "禾盛新材",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002291",
       "name": "遥望科技",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002292",
       "name": "奥飞娱乐",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002293",
@@ -7059,82 +6953,66 @@
     {
       "code": "002294",
       "name": "信立泰",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002295",
       "name": "精艺股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002296",
       "name": "辉煌科技",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002297",
       "name": "博云新材",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002298",
       "name": "中电鑫龙",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002299",
       "name": "圣农发展",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002300",
       "name": "太阳电缆",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002301",
       "name": "齐心集团",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002302",
@@ -7149,22 +7027,18 @@
     {
       "code": "002303",
       "name": "美盈森",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002304",
       "name": "洋河股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002305",
@@ -7191,52 +7065,42 @@
     {
       "code": "002307",
       "name": "北新路桥",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002309",
       "name": "中利集团",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002310",
       "name": "东方新能",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002311",
       "name": "海大集团",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002312",
       "name": "川发龙蟒",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002313",
@@ -7251,52 +7115,42 @@
     {
       "code": "002314",
       "name": "南山控股",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002315",
       "name": "焦点科技",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002316",
       "name": "亚联发展",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002317",
       "name": "众生药业",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002318",
       "name": "久立特材",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002319",
@@ -7311,32 +7165,26 @@
     {
       "code": "002320",
       "name": "海峡股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002321",
       "name": "华英农业",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002322",
       "name": "理工能科",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002323",
@@ -7352,22 +7200,18 @@
     {
       "code": "002324",
       "name": "普利特",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002326",
       "name": "永太科技",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002327",
@@ -7382,22 +7226,18 @@
     {
       "code": "002328",
       "name": "新朋股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002329",
       "name": "皇氏集团",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002330",
@@ -7422,12 +7262,10 @@
     {
       "code": "002332",
       "name": "仙琚制药",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002333",
@@ -7452,72 +7290,58 @@
     {
       "code": "002335",
       "name": "科华数据",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002337",
       "name": "赛象科技",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002338",
       "name": "奥普光电",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002339",
       "name": "积成电子",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002340",
       "name": "格林美",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002342",
       "name": "巨力索具",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002343",
       "name": "慈文传媒",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002344",
@@ -7532,22 +7356,18 @@
     {
       "code": "002345",
       "name": "潮宏基",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002346",
       "name": "柘中股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002347",
@@ -7562,72 +7382,58 @@
     {
       "code": "002348",
       "name": "高乐股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002349",
       "name": "精华制药",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002350",
       "name": "北京科锐",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002351",
       "name": "漫步者",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002352",
       "name": "顺丰控股",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002353",
       "name": "杰瑞股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002354",
       "name": "天娱数科",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002355",
@@ -7642,12 +7448,10 @@
     {
       "code": "002356",
       "name": "鹏飞绿能",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002357",
@@ -7662,12 +7466,10 @@
     {
       "code": "002358",
       "name": "森源电气",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002360",
@@ -7682,22 +7484,18 @@
     {
       "code": "002361",
       "name": "神剑股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002362",
       "name": "汉王科技",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002363",
@@ -7712,172 +7510,138 @@
     {
       "code": "002364",
       "name": "中恒电气",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002365",
       "name": "永安药业",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002366",
       "name": "融发核电",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002367",
       "name": "康力电梯",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002368",
       "name": "太极股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002369",
       "name": "卓翼科技",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002370",
       "name": "亚太药业",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002371",
       "name": "北方华创",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002372",
       "name": "伟星新材",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002373",
       "name": "千方科技",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002374",
       "name": "中锐股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002375",
       "name": "亚厦股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002376",
       "name": "新北洋",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002377",
       "name": "国创高新",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002378",
       "name": "章源钨业",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002379",
       "name": "宏桥控股",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002380",
       "name": "科远智慧",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002381",
@@ -7892,92 +7656,74 @@
     {
       "code": "002382",
       "name": "蓝帆医疗",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002383",
       "name": "合众思壮",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002384",
       "name": "东山精密",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002385",
       "name": "大北农",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002386",
       "name": "天原股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002387",
       "name": "维信诺",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002388",
       "name": "新亚制程",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002389",
       "name": "航天彩虹",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002390",
       "name": "信邦制药",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002391",
@@ -7992,12 +7738,10 @@
     {
       "code": "002392",
       "name": "北京利尔",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002393",
@@ -8032,22 +7776,18 @@
     {
       "code": "002396",
       "name": "星网锐捷",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002397",
       "name": "梦洁股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002398",
@@ -8062,22 +7802,18 @@
     {
       "code": "002399",
       "name": "海普瑞",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002400",
       "name": "省广集团",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002401",
@@ -8092,22 +7828,18 @@
     {
       "code": "002402",
       "name": "和而泰",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002403",
       "name": "爱仕达",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002404",
@@ -8122,132 +7854,106 @@
     {
       "code": "002405",
       "name": "四维图新",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002406",
       "name": "远东传动",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002407",
       "name": "多氟多",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002408",
       "name": "齐翔腾达",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002409",
       "name": "雅克科技",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002410",
       "name": "广联达",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002412",
       "name": "汉森制药",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002413",
       "name": "雷科防务",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002414",
       "name": "高德红外",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002415",
       "name": "海康威视",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002416",
       "name": "爱施德",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002418",
       "name": "康盛股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002419",
       "name": "天虹股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002420",
@@ -8262,32 +7968,26 @@
     {
       "code": "002421",
       "name": "达实智能",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002422",
       "name": "科伦药业",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002423",
       "name": "中粮资本",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002424",
@@ -8303,22 +8003,18 @@
     {
       "code": "002425",
       "name": "凯撒文化",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002426",
       "name": "胜利精密",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002427",
@@ -8333,32 +8029,26 @@
     {
       "code": "002428",
       "name": "云南锗业",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002429",
       "name": "兆驰股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002430",
       "name": "杭氧股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002431",
@@ -8374,12 +8064,10 @@
     {
       "code": "002432",
       "name": "九安医疗",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002434",
@@ -8404,42 +8092,34 @@
     {
       "code": "002437",
       "name": "誉衡药业",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002438",
       "name": "江苏神通",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002439",
       "name": "启明星辰",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002440",
       "name": "闰土股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002441",
@@ -8454,12 +8134,10 @@
     {
       "code": "002442",
       "name": "龙星科技",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002443",
@@ -8474,42 +8152,34 @@
     {
       "code": "002444",
       "name": "巨星科技",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002445",
       "name": "中南文化",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002446",
       "name": "盛路通信",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002448",
       "name": "中原内配",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002449",
@@ -8524,22 +8194,18 @@
     {
       "code": "002451",
       "name": "摩恩电气",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002452",
       "name": "长高电气",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002453",
@@ -8554,12 +8220,10 @@
     {
       "code": "002454",
       "name": "松芝股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002455",
@@ -8574,52 +8238,42 @@
     {
       "code": "002456",
       "name": "欧菲光",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002457",
       "name": "青龙管业",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002458",
       "name": "益生股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002459",
       "name": "晶澳科技",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002460",
       "name": "赣锋锂业",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002461",
@@ -8644,52 +8298,42 @@
     {
       "code": "002463",
       "name": "沪电股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002465",
       "name": "海格通信",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002466",
       "name": "天齐锂业",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002467",
       "name": "二六三",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002468",
       "name": "申通快递",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002469",
@@ -8714,42 +8358,34 @@
     {
       "code": "002471",
       "name": "中超控股",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002472",
       "name": "双环传动",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002474",
       "name": "榕基软件",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002475",
       "name": "立讯精密",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002476",
@@ -8774,12 +8410,10 @@
     {
       "code": "002479",
       "name": "富春环保",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002480",
@@ -54752,5 +54386,5 @@
     }
   ],
   "universe_count": 5564,
-  "valid_count": 597
+  "valid_count": 780
 }
