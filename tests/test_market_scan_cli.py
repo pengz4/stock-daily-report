@@ -21,7 +21,7 @@ from stock_daily_report.market_scan.models import (
     ProfileRankings,
 )
 from stock_daily_report.market_scan.report import write_scan_artifact
-from stock_daily_report.models import DailyBar
+from stock_daily_report.models import DailyBar, MarketDataSettings
 from stock_daily_report.providers.base import ProviderAvailabilityError
 from stock_daily_report.providers.service import MarketDataService
 from stock_daily_report.providers.universe import AkShareUniverseProvider
@@ -165,7 +165,7 @@ def test_market_scan_cli_accepts_date_settings_and_output_root(
     monkeypatch, tmp_path, capsys
 ):
     settings = object()
-    data_settings = SimpleNamespace(market_data=object())
+    data_settings = SimpleNamespace(market_data=MarketDataSettings())
     universe_provider = object()
     history_service = object()
     index_provider = object()
@@ -188,10 +188,16 @@ def test_market_scan_cli_accepts_date_settings_and_output_root(
         ),
     )
     monkeypatch.setattr(cli_module, "_current_market_date", lambda: REPORT_DATE, raising=False)
+    universe_options = {}
+
+    def build_universe(**kwargs):
+        universe_options.update(kwargs)
+        return universe_provider
+
     monkeypatch.setattr(
         cli_module,
         "AkShareUniverseProvider",
-        lambda: universe_provider,
+        build_universe,
     )
     monkeypatch.setattr(
         cli_module,
@@ -263,6 +269,12 @@ def test_market_scan_cli_accepts_date_settings_and_output_root(
     )
 
     assert result == 0
+    assert universe_options == {
+        "cache_directory": output_root / ".cache/stock-daily-report",
+        "cache_ttl_seconds": data_settings.market_data.cache_ttl_seconds,
+        "retries": 2,
+        "retry_delay_seconds": 5,
+    }
     assert calls == [
         (
             settings,
@@ -298,7 +310,7 @@ def test_market_scan_cli_resumes_existing_artifact_when_requested(
     monkeypatch, tmp_path, capsys
 ):
     settings = _scan_settings()
-    data_settings = SimpleNamespace(market_data=object())
+    data_settings = SimpleNamespace(market_data=MarketDataSettings())
     universe_provider = object()
     history_service = object()
     index_provider = object()
@@ -313,7 +325,7 @@ def test_market_scan_cli_resumes_existing_artifact_when_requested(
     monkeypatch.setattr(
         cli_module,
         "AkShareUniverseProvider",
-        lambda: universe_provider,
+        lambda **kwargs: universe_provider,
     )
     monkeypatch.setattr(
         cli_module,
@@ -400,7 +412,7 @@ def test_market_scan_cli_wires_index_provider_for_market_scope(
     monkeypatch, tmp_path, capsys
 ):
     settings = object()
-    data_settings = SimpleNamespace(market_data=object())
+    data_settings = SimpleNamespace(market_data=MarketDataSettings())
     universe_provider = object()
     history_service = object()
     index_provider = object()
@@ -410,7 +422,7 @@ def test_market_scan_cli_wires_index_provider_for_market_scope(
     monkeypatch.setattr(cli_module, "_current_market_date", lambda: REPORT_DATE)
     monkeypatch.setattr(cli_module, "load_market_scan_settings", lambda _path: settings)
     monkeypatch.setattr(cli_module, "load_settings", lambda _path: data_settings)
-    monkeypatch.setattr(cli_module, "AkShareUniverseProvider", lambda: universe_provider)
+    monkeypatch.setattr(cli_module, "AkShareUniverseProvider", lambda **kwargs: universe_provider)
     monkeypatch.setattr(
         cli_module,
         "AkShareIndexProvider",
@@ -563,7 +575,7 @@ def test_market_scan_cli_uses_configured_fallback_and_report_date(
         lambda _path: _scan_settings(),
     )
     monkeypatch.setattr(cli_module, "load_settings", lambda _path: configured)
-    monkeypatch.setattr(cli_module, "AkShareUniverseProvider", lambda: object())
+    monkeypatch.setattr(cli_module, "AkShareUniverseProvider", lambda **kwargs: object())
     monkeypatch.setattr(
         pipeline_module,
         "AkShareMarketDataProvider",
@@ -827,7 +839,7 @@ def test_market_scan_cli_reports_invalid_output_root_without_traceback(
     monkeypatch, tmp_path, capsys
 ):
     settings = _scan_settings()
-    data_settings = SimpleNamespace(market_data=object())
+    data_settings = SimpleNamespace(market_data=MarketDataSettings())
     invalid_root = tmp_path / "not-a-directory"
     invalid_root.write_text("occupied", encoding="utf-8")
     artifact = _empty_artifact(
@@ -847,7 +859,7 @@ def test_market_scan_cli_reports_invalid_output_root_without_traceback(
             else pytest.fail("unexpected configuration hash inputs")
         ),
     )
-    monkeypatch.setattr(cli_module, "AkShareUniverseProvider", lambda: object())
+    monkeypatch.setattr(cli_module, "AkShareUniverseProvider", lambda **kwargs: object())
     monkeypatch.setattr(
         cli_module,
         "build_market_data_service",
@@ -913,7 +925,7 @@ def test_market_scan_cli_reports_sina_decode_failure_without_traceback(
         "akshare.utils.demjson"
     ).JSONDecodeError("rate-limit HTML")
     settings = object()
-    data_settings = SimpleNamespace(market_data=object())
+    data_settings = SimpleNamespace(market_data=MarketDataSettings())
     provider = AkShareUniverseProvider(
         fetcher=lambda: (_ for _ in ()).throw(OSError("eastmoney offline")),
         fallback_fetcher=lambda: (_ for _ in ()).throw(json_decode_error),
@@ -924,7 +936,7 @@ def test_market_scan_cli_reports_sina_decode_failure_without_traceback(
         cli_module, "load_market_scan_settings", lambda _path: settings
     )
     monkeypatch.setattr(cli_module, "load_settings", lambda _path: data_settings)
-    monkeypatch.setattr(cli_module, "AkShareUniverseProvider", lambda: provider)
+    monkeypatch.setattr(cli_module, "AkShareUniverseProvider", lambda **kwargs: provider)
     monkeypatch.setattr(
         cli_module,
         "build_market_data_service",

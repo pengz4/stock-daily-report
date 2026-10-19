@@ -250,13 +250,23 @@ def main(argv: list[str] | None = None) -> int:
             index_provider = (
                 AkShareIndexProvider() if directory == "market-scans" else None
             )
+            cache_directory = Path(data_settings.market_data.cache_directory)
+            if not cache_directory.is_absolute():
+                cache_directory = args.output_root / cache_directory
+            bulk_universe_provider = AkShareUniverseProvider(
+                cache_directory=cache_directory,
+                cache_ttl_seconds=data_settings.market_data.cache_ttl_seconds,
+                retries=2,
+                retry_delay_seconds=5,
+            )
             if args.scope == "watchlist":
                 universe_provider: object = WatchlistUniverseProvider(
                     (stock.code for stock in load_watchlist(args.watchlist).stocks),
-                    AkShareUniverseProvider(),
+                    bulk_universe_provider,
+                    retries=0,
                 )
             else:
-                universe_provider = AkShareUniverseProvider()
+                universe_provider = bulk_universe_provider
             artifact_path = _scan_artifact_path(args.output_root, args.date, directory)
             artifact_exists = artifact_path.exists()
             if artifact_exists:

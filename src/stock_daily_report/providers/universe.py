@@ -1,12 +1,18 @@
 """AkShare adapter for discovering the supported full A-share universe."""
 
+import hashlib
+import json
+import logging
 import math
 import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import date, datetime
+from pathlib import Path
 from typing import Literal
 from zoneinfo import ZoneInfo
+
+from pydantic import TypeAdapter
 
 from stock_daily_report.models import A_SHARE_CODE_PATTERN
 from stock_daily_report.providers.base import (
@@ -14,6 +20,7 @@ from stock_daily_report.providers.base import (
     ProviderDataError,
     ProviderError,
 )
+from stock_daily_report.providers.service import RawResponseCache
 
 Market = Literal["SH", "SZ", "BJ"]
 _SHANGHAI_TIME = ZoneInfo("Asia/Shanghai")
@@ -26,6 +33,8 @@ _PRIMARY_ENDPOINT = "stock_zh_a_spot_em"
 _FALLBACK_ENDPOINT = "stock_zh_a_spot"
 _EXPECTED_CODES_PRIMARY_ENDPOINT = "stock_info_a_code_name"
 _EXPECTED_CODES_FALLBACK_ENDPOINT = "stock_zh_a_spot_tx"
+_LOGGER = logging.getLogger(__name__)
+_SNAPSHOT_CACHE_PROVIDER = "akshare-universe-v1"
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,6 +56,57 @@ class UniverseQuote:
         """Expose the normalized market as an exchange identifier."""
 
         return self.market
+
+
+def _snapshot_digest(payload: Mapping[str, object]) -> str:
+    return hashlib.sha256(
+        json.dumps(
+            {key: value for key, value in payload.items() if key != "digest"},
+            sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False,
+        ).encode("utf-8")
+    ).hexdigest()
+
+
+def _validated_snapshot(payload: object, quote_date: date) -> list[UniverseQuote]:
+    try:
+        if not isinstance(payload, dict) or set(payload) != {
+            "schema_version", "quote_date", "count", "quotes", "digest",
+        }:
+            raise ValueError("invalid snapshot fields")
+        if (
+            type(payload["schema_version"]) is not int
+            or payload["schema_version"] != 1
+            or payload["quote_date"] != quote_date.isoformat()
+            or payload["digest"] != _snapshot_digest(payload)
+        ):
+            raise ValueError("snapshot version, date, or digest mismatch")
+        quotes = TypeAdapter(list[UniverseQuote]).validate_python(payload["quotes"])
+        if (
+            not quotes
+            or type(payload["count"]) is not int
+            or payload["count"] != len(quotes)
+            or len({quote.code for quote in quotes}) != len(quotes)
+        ):
+            raise ValueError("snapshot count mismatch or duplicate codes")
+        for quote in quotes:
+            if (
+                not A_SHARE_CODE_PATTERN.fullmatch(quote.code)
+                or quote.market != _market_for_code(quote.code)
+                or not quote.name.strip()
+                or quote.quote_date != quote_date
+                or any(
+                    value is not None and not math.isfinite(value)
+                    for value in (
+                        quote.latest_price, quote.volume, quote.amount, quote.change_pct,
+                    )
+                )
+            ):
+                raise ValueError(f"invalid quote in snapshot: {quote.code}")
+        return quotes
+    except (TypeError, ValueError) as error:
+        raise ProviderDataError(
+            "akshare", "snapshot_invalid", f"Cached universe snapshot rejected: {error}"
+        ) from error
 
 
 class WatchlistUniverseProvider:
@@ -113,7 +173,15 @@ class AkShareUniverseProvider:
         clock: Callable[[], date | datetime] | None = None,
         use_minimum_size_fallback: bool = False,
         minimum_universe_size: int = _DEFAULT_MINIMUM_UNIVERSE_SIZE,
+        cache_directory: str | Path | None = None,
+        cache_ttl_seconds: int = 21600,
+        retries: int = 0,
+        retry_delay_seconds: float = 5,
     ) -> None:
+        if isinstance(retries, bool) or not isinstance(retries, int) or retries < 0:
+            raise ValueError("retries must be a non-negative integer")
+        if not math.isfinite(retry_delay_seconds) or retry_delay_seconds < 0:
+            raise ValueError("retry_delay_seconds must be finite and non-negative")
         if (
             isinstance(minimum_universe_size, bool)
             or not isinstance(minimum_universe_size, int)
@@ -131,10 +199,70 @@ class AkShareUniverseProvider:
         self._clock = clock or (lambda: datetime.now(_SHANGHAI_TIME))
         self._use_minimum_size_fallback = use_minimum_size_fallback
         self._minimum_universe_size = minimum_universe_size
+        self._retries = retries
+        self._retry_delay_seconds = retry_delay_seconds
+        self._cache = (
+            RawResponseCache(cache_directory, ttl_seconds=cache_ttl_seconds)
+            if cache_directory is not None
+            else None
+        )
 
     def get_quotes(self) -> list[UniverseQuote]:
-        """Fetch and normalize one bulk quote snapshot."""
+        """Reuse a validated closed-session snapshot or retry transient outages."""
 
+        clock = self._clock()
+        quote_date = _date_from_clock(clock)
+        # Intraday quotes change while the session is open; never freeze them
+        # for later scans or reuse a pre-close snapshot after the close.
+        cache_allowed = not isinstance(clock, datetime) or (
+            clock.astimezone(_SHANGHAI_TIME).hour,
+            clock.astimezone(_SHANGHAI_TIME).minute,
+        ) >= (15, 30)
+        if self._cache is not None and cache_allowed:
+            cached = self._cache.load(
+                _SNAPSHOT_CACHE_PROVIDER, "all", quote_date, quote_date
+            )
+            if cached is not None:
+                return _validated_snapshot(cached, quote_date)
+        for attempt in range(self._retries + 1):
+            try:
+                quotes = self._fetch_quotes()
+                if _date_from_clock(self._clock()) != quote_date:
+                    raise ProviderAvailabilityError(
+                        self.name, "snapshot_date_changed",
+                        "Shanghai date changed during universe retrieval; rerun the scan",
+                    )
+                if self._cache is not None and cache_allowed:
+                    payload = {
+                        "schema_version": 1,
+                        "quote_date": quote_date.isoformat(),
+                        "count": len(quotes),
+                        "quotes": [
+                            {**asdict(quote), "quote_date": quote.quote_date.isoformat()}
+                            for quote in quotes
+                        ],
+                    }
+                    payload["digest"] = _snapshot_digest(payload)
+                    _validated_snapshot(payload, quote_date)
+                    self._cache.store(
+                        _SNAPSHOT_CACHE_PROVIDER, "all", quote_date, quote_date, payload
+                    )
+                return quotes
+            except ProviderAvailabilityError as error:
+                if (
+                    attempt == self._retries
+                    or error.code in {"dependency_unavailable", "snapshot_date_changed"}
+                ):
+                    raise
+                delay = self._retry_delay_seconds * 2 ** attempt
+                _LOGGER.warning(
+                    "Universe snapshot attempt %d/%d failed: %s; retrying in %.1fs",
+                    attempt + 1, self._retries + 1, error, delay,
+                )
+                time.sleep(delay)
+        raise AssertionError("unreachable")
+
+    def _fetch_quotes(self) -> list[UniverseQuote]:
         response, endpoint, primary_error = self._fetch_quote_response()
         try:
             return self._quotes_from_response(response, endpoint)

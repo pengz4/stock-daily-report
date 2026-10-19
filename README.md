@@ -35,6 +35,15 @@ cache; locks, request cooldown state, and publication recovery journals are not
 uploaded. Existing history-writer concurrency groups serialize these jobs.
 Cache reuse is best effort, subject to Actions cache availability and TTL.
 
+Both scan scopes also share a full-universe snapshot after 15:30 Shanghai time.
+The snapshot is cached only after the provider's existing completeness checks,
+before watchlist filtering, and is validated for schema, digest, count, unique
+codes, market identifiers, and quote date when reused. Intraday snapshots and
+previous-day snapshots are not reused. Universe availability failures get at
+most three attempts, with 5- and 10-second backoff; schema and completeness
+errors fail immediately. If both upstreams stay unavailable and no valid
+snapshot exists, the scan fails explicitly rather than publishing stale quotes.
+
 This does not append yesterday's forward-adjusted prices to today's history:
 each uncached request still retrieves a consistent adjusted series. Cross-day
 incremental history requires separate raw-price and corporate-action storage.

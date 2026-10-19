@@ -1,6 +1,8 @@
+import hashlib
+import json
 import sys
 from dataclasses import FrozenInstanceError
-from datetime import date
+from datetime import UTC, date, datetime
 from types import ModuleType
 
 import pytest
@@ -37,6 +39,179 @@ def _row(code, name, price=10.5, volume=1_000, amount=10_500):
 
 def _expected_codes(*codes):
     return [{"code": code} for code in codes]
+
+
+def test_full_universe_retries_availability_with_backoff(monkeypatch):
+    calls = []
+    delays = []
+    monkeypatch.setattr("stock_daily_report.providers.universe.time.sleep", delays.append)
+
+    def fetcher():
+        calls.append(1)
+        if len(calls) < 3:
+            raise OSError("upstream disconnected")
+        return [_row("600519", "Example")]
+
+    provider = AkShareUniverseProvider(
+        fetcher=fetcher,
+        expected_codes_fetcher=lambda: _expected_codes("600519"),
+        retries=2,
+        retry_delay_seconds=5,
+    )
+    assert len(provider.get_quotes()) == 1
+    assert len(calls) == 3
+    assert delays == [5, 10]
+
+
+def test_full_universe_reuses_complete_same_day_snapshot(tmp_path):
+    calls = []
+
+    def fetcher():
+        calls.append(1)
+        return [_row("600519", "Example"), _row("000001", "Other")]
+
+    options = {
+        "cache_directory": tmp_path,
+        "clock": lambda: date(2026, 9, 11),
+        "expected_codes_fetcher": lambda: _expected_codes("600519", "000001"),
+    }
+    first = AkShareUniverseProvider(fetcher=fetcher, **options)
+    filtered = WatchlistUniverseProvider({"600519"}, first).get_quotes()
+    assert len(filtered) == 1
+
+    def offline():
+        raise AssertionError("same-date snapshot must avoid all upstream calls")
+
+    second = AkShareUniverseProvider(fetcher=offline, **options)
+    assert len(second.get_quotes()) == 2
+    assert calls == [1]
+
+
+def test_full_universe_does_not_reuse_previous_day_snapshot(tmp_path):
+    current = [date(2026, 9, 11)]
+    calls = []
+
+    def fetcher():
+        calls.append(1)
+        return [_row("600519", "Example")]
+
+    provider = AkShareUniverseProvider(
+        fetcher=fetcher,
+        expected_codes_fetcher=lambda: _expected_codes("600519"),
+        cache_directory=tmp_path,
+        clock=lambda: current[0],
+    )
+    provider.get_quotes()
+    current[0] = date(2026, 9, 12)
+    assert provider.get_quotes()[0].quote_date == current[0]
+    assert len(calls) == 2
+
+
+@pytest.mark.parametrize("corruption", ["date", "count", "digest", "market"])
+def test_full_universe_rejects_corrupt_snapshot(tmp_path, corruption):
+    provider = AkShareUniverseProvider(
+        fetcher=lambda: [_row("600519", "Example")],
+        expected_codes_fetcher=lambda: _expected_codes("600519"),
+        cache_directory=tmp_path,
+        clock=lambda: date(2026, 9, 11),
+    )
+    provider.get_quotes()
+    path = next(tmp_path.glob("*.json"))
+    document = json.loads(path.read_text())
+    payload = document["response"]
+    if corruption == "date":
+        payload["quotes"][0]["quote_date"] = "2026-09-10"
+    elif corruption == "market":
+        payload["quotes"][0]["market"] = "SZ"
+    elif corruption == "count":
+        payload["count"] += 1
+    else:
+        payload["digest"] = "broken"
+    if corruption != "digest":
+        payload["digest"] = hashlib.sha256(json.dumps(
+            {key: value for key, value in payload.items() if key != "digest"},
+            sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False,
+        ).encode()).hexdigest()
+    path.write_text(json.dumps(document), encoding="utf-8")
+
+    with pytest.raises(ProviderDataError, match="snapshot_invalid"):
+        provider.get_quotes()
+
+
+def test_full_universe_does_not_retry_or_cache_incomplete_data(tmp_path, monkeypatch):
+    delays = []
+    monkeypatch.setattr("stock_daily_report.providers.universe.time.sleep", delays.append)
+    provider = AkShareUniverseProvider(
+        fetcher=lambda: [_row("600519", "Example")],
+        expected_codes_fetcher=lambda: _expected_codes("600519", "000001"),
+        cache_directory=tmp_path,
+        retries=2,
+    )
+    with pytest.raises(ProviderDataError, match="provider_snapshot_incomplete"):
+        provider.get_quotes()
+    assert delays == []
+    assert list(tmp_path.glob("*.json")) == []
+
+
+def test_full_universe_retry_exhaustion_preserves_error(monkeypatch):
+    delays = []
+    calls = []
+    monkeypatch.setattr("stock_daily_report.providers.universe.time.sleep", delays.append)
+    failure = ProviderAvailabilityError("akshare", "network_error", "disconnected")
+
+    def offline():
+        calls.append(1)
+        raise failure
+
+    with pytest.raises(ProviderAvailabilityError) as caught:
+        AkShareUniverseProvider(fetcher=offline, retries=2).get_quotes()
+    assert caught.value is failure
+    assert len(calls) == 3
+    assert delays == [5, 10]
+
+
+def test_intraday_snapshot_is_not_cached_for_after_close(tmp_path):
+    current = [datetime(2026, 9, 11, 6, tzinfo=UTC)]
+    calls = []
+
+    def fetcher():
+        calls.append(1)
+        return [_row("600519", "Example")]
+
+    provider = AkShareUniverseProvider(
+        fetcher=fetcher,
+        expected_codes_fetcher=lambda: _expected_codes("600519"),
+        cache_directory=tmp_path,
+        clock=lambda: current[0],
+    )
+    provider.get_quotes()
+    assert list(tmp_path.glob("*.json")) == []
+    current[0] = datetime(2026, 9, 11, 8, tzinfo=UTC)
+    provider.get_quotes()
+    provider.get_quotes()
+    assert len(calls) == 2
+
+
+def test_expired_universe_snapshot_is_refetched(tmp_path):
+    calls = []
+
+    def fetcher():
+        calls.append(1)
+        return [_row("600519", "Example")]
+
+    provider = AkShareUniverseProvider(
+        fetcher=fetcher,
+        expected_codes_fetcher=lambda: _expected_codes("600519"),
+        cache_directory=tmp_path,
+        clock=lambda: date(2026, 9, 11),
+    )
+    provider.get_quotes()
+    path = next(tmp_path.glob("*.json"))
+    document = json.loads(path.read_text())
+    document["cached_at"] = "2000-01-01T00:00:00+00:00"
+    path.write_text(json.dumps(document), encoding="utf-8")
+    provider.get_quotes()
+    assert len(calls) == 2
 
 
 def test_akshare_universe_provider_normalizes_supported_a_share_classes():

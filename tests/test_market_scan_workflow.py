@@ -85,6 +85,11 @@ def test_watchlist_scan_merges_history_and_serializes_history_writers():
         "group": "stock-daily-report-history",
         "cancel-in-progress": False,
     }
+    generate = next(
+        step["run"] for step in watchlist_job["steps"]
+        if step["name"] == "Generate watchlist scan"
+    )
+    assert "--resumable" in generate
 
 
 def test_history_publish_retries_fail_the_job_when_push_never_succeeds():
