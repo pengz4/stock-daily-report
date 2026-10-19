@@ -1,5 +1,5 @@
 {
-  "config_hash": "d3f1b8473dca1a69907186e064adb539c6a8d98367d532e7971b9494de364140",
+  "config_hash": "5ef5d52df395dc1f192a5940cd4af4fc3a2b6d106f42d53a79f1a6d76678e6c5",
   "consensus": [
     {
       "balanced_rank": 2,
@@ -289,8 +289,8 @@
     "special_treatment_name": 3
   },
   "failure_counts": {},
-  "generated_at": "2026-10-19T14:11:17.710074Z",
-  "input_hash": "072bb944fa664ef780e456aab03c8cd1cf14f39cf451b9dd2a548b5451ed0895",
+  "generated_at": "2026-10-19T14:38:11.781350Z",
+  "input_hash": "2e59cee40ddd4a6a52a2e0b656e269b2937459364aca5dec0c7909a555055205",
   "market_state": null,
   "market_state_identity": null,
   "provider_names": [
