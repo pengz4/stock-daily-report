@@ -14,6 +14,7 @@ matching the existing gate in ``runner.scan_market``.
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, date, datetime
@@ -116,6 +117,12 @@ def _run_resumable_scan(
     directory: str | Path = "market-scans",
 ) -> Path | None:
     semantic_hash = scoring_config_hash(settings)
+    if configuration_hash is not None:
+        # Checkpoints contain normalized histories and scores; changing the
+        # data settings must not relabel old results as a new configuration.
+        semantic_hash = hashlib.sha256(
+            f"{semantic_hash}:{configuration_hash}".encode()
+        ).hexdigest()
     per_batch = batch_size or min(settings.max_candidates, 100)
     execution_date = _current_shanghai_date()
 

@@ -744,6 +744,83 @@ def test_market_scan_cli_rejects_reuse_after_data_settings_change(
     assert "configuration does not match" in captured.err
 
 
+@pytest.mark.parametrize("scope", ["market", "watchlist"])
+def test_resumable_cli_rebuilds_same_date_artifact_after_config_change(
+    monkeypatch, tmp_path, capsys, scope
+):
+    from stock_daily_report.market_scan import resumable
+
+    settings = _scan_settings()
+    data_settings = load_settings(
+        Path(__file__).parents[1] / "config" / "settings.yaml"
+    )
+    directory = "market-scans" if scope == "market" else "watchlist-scans"
+    old = _empty_artifact(report_date=REPORT_DATE, config_hash="f" * 64)
+    path = write_scan_artifact(tmp_path, old, directory=directory)
+    before = path.read_bytes()
+    calls = []
+    monkeypatch.setattr(cli_module, "_current_market_date", lambda: REPORT_DATE)
+    monkeypatch.setattr(cli_module, "load_market_scan_settings", lambda _: settings)
+    monkeypatch.setattr(cli_module, "load_settings", lambda _: data_settings)
+    monkeypatch.setattr(cli_module, "build_market_data_service", lambda *a, **k: object())
+
+    def rebuild(*args, **kwargs):
+        calls.append(kwargs)
+        assert path.read_bytes() == before
+        return path
+
+    monkeypatch.setattr(resumable, "run_resumable_scan", rebuild)
+    result = cli_module.main([
+        "market-scan", "--date", REPORT_DATE.isoformat(),
+        "--scope", scope, "--resumable", "--output-root", str(tmp_path),
+    ])
+
+    assert result == 0
+    assert calls[0]["configuration_hash"] == _scan_config_hash(settings, data_settings)
+    assert calls[0]["directory"] == directory
+    assert "configuration changed" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("invalid", ["date", "rule", "json", "identity"])
+def test_resumable_does_not_bypass_invalid_artifact_checks(
+    monkeypatch, tmp_path, capsys, invalid
+):
+    from stock_daily_report.market_scan import resumable
+
+    settings = _scan_settings()
+    data_settings = load_settings(
+        Path(__file__).parents[1] / "config" / "settings.yaml"
+    )
+    artifact = _empty_artifact(
+        report_date=REPORT_DATE, config_hash="f" * 64,
+        market_state=_unavailable_market_state() if invalid == "identity" else None,
+        market_state_identity="f" * 64 if invalid == "identity" else None,
+    )
+    document = artifact.model_dump(mode="json")
+    if invalid == "date":
+        document["report_date"] = "2026-09-10"
+    elif invalid == "rule":
+        document["rule_version"] = "unrecognized-v2"
+    path = tmp_path / "market-scans" / REPORT_DATE.isoformat() / "scan.json"
+    path.parent.mkdir(parents=True)
+    path.write_text("broken" if invalid == "json" else json.dumps(document))
+    before = path.read_bytes()
+    monkeypatch.setattr(cli_module, "_current_market_date", lambda: REPORT_DATE)
+    monkeypatch.setattr(cli_module, "load_market_scan_settings", lambda _: settings)
+    monkeypatch.setattr(cli_module, "load_settings", lambda _: data_settings)
+    monkeypatch.setattr(
+        resumable, "run_resumable_scan",
+        lambda *a, **k: pytest.fail("invalid artifact must stop before rebuilding"),
+    )
+
+    assert cli_module.main([
+        "market-scan", "--date", REPORT_DATE.isoformat(),
+        "--resumable", "--output-root", str(tmp_path),
+    ]) == 1
+    assert path.read_bytes() == before
+    assert "Traceback" not in capsys.readouterr().err
+
+
 def test_market_scan_cli_rejects_wrong_market_state_identity(
     monkeypatch, tmp_path, capsys
 ):

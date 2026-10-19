@@ -66,6 +66,20 @@ artifact rather than relabeling current quotes. The workflow may still reuse a
 same-date existing artifact after validating its schema, embedded date, rule
 version, and configuration hash.
 
+When an Actions run restores `scan.json` from `reports-history`, an artifact
+created with old data or scan settings cannot be reused as current output.
+Without `--resumable`, this deliberately fails with
+`Existing market scan artifact configuration does not match`.
+For a current-date `--resumable` run, a configuration-hash change instead logs
+the old/new hashes and rebuilds the scan. The old artifact stays in place until
+the replacement is successfully published; invalid schema, embedded dates,
+rule versions, and market-state identities still fail validation.
+Checkpoints are also bound to the full configuration hash when supplied, so
+changes to data-provider or quality settings archive old progress rather than
+relabeling its results. The first run after this checkpoint-identity update
+rebuilds legacy progress once. This fixes the pre-fetch failure in Actions run
+`39273289224`; it is separate from upstream connection/response failures.
+
 ## Notifications
 
 Enable one or both channels in `config/settings.yaml`:

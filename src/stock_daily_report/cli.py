@@ -276,6 +276,7 @@ def main(argv: list[str] | None = None) -> int:
                     expected_config_hash=configuration_hash,
                     expected_rule_version=settings.rule_version,
                     market_state_settings=settings.market_state,
+                    rebuild_configuration=args.resumable,
                 )
             if args.resumable:
                 current_date = _current_market_date()
@@ -376,6 +377,7 @@ def _existing_scan_artifact(
     expected_config_hash: str,
     expected_rule_version: str,
     market_state_settings: MarketStateSettings,
+    rebuild_configuration: bool = False,
 ) -> Path:
     artifact = load_scan_artifact(
         path,
@@ -386,12 +388,21 @@ def _existing_scan_artifact(
             "Existing market scan artifact report_date does not match "
             f"requested date: {path}"
         )
-    if (
-        artifact.rule_version != expected_rule_version
-        or artifact.config_hash != expected_config_hash
-    ):
+    if artifact.rule_version != expected_rule_version:
         raise MarketScanArtifactError(
             f"Existing market scan artifact configuration does not match: {path}"
+        )
+    if artifact.config_hash != expected_config_hash:
+        if not rebuild_configuration:
+            raise MarketScanArtifactError(
+                f"Existing market scan artifact configuration does not match: {path}"
+            )
+        print(
+            f"Existing market scan configuration changed; rebuilding with "
+            f"--resumable: {path} "
+            f"(old={artifact.config_hash}, new={expected_config_hash}). "
+            "The previous artifact remains until replacement succeeds.",
+            file=sys.stderr,
         )
     return path
 

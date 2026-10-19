@@ -109,6 +109,84 @@ def test_default_batches_checkpoint_before_full_universe_finishes(tmp_path):
     assert len(checkpoint_completed(checkpoint)) == 100
 
 
+def test_data_config_change_archives_checkpoint_before_rebuilding(tmp_path):
+    codes = ["600000", "600001"]
+    universe = FakeUniverseProvider([_quote(code) for code in codes])
+    history = FakeHistoryProvider({code: _bars(code) for code in codes})
+    settings = _settings()
+    run_resumable_scan(
+        settings, universe, history, report_date=REPORT_DATE, output_root=tmp_path,
+        configuration_hash="a" * 64, max_batches=1, batch_size=1,
+    )
+    assert history.requested == [codes[0]]
+    history.requested.clear()
+
+    path = run_resumable_scan(
+        settings, universe, history, report_date=REPORT_DATE, output_root=tmp_path,
+        configuration_hash="b" * 64,
+    )
+
+    assert path is not None
+    assert sorted(history.requested) == codes
+    archived = tmp_path / "market-scans" / REPORT_DATE.isoformat() / "progress-archive"
+    assert len(list(archived.glob("*.json"))) == 1
+
+
+def test_unchanged_full_config_resumes_checkpoint_without_refetching(tmp_path):
+    codes = ["600000", "600001"]
+    universe = FakeUniverseProvider([_quote(code) for code in codes])
+    history = FakeHistoryProvider({code: _bars(code) for code in codes})
+    settings = _settings()
+    run_resumable_scan(
+        settings, universe, history, report_date=REPORT_DATE, output_root=tmp_path,
+        configuration_hash="a" * 64, max_batches=1, batch_size=1,
+    )
+    history.requested.clear()
+    path = run_resumable_scan(
+        settings, universe, history, report_date=REPORT_DATE, output_root=tmp_path,
+        configuration_hash="a" * 64,
+    )
+
+    assert path is not None
+    assert history.requested == [codes[1]]
+
+
+def test_full_config_rebuild_replaces_output_only_after_success(tmp_path):
+    from stock_daily_report.market_scan.report import load_scan_artifact
+    from stock_daily_report.providers.base import ProviderAvailabilityError
+
+    code = "600000"
+    universe = FakeUniverseProvider([_quote(code)])
+    history = FakeHistoryProvider({code: _bars(code)})
+    settings = _settings()
+    path = run_resumable_scan(
+        settings, universe, history, report_date=REPORT_DATE, output_root=tmp_path,
+        configuration_hash="a" * 64,
+    )
+    before = path.read_bytes()
+
+    class OfflineUniverse:
+        def get_quotes(self):
+            raise ProviderAvailabilityError("akshare", "network_error", "offline")
+
+    with pytest.raises(ProviderAvailabilityError):
+        run_resumable_scan(
+            settings, OfflineUniverse(), history,
+            report_date=REPORT_DATE, output_root=tmp_path,
+            configuration_hash="b" * 64,
+        )
+    assert path.read_bytes() == before
+
+    history.requested.clear()
+    rebuilt = run_resumable_scan(
+        settings, universe, history, report_date=REPORT_DATE, output_root=tmp_path,
+        configuration_hash="b" * 64,
+    )
+    assert rebuilt == path
+    assert load_scan_artifact(rebuilt).config_hash == "b" * 64
+    assert history.requested == [code]
+
+
 def _settings(**changes: object) -> MarketScanSettings:
     values = {
         "rule_version": "market-scan-v1",
