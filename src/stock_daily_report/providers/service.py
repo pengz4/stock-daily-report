@@ -25,6 +25,7 @@ from stock_daily_report.providers.base import (
     ProviderError,
 )
 from stock_daily_report.providers.index import IndexHistoryProvider
+from stock_daily_report.providers.requests import ProviderRequestGate
 from stock_daily_report.quality.checks import (
     BarInput,
     DataQualityIssue,
@@ -1019,6 +1020,8 @@ class MarketDataService:
         secrets: Sequence[str] = (),
         now: Callable[[], datetime] | None = None,
         recover_pending: bool = False,
+        history_request_interval_seconds: float = 0,
+        provider_cooldown_seconds: float = 0,
     ) -> None:
         if primary_provider == fallback_provider:
             raise ConfigurationError("primary and fallback providers must differ")
@@ -1029,6 +1032,11 @@ class MarketDataService:
                     f"Configured provider is unavailable: {provider_name}"
                 )
         self._selection = (primary_provider, fallback_provider)
+        self._request_gate = ProviderRequestGate(
+            cache_directory,
+            interval_seconds=history_request_interval_seconds,
+            cooldown_seconds=provider_cooldown_seconds,
+        )
         self._quality_settings = quality_settings or DataQualitySettings()
         self._cache = RawResponseCache(
             cache_directory,
@@ -1075,6 +1083,8 @@ class MarketDataService:
             fallback_provider=settings.fallback_provider,
             cache_directory=settings.cache_directory,
             cache_ttl_seconds=settings.cache_ttl_seconds,
+            history_request_interval_seconds=settings.history_request_interval_seconds,
+            provider_cooldown_seconds=settings.provider_cooldown_seconds,
             quality_settings=DataQualitySettings(
                 minimum_history_bars=settings.minimum_history_bars,
                 max_completed_trading_day_lag=settings.max_completed_trading_day_lag,
@@ -1093,7 +1103,7 @@ class MarketDataService:
         as_of: date,
         defer_cache: bool = False,
     ) -> FetchedBars:
-        """Return validated data from exactly the configured primary/fallback order.
+        """Prefer cached responses, then request primary/fallback in order.
 
         By default, successful uncached responses are persisted immediately for
         standalone retrieval. Callers fetching a batch can defer those writes
@@ -1101,17 +1111,27 @@ class MarketDataService:
         """
 
         failures: list[ProviderAvailabilityError] = []
-        for provider_name in self._selection:
-            cached_response = self._cache.load(provider_name, code, start, end)
+        cached_responses = {
+            name: self._cache.load(name, code, start, end)
+            for name in self._selection
+        }
+        selection = sorted(
+            self._selection, key=lambda name: cached_responses[name] is None
+        )
+        for provider_name in selection:
+            cached_response = cached_responses[provider_name]
             from_cache = cached_response is not None
             if from_cache:
                 response = cached_response
             else:
                 try:
+                    self._request_gate.acquire(provider_name)
                     response = self._providers[provider_name].get_daily_bars(
                         code, start=start, end=end
                     )
                 except ProviderAvailabilityError as error:
+                    if error.code != "provider_circuit_open":
+                        self._request_gate.record_failure(provider_name)
                     failures.append(error)
                     continue
 

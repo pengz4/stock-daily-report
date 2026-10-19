@@ -124,6 +124,7 @@ REASON_LABELS: Mapping[str, str] = {
     "network_error": "网络错误",
     "price_missing": "价格缺失",
     "fetch_timeout": "请求超时",
+    "fetch_workers_unavailable": "请求线程全部超时，等待续跑",
     "history_fetch_failed": "历史数据请求失败",
     "history_data_invalid": "历史数据格式无效",
     "scan_artifact_invalid": "扫描产物无效",

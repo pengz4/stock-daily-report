@@ -13,8 +13,33 @@ python -m pip install --no-deps -e .
 stock-daily-report daily --date 2026-09-04 --output-root .
 ```
 
-The default configuration uses the AkShare provider with a fixture fallback.
+The production configuration uses AkShare/Eastmoney with an AkShare/Sina fallback.
 Use `--fixture-directory` for an offline run with fixture CSV files.
+
+History requests are spaced at least one second apart per provider, shared
+across processes using the same cache directory. An availability failure pauses
+new history requests to that provider for 15 seconds; the independent fallback
+is still available. Invalid data is not silently replaced with fallback data.
+Resumable scans back off for 2 and 4 seconds before retrying availability
+failures, rather than immediately repeating requests. Provider timeouts and
+schema errors are retained for diagnosis instead of immediately retried.
+
+The scanner uses four history workers. Queued symbols do not consume their
+per-symbol fetch timeout. Resumable scans checkpoint every 100 candidates by
+default (or fewer when the candidate batch limit is smaller), so runner
+interruption does not discard an entire full-market scan.
+Successful responses are cached for six hours, and a
+valid cached fallback is reused before making another primary-provider request.
+The daily and scan workflows share same-date response caches through Actions
+cache; locks, request cooldown state, and publication recovery journals are not
+uploaded. Existing history-writer concurrency groups serialize these jobs.
+Cache reuse is best effort, subject to Actions cache availability and TTL.
+
+This does not append yesterday's forward-adjusted prices to today's history:
+each uncached request still retrieves a consistent adjusted series. Cross-day
+incremental history requires separate raw-price and corporate-action storage.
+These controls reduce avoidable traffic; they cannot guarantee that an upstream
+service will accept requests from every network or runner.
 
 ## Full-market scan
 

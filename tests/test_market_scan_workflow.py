@@ -113,3 +113,33 @@ def test_daily_workflow_restores_same_date_market_scan_history_when_available():
 
     assert "if [ -d .report-history/market-scans ]; then" in merge
     assert "cp -a .report-history/market-scans ./market-scans" in merge
+
+
+def test_data_jobs_share_same_date_response_cache_without_recovery_files():
+    _, scan_workflow = _workflow()
+    daily = _daily_workflow()
+    jobs = [
+        scan_workflow["jobs"]["watchlist-scan"],
+        scan_workflow["jobs"]["market-scan"],
+        daily["jobs"]["generate"],
+    ]
+    prefixes = []
+    for job in jobs:
+        steps = job["steps"]
+        cache = next(
+            step for step in steps if step.get("uses") == "actions/cache@v4"
+        )
+        options = cache["with"]
+        assert options["path"] == ".cache/stock-daily-report/*.json"
+        assert "steps.report-date.outputs.report_date" in options["key"]
+        assert "github.run_id" in options["key"]
+        assert "github.job" in options["key"]
+        prefixes.append(options["restore-keys"])
+        assert steps.index(cache) > next(
+            index for index, step in enumerate(steps) if step.get("id") == "report-date"
+        )
+        assert steps.index(cache) < next(
+            index for index, step in enumerate(steps)
+            if step["name"].startswith("Generate ")
+        )
+    assert len(set(prefixes)) == 1

@@ -4,7 +4,7 @@ balanced_limit: 30
 minimum_history_bars: 120
 minimum_latest_amount: 50000000
 minimum_coverage_ratio: 0.80
-max_workers: 16
+max_workers: 4
 max_candidates: 6000
 market_state:
   rule_version: market-state-v1

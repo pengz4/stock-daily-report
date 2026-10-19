@@ -91,6 +91,13 @@ jobs:
           if [ -d .report-history/watchlist-scans ]; then
             cp -a .report-history/watchlist-scans ./watchlist-scans
           fi
+      - name: Reuse same-date market data responses
+        uses: actions/cache@v4
+        with:
+          path: .cache/stock-daily-report/*.json
+          key: market-data-v1-${{ runner.os }}-${{ steps.report-date.outputs.report_date }}-${{ hashFiles('config/settings.yaml', 'requirements.lock', 'src/stock_daily_report/providers/**', 'src/stock_daily_report/models.py') }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
+          restore-keys: |
+            market-data-v1-${{ runner.os }}-${{ steps.report-date.outputs.report_date }}-${{ hashFiles('config/settings.yaml', 'requirements.lock', 'src/stock_daily_report/providers/**', 'src/stock_daily_report/models.py') }}-
       - name: Generate report artifacts
         env:
           WECOM_WEBHOOK_URL: ${{ secrets.WECOM_WEBHOOK_URL }}

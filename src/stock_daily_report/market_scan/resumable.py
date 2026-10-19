@@ -18,8 +18,10 @@ from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, date, datetime
 from pathlib import Path
+from time import sleep
 from zoneinfo import ZoneInfo
 
+from stock_daily_report.market_scan import runner
 from stock_daily_report.market_scan.models import MarketState
 from stock_daily_report.market_scan.resume import (
     ScanCheckpoint,
@@ -47,6 +49,12 @@ from stock_daily_report.providers.universe import UniverseQuote
 
 _SHANGHAI = ZoneInfo("Asia/Shanghai")
 HISTORY_FAILURE_ATTEMPTS = 3
+_RETRYABLE_HISTORY_FAILURES = frozenset({
+    "network_error",
+    "all_providers_failed",
+    "provider_circuit_open",
+    "invalid_remote_response",
+})
 
 __all__ = ["run_resumable_scan"]
 
@@ -108,7 +116,7 @@ def _run_resumable_scan(
     directory: str | Path = "market-scans",
 ) -> Path | None:
     semantic_hash = scoring_config_hash(settings)
-    per_batch = batch_size or settings.max_candidates
+    per_batch = batch_size or min(settings.max_candidates, 100)
     execution_date = _current_shanghai_date()
 
     checkpoint = load_checkpoint(output_root, report_date, directory=directory)
@@ -341,6 +349,8 @@ def _process_batch(
             results,
             quotes_by_code={quote.code: quote for quote in batch},
             provider_name=_provider_name(history_provider),
+            max_workers=settings.max_workers,
+            timeout_seconds=HISTORY_FAILURE_ATTEMPTS * runner._FETCH_TIMEOUT_SECONDS + 6,
         )
     finally:
         executor.shutdown(wait=False, cancel_futures=True)
@@ -354,9 +364,13 @@ def _process_candidate_with_retries(
     settings: MarketScanSettings,
 ) -> _CandidateResult:
     result = _process_candidate(quote, history_provider, report_date, settings)
-    for _ in range(1, HISTORY_FAILURE_ATTEMPTS):
-        if result.status.status != "history_failed":
+    for attempt in range(1, HISTORY_FAILURE_ATTEMPTS):
+        if (
+            result.status.status != "history_failed"
+            or not set(result.status.reason_codes) & _RETRYABLE_HISTORY_FAILURES
+        ):
             break
+        sleep(2 ** attempt)
         result = _process_candidate(quote, history_provider, report_date, settings)
     return result
 

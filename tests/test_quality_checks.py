@@ -161,6 +161,54 @@ def test_service_falls_back_only_for_expected_provider_failure(tmp_path, bars):
     assert (primary.calls, fallback.calls) == (1, 1)
 
 
+def test_service_reuses_cached_fallback_before_requesting_primary(tmp_path, bars):
+    from stock_daily_report.providers.base import ProviderAvailabilityError
+
+    primary = RecordingProvider(
+        "primary",
+        error=ProviderAvailabilityError("primary", "network_error", "unavailable"),
+    )
+    fallback = RecordingProvider("fallback", response=bars)
+    service = _service(primary, fallback, tmp_path)
+    service.fetch("600519", end=date(2026, 9, 4), as_of=date(2026, 9, 4))
+
+    fetched = service.fetch(
+        "600519", end=date(2026, 9, 4), as_of=date(2026, 9, 4)
+    )
+
+    assert fetched.from_cache
+    assert fetched.provider_name == "fallback"
+    assert (primary.calls, fallback.calls) == (1, 1)
+
+
+def test_configured_cooldown_skips_failing_provider_for_next_symbol(tmp_path, bars):
+    from stock_daily_report.models import MarketDataSettings
+    from stock_daily_report.providers.base import ProviderAvailabilityError
+    from stock_daily_report.providers.service import MarketDataService
+
+    primary = RecordingProvider(
+        "primary",
+        error=ProviderAvailabilityError("primary", "network_error", "unavailable"),
+    )
+    fallback = RecordingProvider("fallback", response=bars)
+    settings = MarketDataSettings(
+        primary_provider="primary",
+        fallback_provider="fallback",
+        cache_directory=str(tmp_path),
+        minimum_history_bars=1,
+        provider_cooldown_seconds=30,
+    )
+    service = MarketDataService.from_settings(
+        {primary.name: primary, fallback.name: fallback}, settings
+    )
+
+    service.fetch("600519", as_of=date(2026, 9, 4))
+    fetched = service.fetch("600000", as_of=date(2026, 9, 4))
+
+    assert fetched.provider_name == "fallback"
+    assert (primary.calls, fallback.calls) == (1, 2)
+
+
 def test_service_uses_provider_order_and_thresholds_from_settings(tmp_path, bars):
     from stock_daily_report.models import MarketDataSettings
     from stock_daily_report.providers.base import ProviderAvailabilityError

@@ -263,6 +263,7 @@ def scan_market(
             results,
             quotes_by_code={quote.code: quote for quote in selected},
             provider_name=_provider_name(history_provider),
+            max_workers=settings.max_workers,
         )
     finally:
         executor.shutdown(wait=False, cancel_futures=True)
@@ -488,24 +489,46 @@ def _collect_with_timeout(
     *,
     quotes_by_code: Mapping[str, UniverseQuote],
     provider_name: str,
+    max_workers: int,
+    timeout_seconds: float | None = None,
 ) -> None:
-    """Drain completed futures, fusing those that exceed the per-symbol timeout.
-
-    ``wait`` is used instead of ``as_completed`` so we keep a live handle on
-    the still-pending set: when the timeout window elapses with no completed
-    future, we cancel every remaining request rather than blocking forever on
-    one hung network call.
-    """
+    """Time running work, not symbols waiting for an executor worker."""
 
     pending: set[Future[_CandidateResult]] = set(futures)
-    deadlines = {
-        future: time.monotonic() + _FETCH_TIMEOUT_SECONDS for future in pending
-    }
+    budget = _FETCH_TIMEOUT_SECONDS if timeout_seconds is None else timeout_seconds
+    deadlines: dict[Future[_CandidateResult], float] = {}
     total = len(pending)
     completed = 0
     while pending:
         now = time.monotonic()
-        expired = {future for future in pending if deadlines[future] <= now}
+        done = {future for future in pending if future.done()}
+        for future in done:
+            results[futures[future]] = future.result()
+            completed += 1
+        pending -= done
+        if done:
+            _report_progress(completed, total)
+        for future in pending:
+            if future.running():
+                deadlines.setdefault(future, now + budget)
+        blocked_workers = sum(
+            future.running() for future in futures if future not in pending
+        )
+        if blocked_workers >= max_workers:
+            cancelled = {future for future in pending if future.cancel()}
+            for future in cancelled:
+                code = futures[future]
+                results[code] = _failed_result(
+                    quotes_by_code[code],
+                    reason="fetch_workers_unavailable",
+                    provider_name=provider_name,
+                )
+                completed += 1
+            pending -= cancelled
+        expired = {
+            future for future in pending
+            if future in deadlines and deadlines[future] <= now
+        }
         if expired:
             pending -= expired
             for future in expired:
@@ -519,27 +542,13 @@ def _collect_with_timeout(
                 completed += 1
             _report_progress(completed, total)
             continue
-        done, pending = wait(
+        if not pending:
+            break
+        wait(
             pending,
-            timeout=min(deadlines[future] - now for future in pending),
+            timeout=min(0.1, budget / 10),
             return_when=FIRST_COMPLETED,
         )
-        if not done:
-            continue
-        for future in done:
-            results[futures[future]] = future.result()
-            completed += 1
-        _report_progress(completed, total)
-
-    for future in pending:
-        future.cancel()
-        code = futures[future]
-        results[code] = _failed_result(
-            quotes_by_code[code],
-            reason="fetch_timeout",
-            provider_name=provider_name,
-        )
-        completed += 1
     _report_progress(completed, total)
 
 

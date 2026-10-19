@@ -1,5 +1,6 @@
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, date, datetime, timedelta
 
 from stock_daily_report.models import DailyBar, MarketScanSettings
@@ -232,6 +233,23 @@ def test_scanner_bounds_history_workers_and_passes_report_date():
     assert artifact.valid_count == len(codes)
 
 
+def test_queued_symbols_do_not_consume_their_fetch_timeout(monkeypatch):
+    from stock_daily_report.market_scan import runner
+
+    monkeypatch.setattr(runner, "_FETCH_TIMEOUT_SECONDS", 0.15)
+    codes = _codes(6)
+    provider = FakeHistoryProvider(
+        {code: _bars(code) for code in codes},
+        delays=dict.fromkeys(codes, 0.06),
+    )
+
+    artifact = _scan(codes, provider, max_workers=1)
+
+    assert artifact.valid_count == len(codes)
+    assert artifact.failure_counts == {}
+    assert set(provider.requested_ends) == set(codes)
+
+
 def test_hung_symbol_is_fused_without_aborting_the_scan(monkeypatch):
     from stock_daily_report.market_scan import runner
 
@@ -251,6 +269,34 @@ def test_hung_symbol_is_fused_without_aborting_the_scan(monkeypatch):
     hung = next(status for status in artifact.statuses if status.code == codes[0])
     assert hung.status == "history_failed"
     assert hung.reason_codes == ("fetch_timeout",)
+
+
+def test_exhausted_workers_do_not_leave_queued_symbols_waiting_forever(monkeypatch):
+    from stock_daily_report.market_scan import runner
+
+    monkeypatch.setattr(runner, "_FETCH_TIMEOUT_SECONDS", 0.05)
+    release = threading.Event()
+    codes = _codes(2)
+
+    class BlockedHistory(FakeHistoryProvider):
+        def get_daily_bars(self, code, *, start=None, end=None):
+            release.wait()
+            return super().get_daily_bars(code, start=start, end=end)
+
+    provider = BlockedHistory({code: _bars(code) for code in codes})
+    executor = ThreadPoolExecutor(max_workers=1)
+    try:
+        future = executor.submit(_scan, codes, provider, max_workers=1)
+        artifact = future.result(timeout=0.5)
+    finally:
+        release.set()
+        executor.shutdown(wait=True)
+
+    assert artifact.valid_count == 0
+    assert artifact.failure_counts == {
+        "fetch_timeout": 1,
+        "fetch_workers_unavailable": 1,
+    }
 
 
 def test_hung_symbol_does_not_block_scan_return(monkeypatch):

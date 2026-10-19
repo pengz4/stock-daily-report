@@ -31,6 +31,84 @@ from stock_daily_report.providers.universe import UniverseQuote
 REPORT_DATE = date(2026, 9, 11)
 
 
+def test_history_retries_back_off_and_do_not_retry_schema_errors(monkeypatch):
+    from stock_daily_report.market_scan import resumable
+    from stock_daily_report.providers.base import ProviderDataError
+
+    delays = []
+    monkeypatch.setattr(resumable, "sleep", delays.append, raising=False)
+    code = "600000"
+
+    class UnavailableHistory(FakeHistoryProvider):
+        def get_daily_bars(self, code, *, start=None, end=None):
+            self.requested.append(code)
+            raise ProviderError(self.name, "network_error", "offline")
+
+    history = UnavailableHistory({})
+    resumable._process_candidate_with_retries(
+        _quote(code), history, REPORT_DATE, _settings()
+    )
+    assert delays == [2, 4]
+    assert history.requested == [code] * 3
+
+    class InvalidHistory(FakeHistoryProvider):
+        def get_daily_bars(self, code, *, start=None, end=None):
+            self.requested.append(code)
+            raise ProviderDataError(self.name, "provider_schema_invalid", "bad schema")
+
+    invalid = InvalidHistory({})
+    delays.clear()
+    result = resumable._process_candidate_with_retries(
+        _quote(code), invalid, REPORT_DATE, _settings()
+    )
+    assert invalid.requested == [code]
+    assert delays == []
+    assert result.status.reason_codes == ("provider_schema_invalid",)
+
+
+def test_resumable_batch_does_not_timeout_queued_symbols(monkeypatch):
+    from stock_daily_report.market_scan import runner
+    from stock_daily_report.market_scan.resumable import _process_batch
+
+    monkeypatch.setattr(runner, "_FETCH_TIMEOUT_SECONDS", 0.15)
+    codes = [f"600{index:03d}" for index in range(6)]
+
+    class SlowHistory(FakeHistoryProvider):
+        def get_daily_bars(self, code, *, start=None, end=None):
+            time.sleep(0.06)
+            return super().get_daily_bars(code, start=start, end=end)
+
+    results = _process_batch(
+        [_quote(code) for code in codes],
+        SlowHistory({code: _bars(code) for code in codes}),
+        REPORT_DATE,
+        _settings(max_workers=1),
+    )
+
+    assert len(results) == len(codes)
+    assert all(result.status.status == "valid" for result in results.values())
+
+
+def test_default_batches_checkpoint_before_full_universe_finishes(tmp_path):
+    codes = [f"600{index:03d}" for index in range(101)]
+    history = FakeHistoryProvider({code: _bars(code) for code in codes})
+
+    path = run_resumable_scan(
+        _settings(max_workers=1, max_candidates=6000),
+        FakeUniverseProvider([_quote(code) for code in codes]),
+        history,
+        report_date=REPORT_DATE,
+        output_root=tmp_path,
+        max_batches=1,
+    )
+
+    assert path is None
+    assert len(history.requested) == 100
+    checkpoint = load_checkpoint(tmp_path, REPORT_DATE)
+    assert checkpoint is not None
+    assert len(checkpoint_completed(checkpoint)) == 100
+
+
 def _settings(**changes: object) -> MarketScanSettings:
     values = {
         "rule_version": "market-scan-v1",

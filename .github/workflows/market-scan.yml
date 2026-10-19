@@ -59,6 +59,13 @@ jobs:
           PY
           )"
           echo "report_date=$canonical_date" >> "$GITHUB_OUTPUT"
+      - name: Reuse same-date market data responses
+        uses: actions/cache@v4
+        with:
+          path: .cache/stock-daily-report/*.json
+          key: market-data-v1-${{ runner.os }}-${{ steps.report-date.outputs.report_date }}-${{ hashFiles('config/settings.yaml', 'requirements.lock', 'src/stock_daily_report/providers/**', 'src/stock_daily_report/models.py') }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
+          restore-keys: |
+            market-data-v1-${{ runner.os }}-${{ steps.report-date.outputs.report_date }}-${{ hashFiles('config/settings.yaml', 'requirements.lock', 'src/stock_daily_report/providers/**', 'src/stock_daily_report/models.py') }}-
       - name: Generate watchlist scan
         run: |
           report_date="${{ steps.report-date.outputs.report_date }}"
@@ -165,6 +172,13 @@ jobs:
           if [ -d .report-history/market-scans ]; then
             cp -a .report-history/market-scans ./market-scans
           fi
+      - name: Reuse same-date market data responses
+        uses: actions/cache@v4
+        with:
+          path: .cache/stock-daily-report/*.json
+          key: market-data-v1-${{ runner.os }}-${{ steps.report-date.outputs.report_date }}-${{ hashFiles('config/settings.yaml', 'requirements.lock', 'src/stock_daily_report/providers/**', 'src/stock_daily_report/models.py') }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
+          restore-keys: |
+            market-data-v1-${{ runner.os }}-${{ steps.report-date.outputs.report_date }}-${{ hashFiles('config/settings.yaml', 'requirements.lock', 'src/stock_daily_report/providers/**', 'src/stock_daily_report/models.py') }}-
       - name: Generate market scan
         run: |
           report_date="${{ steps.report-date.outputs.report_date }}"
