@@ -490,6 +490,76 @@ def test_daily_pipeline_can_reuse_existing_snapshot_when_refreshing_scan(
     assert outputs.report.market_rankings.input_hash == "d" * 64
 
 
+def test_snapshot_reuse_rejects_missing_selected_stocks_without_republishing(
+    tmp_path, fixture_settings
+):
+    initial_watchlist = Watchlist(stocks=[{"code": "600519", "name": "贵州茅台"}])
+    run_daily_report(
+        fixture_settings, output_root=tmp_path, watchlist=initial_watchlist,
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        report_date=date(2026, 9, 4),
+        now=lambda: datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
+    )
+    report_path = tmp_path / "reports/2026-09-04/report.json"
+    previous = report_path.read_bytes()
+    expanded = Watchlist(stocks=[
+        {"code": "600519", "name": "贵州茅台"},
+        {"code": "000001", "name": "平安银行"},
+    ])
+    with pytest.raises(SnapshotError, match="000001"):
+        run_daily_report(
+            fixture_settings, output_root=tmp_path, watchlist=expanded,
+            provider=RecordingProvider({}),
+            report_date=date(2026, 9, 4),
+            now=lambda: datetime(2026, 9, 4, 10, 0, tzinfo=UTC),
+            reuse_existing_snapshot=True,
+        )
+    assert report_path.read_bytes() == previous
+
+
+def test_daily_workflow_refetches_changed_deep_set_even_when_market_changed(
+    tmp_path, fixture_settings
+):
+    import yaml
+
+    run_daily_report(
+        fixture_settings, output_root=tmp_path,
+        watchlist=Watchlist(stocks=[{"code": "600519", "name": "贵州茅台"}]),
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        report_date=date(2026, 9, 4),
+        now=lambda: datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
+    )
+    write_scan_artifact(tmp_path, _market_scan_artifact())
+    write_scan_artifact(tmp_path, _market_scan_artifact(), directory="watchlist-scans")
+    config = tmp_path / "config"
+    config.mkdir()
+    (config / "watchlist.yaml").write_text(yaml.safe_dump({"stocks": [
+        {"code": "600519", "name": "贵州茅台", "priority": "core"},
+        {"code": "000001", "name": "平安银行", "priority": "core"},
+    ]}))
+    repo = Path(__file__).parents[1]
+    (config / "market_scan.yaml").write_bytes((repo / "config/market_scan.yaml").read_bytes())
+    workflow = yaml.safe_load((repo / ".github/workflows/daily-report.yml").read_text())
+    command = next(
+        step["run"] for step in workflow["jobs"]["generate"]["steps"]
+        if step["name"] == "Generate report artifacts"
+    ).replace("${{ steps.report-date.outputs.report_date }}", "2026-09-04")
+    invocation = tmp_path / "cli-args.txt"
+    wrapper = (
+        'python() { if [ "$1" = "-m" ]; then printf "%s\\n" "$@" > cli-args.txt; '
+        f'else "{sys.executable}" "$@"; fi; }}\n'
+    )
+    result = subprocess.run(
+        ["bash", "-e", "-c", wrapper + command], cwd=tmp_path,
+        env={**os.environ, "PYTHONPATH": str(repo / "src")},
+        capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "Existing report does not include the current scan" in result.stdout
+    assert "--overwrite-snapshot" in invocation.read_text()
+    assert "--reuse-existing-snapshot" not in invocation.read_text()
+
+
 @pytest.mark.parametrize(
     ("artifact_kind", "expected_reason"),
     [

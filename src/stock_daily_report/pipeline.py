@@ -7,7 +7,6 @@ import hashlib
 import json
 import os
 import shutil
-import sys
 import tempfile
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import contextmanager
@@ -358,6 +357,16 @@ def run_daily_report(
                 "Existing snapshot report_date does not match requested date: "
                 f"{active_report_date.isoformat()}"
             )
+        missing_codes = sorted(
+            stock.code for stock in core_stocks
+            if stock.code not in snapshot_for_reuse.bars_by_code
+        )
+        if missing_codes:
+            raise SnapshotError(
+                "Existing snapshot is missing selected deep-analysis stocks: "
+                f"{', '.join(missing_codes)}. Regenerate with --overwrite-snapshot "
+                "instead of --reuse-existing-snapshot."
+            )
 
     active_service = service
     recovery_cache: RawResponseCache | None = None
@@ -401,16 +410,9 @@ def run_daily_report(
                     if snapshot_for_reuse is not None:
                         bars = snapshot_for_reuse.bars_by_code.get(stock.code)
                         if bars is None:
-                            # The snapshot for a date is frozen, so a code that
-                            # was not part of the original publication cannot be
-                            # analysed for that same date. It is picked up by the
-                            # next report date instead of failing the run.
-                            print(
-                                f"Skipping {stock.code}: the frozen snapshot for "
-                                f"{active_report_date.isoformat()} has no bars for it",
-                                file=sys.stderr,
+                            raise SnapshotError(
+                                f"Existing snapshot is missing selected stock {stock.code}"
                             )
-                            continue
                         bar_providers = tuple(
                             sorted({bar.provider_name for bar in bars})
                         )

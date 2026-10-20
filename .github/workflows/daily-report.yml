@@ -258,7 +258,9 @@ jobs:
             # self-selected deep-analysis section. The deep set itself changed,
             # so refetch history (do NOT reuse the frozen snapshot, which only
             # holds the previous deep set's bars).
-            if [ "$reuse_report" = true ]; then
+            # Check independently even if a full-market change already forced
+            # report regeneration with snapshot reuse.
+            if [ -f "$report_path" ]; then
               if [ ! -f "$watchlist_scan_path" ]; then
                 reuse_report=false
                 reuse_snapshot=false
