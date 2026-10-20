@@ -38,8 +38,8 @@ from stock_daily_report.pipeline import (
 )
 from stock_daily_report.providers.base import ProviderError
 from stock_daily_report.providers.fixture import FixtureMarketDataProvider
-from stock_daily_report.providers.index import AkShareIndexProvider
-from stock_daily_report.providers.service import CacheRollbackError
+from stock_daily_report.providers.index import AkShareIndexProvider, SinaIndexProvider
+from stock_daily_report.providers.service import CacheRollbackError, IndexHistoryService
 from stock_daily_report.providers.universe import (
     AkShareUniverseProvider,
     WatchlistUniverseProvider,
@@ -129,6 +129,10 @@ def main(argv: list[str] | None = None) -> int:
         "--resumable",
         action="store_true",
         help="process in resumable batches, persisting a checkpoint after each",
+    )
+    market_scan.add_argument(
+        "--refresh-market-state", action="store_true",
+        help="repair incomplete index state with --resumable; archive previous output",
     )
     market_scan.add_argument(
         "--max-batches",
@@ -234,6 +238,12 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "market-scan":
         try:
+            if args.refresh_market_state and (
+                not args.resumable or args.scope != "market"
+            ):
+                raise _MarketScanCliError(
+                    "--refresh-market-state requires --resumable and --scope market"
+                )
             if args.max_batches is not None and args.max_batches <= 0:
                 raise _MarketScanCliError(
                     "--max-batches must be a positive integer"
@@ -247,12 +257,18 @@ def main(argv: list[str] | None = None) -> int:
             directory = (
                 "watchlist-scans" if args.scope == "watchlist" else "market-scans"
             )
-            index_provider = (
-                AkShareIndexProvider() if directory == "market-scans" else None
-            )
             cache_directory = Path(data_settings.market_data.cache_directory)
             if not cache_directory.is_absolute():
                 cache_directory = args.output_root / cache_directory
+            index_provider = (
+                IndexHistoryService(
+                    {
+                        "sina-index": SinaIndexProvider(cache_directory=cache_directory),
+                        "akshare": AkShareIndexProvider(),
+                    },
+                    primary_provider="sina-index", fallback_provider="akshare",
+                ) if directory == "market-scans" else None
+            )
             bulk_universe_provider = AkShareUniverseProvider(
                 cache_directory=cache_directory,
                 cache_ttl_seconds=data_settings.market_data.cache_ttl_seconds,
@@ -303,6 +319,7 @@ def main(argv: list[str] | None = None) -> int:
                     index_provider=index_provider,
                     max_batches=args.max_batches,
                     directory=directory,
+                    refresh_market_state=args.refresh_market_state,
                 )
                 if artifact_path is None:
                     print(

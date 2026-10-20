@@ -201,8 +201,8 @@ def test_market_scan_cli_accepts_date_settings_and_output_root(
     )
     monkeypatch.setattr(
         cli_module,
-        "AkShareIndexProvider",
-        lambda: index_provider,
+        "IndexHistoryService",
+        lambda *a, **k: index_provider,
         raising=False,
     )
 
@@ -329,8 +329,8 @@ def test_market_scan_cli_resumes_existing_artifact_when_requested(
     )
     monkeypatch.setattr(
         cli_module,
-        "AkShareIndexProvider",
-        lambda: index_provider,
+        "IndexHistoryService",
+        lambda *a, **k: index_provider,
         raising=False,
     )
     monkeypatch.setattr(
@@ -362,6 +362,7 @@ def test_market_scan_cli_resumes_existing_artifact_when_requested(
         index_provider,
         directory,
         max_batches,
+        refresh_market_state,
     ):
         observed.update(
             settings=configured_settings,
@@ -425,8 +426,8 @@ def test_market_scan_cli_wires_index_provider_for_market_scope(
     monkeypatch.setattr(cli_module, "AkShareUniverseProvider", lambda **kwargs: universe_provider)
     monkeypatch.setattr(
         cli_module,
-        "AkShareIndexProvider",
-        lambda: index_provider,
+        "IndexHistoryService",
+        lambda *a, **k: index_provider,
         raising=False,
     )
     monkeypatch.setattr(

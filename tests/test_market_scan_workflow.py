@@ -1,3 +1,6 @@
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import yaml
@@ -11,6 +14,25 @@ def _workflow():
 def _daily_workflow():
     path = Path(__file__).parents[1] / ".github" / "workflows" / "daily-report.yml"
     return yaml.safe_load(path.read_text(encoding="utf-8"))
+
+
+def test_index_summary_allows_incomplete_scan_to_persist_checkpoint(tmp_path):
+    _, workflow = _workflow()
+    step = next(
+        step for step in workflow["jobs"]["market-scan"]["steps"]
+        if step["name"] == "Summarize index availability"
+    )
+    summary = tmp_path / "summary.txt"
+    script = step["run"].replace(
+        "${{ steps.report-date.outputs.report_date }}", "2026-10-20"
+    ).replace("python -", f'"{sys.executable}" -')
+    result = subprocess.run(
+        ["bash", "-e", "-c", script], cwd=tmp_path,
+        env={**os.environ, "GITHUB_STEP_SUMMARY": str(summary)},
+        capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "incomplete" in summary.read_text().lower()
 
 
 def test_market_scan_workflow_is_scheduled_before_daily_and_dispatchable():

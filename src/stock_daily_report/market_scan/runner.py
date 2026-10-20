@@ -44,6 +44,7 @@ from stock_daily_report.market_scan.state import (
 )
 from stock_daily_report.models import DailyBar, MarketDataSettings, MarketScanSettings
 from stock_daily_report.providers.base import ProviderDataError, ProviderError
+from stock_daily_report.providers.index import IndexBar, IndexCloseBar
 from stock_daily_report.providers.service import (
     AllProvidersFailedError,
     DataQualityError,
@@ -748,7 +749,7 @@ def _build_market_state(
 ) -> MarketState:
     """Build state from the exact quote snapshot and isolated index requests."""
 
-    index_bars: dict[str, Sequence[DailyBar] | BaseException] = {}
+    index_bars: dict[str, Sequence[IndexBar] | BaseException] = {}
     for code in settings.market_state.index_codes:
         try:
             raw_bars, _index_provider_name = _fetch_history_with_timeout(
@@ -756,7 +757,10 @@ def _build_market_state(
                 code,
                 report_date,
             )
-            index_bars[code] = tuple(_normalize_bar(bar) for bar in raw_bars)
+            index_bars[code] = tuple(
+                bar if isinstance(bar, IndexCloseBar) else _normalize_bar(bar)
+                for bar in raw_bars
+            )
         except ProviderError as error:
             index_bars[code] = error
         except (KeyError, TypeError, ValueError, ValidationError) as error:

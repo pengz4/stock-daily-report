@@ -693,6 +693,55 @@ def test_resumable_scan_preserves_market_state_from_checkpoint_snapshot(tmp_path
     assert len(index.requested) == len(MARKET_STATE_INDEX_CODES)
 
 
+@pytest.mark.parametrize("legacy", [False, True])
+def test_explicit_refresh_repairs_failed_indices_without_refetching_stocks(
+    tmp_path, legacy
+):
+    from stock_daily_report.market_scan.report import load_scan_artifact
+    from stock_daily_report.models import MARKET_STATE_INDEX_CODES
+    from stock_daily_report.providers.base import ProviderAvailabilityError
+
+    class OfflineIndex:
+        name = "offline-index"
+
+        def get_daily_bars(self, *args, **kwargs):
+            raise ProviderAvailabilityError(self.name, "network_error", "offline")
+
+    codes = _codes(2)
+    universe = FakeUniverseProvider([_quote(codes[0], 1.0), _quote(codes[1], -1.0)])
+    history = FakeHistoryProvider({code: _bars(code) for code in codes})
+    path = run_resumable_scan(
+        _settings(), universe, history, index_provider=OfflineIndex(),
+        report_date=REPORT_DATE, output_root=tmp_path,
+    )
+    if legacy:
+        document = json.loads(path.read_text())
+        document.pop("market_state_identity")
+        path.write_text(json.dumps(document))
+    before = path.read_bytes()
+    assert load_scan_artifact(path).market_state.status == "partial"
+    history.requested.clear()
+    with pytest.raises(ProviderAvailabilityError, match="index_refresh_incomplete"):
+        run_resumable_scan(
+            _settings(), universe, history, index_provider=OfflineIndex(),
+            report_date=REPORT_DATE, output_root=tmp_path, refresh_market_state=True,
+        )
+    assert path.read_bytes() == before
+    index = FakeIndexProvider({
+        code: _bars("600000") for code in MARKET_STATE_INDEX_CODES
+    })
+    rebuilt = run_resumable_scan(
+        _settings(), universe, history, index_provider=index,
+        report_date=REPORT_DATE, output_root=tmp_path, refresh_market_state=True,
+    )
+    assert rebuilt == path
+    assert load_scan_artifact(path).market_state.status == "available"
+    assert not history.requested
+    archived = list((path.parent / "scan-archive").glob("*.json"))
+    assert len(archived) == 1
+    assert archived[0].read_bytes() == before
+
+
 def test_concurrent_resumable_scans_serialize_checkpoint_lifecycle(tmp_path):
     codes = _codes(2)
     quotes = [_quote(code) for code in codes]

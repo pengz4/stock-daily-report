@@ -12,7 +12,7 @@ from stock_daily_report.market_scan.models import (
     MarketIndexState,
     MarketState,
 )
-from stock_daily_report.models import DailyBar
+from stock_daily_report.providers.index import IndexBar
 from stock_daily_report.providers.universe import UniverseQuote
 
 IndexDirection = Literal["bullish", "bearish", "neutral", "insufficient"]
@@ -30,7 +30,7 @@ def calculate_index_state(
     *,
     name: str,
     code: str,
-    bars: Sequence[DailyBar],
+    bars: Sequence[IndexBar],
     report_date: date,
     generated_at: datetime | None = None,
 ) -> MarketIndexState:
@@ -177,7 +177,7 @@ def calculate_market_state(
     indices: Sequence[MarketIndexState] | None = None,
     breadth: MarketBreadth | None = None,
     quotes: Iterable[UniverseQuote] | None = None,
-    index_bars: dict[str, Sequence[DailyBar] | BaseException] | None = None,
+    index_bars: dict[str, Sequence[IndexBar] | BaseException] | None = None,
     index_definitions: Sequence[tuple[str, str]] = INDEX_DEFINITIONS,
 ) -> MarketState:
     """Build the validated immutable market-state model from pure components."""
@@ -240,7 +240,7 @@ def _index_result(
     *,
     name: str,
     code: str,
-    bars: Sequence[DailyBar] | BaseException | None,
+    bars: Sequence[IndexBar] | BaseException | None,
     report_date: date,
     generated_at: datetime,
 ) -> MarketIndexState:

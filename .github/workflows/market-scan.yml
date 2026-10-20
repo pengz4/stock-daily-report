@@ -9,6 +9,11 @@ on:
         description: "Current Shanghai date; older dates require a valid artifact"
         required: false
         type: string
+      refresh_market_state:
+        description: "Repair incomplete index state and archive the previous scan"
+        required: false
+        type: boolean
+        default: false
   push:
     branches:
       - feature/report-wide-cn
@@ -183,14 +188,38 @@ jobs:
           restore-keys: |
             market-data-v1-${{ runner.os }}-${{ steps.report-date.outputs.report_date }}-${{ hashFiles('config/settings.yaml', 'requirements.lock', 'src/stock_daily_report/providers/**', 'src/stock_daily_report/models.py') }}-
       - name: Generate market scan
+        env:
+          REFRESH_MARKET_STATE: ${{ inputs.refresh_market_state }}
         run: |
           report_date="${{ steps.report-date.outputs.report_date }}"
+          refresh_args=()
+          if [ "$REFRESH_MARKET_STATE" = "true" ]; then
+            refresh_args+=(--refresh-market-state)
+          fi
           python -m stock_daily_report.cli market-scan \
             --date "$report_date" \
             --settings config/market_scan.yaml \
             --data-settings config/settings.yaml \
             --output-root . \
-            --resumable
+            --resumable "${refresh_args[@]}"
+      - name: Summarize index availability
+        run: |
+          python - "${{ steps.report-date.outputs.report_date }}" <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          import sys
+          from pathlib import Path
+          path = Path("market-scans") / sys.argv[1] / "scan.json"
+          if not path.exists():
+              print("Scan incomplete; checkpoint will be persisted for resumption.")
+              sys.exit(0)
+          state = json.loads(path.read_text())["market_state"]
+          print("## Market indices")
+          print("| Index | Status | Provider | Latest date | Error |")
+          print("|---|---|---|---|---|")
+          for item in state["indices"]:
+              print(f'| {item["name"]} | {item["status"]} | {item["provider"]} | '
+                    f'{item["latest_trade_date"]} | {item["error_code"] or ""} |')
+          PY
       - name: Persist market scan history
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

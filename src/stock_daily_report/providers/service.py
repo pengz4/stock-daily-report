@@ -24,7 +24,7 @@ from stock_daily_report.providers.base import (
     ProviderDataError,
     ProviderError,
 )
-from stock_daily_report.providers.index import IndexHistoryProvider
+from stock_daily_report.providers.index import IndexBar, IndexHistoryProvider
 from stock_daily_report.providers.requests import ProviderRequestGate
 from stock_daily_report.quality.checks import (
     BarInput,
@@ -122,11 +122,14 @@ class FetchedIndexBars:
 
     code: str
     provider_name: str
-    bars: tuple[DailyBar, ...]
+    bars: tuple[IndexBar, ...]
 
 
 class IndexHistoryService:
     """Select and retrieve dedicated index-history providers."""
+
+    name = "index-history"
+    supports_hard_timeout = True
 
     def __init__(
         self,

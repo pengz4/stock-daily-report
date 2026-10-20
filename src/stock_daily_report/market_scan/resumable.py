@@ -46,6 +46,7 @@ from stock_daily_report.market_scan.runner import (
     scoring_config_hash,
 )
 from stock_daily_report.models import MarketScanSettings
+from stock_daily_report.providers.base import ProviderAvailabilityError
 from stock_daily_report.providers.universe import UniverseQuote
 
 _SHANGHAI = ZoneInfo("Asia/Shanghai")
@@ -74,6 +75,7 @@ def run_resumable_scan(
     max_batches: int | None = None,
     batch_size: int | None = None,
     directory: str | Path = "market-scans",
+    refresh_market_state: bool = False,
 ) -> Path | None:
     """Run one resumable scan, returning the artifact path once complete.
 
@@ -98,6 +100,7 @@ def run_resumable_scan(
             max_batches=max_batches,
             batch_size=batch_size,
             directory=directory,
+            refresh_market_state=refresh_market_state,
         )
 
 
@@ -115,6 +118,7 @@ def _run_resumable_scan(
     max_batches: int | None = None,
     batch_size: int | None = None,
     directory: str | Path = "market-scans",
+    refresh_market_state: bool = False,
 ) -> Path | None:
     semantic_hash = scoring_config_hash(settings)
     if configuration_hash is not None:
@@ -148,8 +152,15 @@ def _run_resumable_scan(
         completed = {}
         last_batch = 0
 
-    if market_state is None and index_provider is not None:
-        market_state = _build_market_state(
+    artifact_exists = (
+        Path(output_root) / directory / report_date.isoformat() / "scan.json"
+    ).exists()
+    retry_incomplete_state = (
+        market_state is not None and market_state.status != "available"
+        and (refresh_market_state or not artifact_exists)
+    )
+    if (market_state is None or retry_incomplete_state) and index_provider is not None:
+        refreshed_state = _build_market_state(
             settings,
             index_provider,
             quotes,
@@ -159,6 +170,16 @@ def _run_resumable_scan(
             ),
             breadth_provider=_provider_name(universe_provider),
         )
+        if refresh_market_state and refreshed_state.status != "available":
+            raise ProviderAvailabilityError(
+                "index-history", "index_refresh_incomplete",
+                "; ".join(
+                    f"{index.code}: {index.error_code}: {index.error_message}"
+                    for index in refreshed_state.indices
+                    if index.status != "available"
+                ) or "market breadth unavailable",
+            )
+        market_state = refreshed_state
 
     eligible = _eligible_quotes(quotes, report_date, settings)
     eligible_codes = {quote.code for quote in eligible}
@@ -255,6 +276,7 @@ def _run_resumable_scan(
         configuration_hash,
         index_provider,
         directory=directory,
+        refresh_market_state=refresh_market_state,
     )
 
     save_checkpoint(
@@ -395,6 +417,7 @@ def _finalize(
     configuration_hash: str | None,
     index_provider: object | None,
     directory: str | Path = "market-scans",
+    refresh_market_state: bool = False,
 ) -> Path:
     """Rebuild the immutable artifact from completed results via ``scan_market``."""
 
@@ -417,6 +440,7 @@ def _finalize(
         artifact,
         directory=directory,
         replace_existing=True,
+        refresh_market_state=settings.market_state if refresh_market_state else None,
     )
 
 

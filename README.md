@@ -83,6 +83,27 @@ relabeling its results. The first run after this checkpoint-identity update
 rebuilds legacy progress once. This fixes the pre-fetch failure in Actions run
 `39273289224`; it is separate from upstream connection/response failures.
 
+Index market-state history uses a dedicated Sina HTTPS daily-price source for
+the five configured indices, with explicit exchange-qualified index symbols,
+one transport retry, a 20-second read timeout, and validated same-date
+after-close caching for six hours. Eastmoney/AkShare remains the availability
+fallback. Index calculations only need dated closing prices: the price-only
+index model does not fabricate missing amount/turnover fields or relax the
+stock-history quality contract. Empty, duplicate, non-finite, and stale index
+responses fail explicitly.
+
+Unpublished checkpoints retry incomplete index observations on resumption.
+Published observations remain immutable by default. To repair a published
+incomplete market state, dispatch the market-scan workflow with
+`refresh_market_state=true` (CLI: `--resumable --refresh-market-state`).
+The repair must produce a fully available market state with unchanged scan
+configuration and valid canonical identities; the original `scan.json` is
+archived under the date's `scan-archive/` before atomic replacement. Failed
+repairs leave the published artifact unchanged. Healthy published observations
+are not silently refreshed. Actions summaries list actual index availability
+and latest dates rather than treating a green workflow as proof of complete
+index coverage.
+
 ## Notifications
 
 Enable one or both channels in `config/settings.yaml`:
