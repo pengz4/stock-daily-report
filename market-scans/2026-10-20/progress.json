@@ -45786,122 +45786,6 @@
       }
     },
     {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_name": "MarketDataService",
-      "provider_names": [
-        "MarketDataService"
-      ],
-      "quote": {
-        "amount": 222601558.0,
-        "change_pct": -0.716,
-        "code": "002303",
-        "latest_price": 5.55,
-        "market": "SZ",
-        "name": "美盈森",
-        "quote_date": "2026-10-20",
-        "volume": 40096200.0
-      },
-      "scores": null,
-      "status": {
-        "code": "002303",
-        "name": "美盈森",
-        "provider_name": "MarketDataService",
-        "provider_names": [],
-        "reason_codes": [
-          "fetch_timeout"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_name": "MarketDataService",
-      "provider_names": [
-        "MarketDataService"
-      ],
-      "quote": {
-        "amount": 111069686.0,
-        "change_pct": 0.0,
-        "code": "002309",
-        "latest_price": 2.64,
-        "market": "SZ",
-        "name": "中利集团",
-        "quote_date": "2026-10-20",
-        "volume": 42166700.0
-      },
-      "scores": null,
-      "status": {
-        "code": "002309",
-        "name": "中利集团",
-        "provider_name": "MarketDataService",
-        "provider_names": [],
-        "reason_codes": [
-          "fetch_timeout"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_name": "MarketDataService",
-      "provider_names": [
-        "MarketDataService"
-      ],
-      "quote": {
-        "amount": 59754162.0,
-        "change_pct": 0.472,
-        "code": "002310",
-        "latest_price": 2.13,
-        "market": "SZ",
-        "name": "东方新能",
-        "quote_date": "2026-10-20",
-        "volume": 28204650.0
-      },
-      "scores": null,
-      "status": {
-        "code": "002310",
-        "name": "东方新能",
-        "provider_name": "MarketDataService",
-        "provider_names": [],
-        "reason_codes": [
-          "fetch_timeout"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_name": "MarketDataService",
-      "provider_names": [
-        "MarketDataService"
-      ],
-      "quote": {
-        "amount": 406779084.0,
-        "change_pct": 3.459,
-        "code": "002315",
-        "latest_price": 25.72,
-        "market": "SZ",
-        "name": "焦点科技",
-        "quote_date": "2026-10-20",
-        "volume": 15935400.0
-      },
-      "scores": null,
-      "status": {
-        "code": "002315",
-        "name": "焦点科技",
-        "provider_name": "MarketDataService",
-        "provider_names": [],
-        "reason_codes": [
-          "fetch_timeout"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
       "history_hash": "1d21387f7fbefb971304cf77baf1e96ea14337a26c0a999165994364a99849a9",
       "latest_trade_date": "2026-10-20",
       "provider_name": "sina",
@@ -287943,10 +287827,325 @@
         "reason_codes": [],
         "status": "valid"
       }
+    },
+    {
+      "history_hash": "da6a73eb63ba78e1f54e45d284d8ccd5ed98a36ba067d057a039e23d8a8eeb16",
+      "latest_trade_date": "2026-10-20",
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 59754162.0,
+        "change_pct": 0.472,
+        "code": "002310",
+        "latest_price": 2.13,
+        "market": "SZ",
+        "name": "东方新能",
+        "quote_date": "2026-10-20",
+        "volume": 28204650.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-10-20",
+          "code": "002310",
+          "components": {
+            "momentum": 0.0,
+            "risk": 86.66666666666667,
+            "structure": 85.0,
+            "trend": 0.0,
+            "volume": 20.0
+          },
+          "evidence_codes": [
+            "trailing_volume_observed",
+            "risk_measures_within_moderate_ranges",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure"
+          ],
+          "profile": "balanced",
+          "risk_codes": [],
+          "rule_version": "market-scan-v1",
+          "total": 33.0
+        },
+        "trend": {
+          "as_of": "2026-10-20",
+          "code": "002310",
+          "components": {
+            "momentum": 0.0,
+            "risk": 86.66666666666667,
+            "structure": 85.0,
+            "trend": 0.0,
+            "volume": 20.0
+          },
+          "evidence_codes": [
+            "trailing_volume_observed",
+            "risk_measures_within_moderate_ranges"
+          ],
+          "profile": "trend",
+          "risk_codes": [],
+          "rule_version": "market-scan-v1",
+          "total": 11.666666666666668
+        }
+      },
+      "status": {
+        "code": "002310",
+        "name": "东方新能",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "b3fd4e4597d5124da52ea0d99d645b3a77c05aee591703b32b0600aef9b8e199",
+      "latest_trade_date": "2026-10-20",
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 406779084.0,
+        "change_pct": 3.459,
+        "code": "002315",
+        "latest_price": 25.72,
+        "market": "SZ",
+        "name": "焦点科技",
+        "quote_date": "2026-10-20",
+        "volume": 15935400.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-10-20",
+          "code": "002315",
+          "components": {
+            "momentum": 56.31922752165498,
+            "risk": 80.97972445237635,
+            "structure": 85.0,
+            "trend": 48.41856517387647,
+            "volume": 100.0
+          },
+          "evidence_codes": [
+            "close_above_ma20",
+            "macd_line_above_signal",
+            "ma20_slope_positive",
+            "ma60_slope_positive",
+            "positive_20_day_momentum",
+            "positive_60_day_momentum",
+            "positive_macd_histogram",
+            "trailing_volume_observed",
+            "volume_above_20_day_average",
+            "volume_with_positive_price_change",
+            "risk_measures_within_moderate_ranges",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure"
+          ],
+          "profile": "balanced",
+          "risk_codes": [],
+          "rule_version": "market-scan-v1",
+          "total": 69.93637372435039
+        },
+        "trend": {
+          "as_of": "2026-10-20",
+          "code": "002315",
+          "components": {
+            "momentum": 56.31922752165498,
+            "risk": 80.97972445237635,
+            "structure": 85.0,
+            "trend": 48.41856517387647,
+            "volume": 100.0
+          },
+          "evidence_codes": [
+            "close_above_ma20",
+            "macd_line_above_signal",
+            "ma20_slope_positive",
+            "ma60_slope_positive",
+            "positive_20_day_momentum",
+            "positive_60_day_momentum",
+            "positive_macd_histogram",
+            "trailing_volume_observed",
+            "volume_above_20_day_average",
+            "volume_with_positive_price_change",
+            "risk_measures_within_moderate_ranges"
+          ],
+          "profile": "trend",
+          "risk_codes": [],
+          "rule_version": "market-scan-v1",
+          "total": 61.78209502997854
+        }
+      },
+      "status": {
+        "code": "002315",
+        "name": "焦点科技",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "d801226d04bc951fee85a188c6933c0c286e34f6b323f4bc3697696ef7867a4c",
+      "latest_trade_date": "2026-10-20",
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 222601558.0,
+        "change_pct": -0.716,
+        "code": "002303",
+        "latest_price": 5.55,
+        "market": "SZ",
+        "name": "美盈森",
+        "quote_date": "2026-10-20",
+        "volume": 40096200.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-10-20",
+          "code": "002303",
+          "components": {
+            "momentum": 65.62377690802347,
+            "risk": 45.376344086021504,
+            "structure": 100.0,
+            "trend": 62.27438750280963,
+            "volume": 30.0
+          },
+          "evidence_codes": [
+            "ma20_above_ma60",
+            "ma60_above_ma120",
+            "ma20_slope_positive",
+            "ma60_slope_positive",
+            "positive_20_day_momentum",
+            "positive_60_day_momentum",
+            "trailing_volume_observed",
+            "volume_with_positive_price_change",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure",
+            "confirmed_central_breakout_observation"
+          ],
+          "profile": "balanced",
+          "risk_codes": [
+            "high_realized_volatility",
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 63.113523245350805
+        },
+        "trend": {
+          "as_of": "2026-10-20",
+          "code": "002303",
+          "components": {
+            "momentum": 65.62377690802347,
+            "risk": 45.376344086021504,
+            "structure": 100.0,
+            "trend": 62.27438750280963,
+            "volume": 30.0
+          },
+          "evidence_codes": [
+            "ma20_above_ma60",
+            "ma60_above_ma120",
+            "ma20_slope_positive",
+            "ma60_slope_positive",
+            "positive_20_day_momentum",
+            "positive_60_day_momentum",
+            "trailing_volume_observed",
+            "volume_with_positive_price_change"
+          ],
+          "profile": "trend",
+          "risk_codes": [
+            "high_realized_volatility",
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 56.74824185727353
+        }
+      },
+      "status": {
+        "code": "002303",
+        "name": "美盈森",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "83017086553d704f25d6c7d09f3b776708b44945f22af2c90d350a933368db0a",
+      "latest_trade_date": "2026-10-20",
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 111069686.0,
+        "change_pct": 0.0,
+        "code": "002309",
+        "latest_price": 2.64,
+        "market": "SZ",
+        "name": "中利集团",
+        "quote_date": "2026-10-20",
+        "volume": 42166700.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-10-20",
+          "code": "002309",
+          "components": {
+            "momentum": 3.0723606168446014,
+            "risk": 77.44611838621945,
+            "structure": 85.0,
+            "trend": 2.731353591160289,
+            "volume": 25.810588362465293
+          },
+          "evidence_codes": [
+            "trailing_volume_observed",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure"
+          ],
+          "profile": "balanced",
+          "risk_codes": [
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 33.92238421301972
+        },
+        "trend": {
+          "as_of": "2026-10-20",
+          "code": "002309",
+          "components": {
+            "momentum": 3.0723606168446014,
+            "risk": 77.44611838621945,
+            "structure": 85.0,
+            "trend": 2.731353591160289,
+            "volume": 25.810588362465293
+          },
+          "evidence_codes": [
+            "trailing_volume_observed"
+          ],
+          "profile": "trend",
+          "risk_codes": [
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 13.767017394067251
+        }
+      },
+      "status": {
+        "code": "002309",
+        "name": "中利集团",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
     }
   ],
   "execution_date": "2026-10-20",
-  "last_batch": 38,
+  "last_batch": 39,
   "manifest_hash": "64a476b0ef906a0ee2add70bf916ace183a07d195e9cc6e8d02802edc631f687",
   "market_state": {
     "breadth": {
@@ -287965,83 +288164,83 @@
       "unchanged_count": 129,
       "valid_count": 5574
     },
-    "conclusion": "市场状态数据不足",
-    "generated_at": "2026-10-20T09:40:10.907772Z",
+    "conclusion": "指数与市场广度方向分歧",
+    "generated_at": "2026-10-20T13:05:45.647685Z",
     "indices": [
       {
-        "change_pct": null,
-        "close": null,
-        "close_vs_ma20": null,
-        "close_vs_ma60": null,
+        "change_pct": 0.11927353038927446,
+        "close": 3735.37,
+        "close_vs_ma20": "below",
+        "close_vs_ma60": "below",
         "code": "000001",
-        "error_code": "network_error",
-        "error_message": "('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))",
-        "latest_trade_date": null,
+        "error_code": null,
+        "error_message": null,
+        "latest_trade_date": "2026-10-20",
         "name": "上证指数",
-        "provider": "akshare",
-        "status": "unavailable",
-        "trend": null
+        "provider": "sina-index",
+        "status": "available",
+        "trend": "neutral"
       },
       {
-        "change_pct": null,
-        "close": null,
-        "close_vs_ma20": null,
-        "close_vs_ma60": null,
+        "change_pct": -0.13651876555489384,
+        "close": 11801.29,
+        "close_vs_ma20": "below",
+        "close_vs_ma60": "below",
         "code": "399001",
-        "error_code": "network_error",
-        "error_message": "('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))",
-        "latest_trade_date": null,
+        "error_code": null,
+        "error_message": null,
+        "latest_trade_date": "2026-10-20",
         "name": "深证成指",
-        "provider": "akshare",
-        "status": "unavailable",
-        "trend": null
+        "provider": "sina-index",
+        "status": "available",
+        "trend": "bearish"
       },
       {
-        "change_pct": null,
-        "close": null,
-        "close_vs_ma20": null,
-        "close_vs_ma60": null,
+        "change_pct": -0.25809355235844045,
+        "close": 2739.203,
+        "close_vs_ma20": "below",
+        "close_vs_ma60": "below",
         "code": "399006",
-        "error_code": "network_error",
-        "error_message": "('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))",
-        "latest_trade_date": null,
+        "error_code": null,
+        "error_message": null,
+        "latest_trade_date": "2026-10-20",
         "name": "创业板指",
-        "provider": "akshare",
-        "status": "unavailable",
-        "trend": null
+        "provider": "sina-index",
+        "status": "available",
+        "trend": "bearish"
       },
       {
-        "change_pct": null,
-        "close": null,
-        "close_vs_ma20": null,
-        "close_vs_ma60": null,
+        "change_pct": -0.5372334882807195,
+        "close": 4152.108,
+        "close_vs_ma20": "below",
+        "close_vs_ma60": "below",
         "code": "000300",
-        "error_code": "network_error",
-        "error_message": "('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))",
-        "latest_trade_date": null,
+        "error_code": null,
+        "error_message": null,
+        "latest_trade_date": "2026-10-20",
         "name": "沪深300",
-        "provider": "akshare",
-        "status": "unavailable",
-        "trend": null
+        "provider": "sina-index",
+        "status": "available",
+        "trend": "bearish"
       },
       {
-        "change_pct": null,
-        "close": null,
-        "close_vs_ma20": null,
-        "close_vs_ma60": null,
+        "change_pct": 1.024139994861395,
+        "close": 6766.903,
+        "close_vs_ma20": "below",
+        "close_vs_ma60": "below",
         "code": "000852",
-        "error_code": "network_error",
-        "error_message": "('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))",
-        "latest_trade_date": null,
+        "error_code": null,
+        "error_message": null,
+        "latest_trade_date": "2026-10-20",
         "name": "中证1000",
-        "provider": "akshare",
-        "status": "unavailable",
-        "trend": null
+        "provider": "sina-index",
+        "status": "available",
+        "trend": "neutral"
       }
     ],
     "report_date": "2026-10-20",
     "rule_version": "market-state-v1",
-    "status": "partial"
+    "status": "available"
   },
   "report_date": "2026-10-20",
   "rule_version": "market-scan-v1",
@@ -343791,5 +343990,5 @@
       "volume": 1025485.0
     }
   ],
-  "updated_at": "2026-10-20T10:46:00.689852Z"
+  "updated_at": "2026-10-20T13:06:10.830821Z"
 }
