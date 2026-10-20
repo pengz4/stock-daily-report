@@ -16,10 +16,12 @@ def test_daily_workflow_serializes_the_full_deployment_lifecycle():
     assert workflow["concurrency"] == {
         "group": "stock-daily-report-pages",
         "cancel-in-progress": False,
+        "queue": "max",
     }
     assert workflow["jobs"]["generate"]["concurrency"] == {
         "group": "stock-daily-report-history",
         "cancel-in-progress": False,
+        "queue": "max",
     }
     assert workflow["jobs"]["deploy"]["needs"] == "generate"
     assert workflow["jobs"]["notify"]["needs"] == ["generate", "deploy"]

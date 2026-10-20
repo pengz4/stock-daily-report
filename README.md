@@ -33,6 +33,9 @@ valid cached fallback is reused before making another primary-provider request.
 The daily and scan workflows share same-date response caches through Actions
 cache; locks, request cooldown state, and publication recovery journals are not
 uploaded. Existing history-writer concurrency groups serialize these jobs.
+History writers and the daily Pages lifecycle use `queue: max`, retaining up to
+100 pending jobs or runs per group instead of replacing an older pending request.
+When a group reaches that limit, GitHub cancels additional requests.
 Cache reuse is best effort, subject to Actions cache availability and TTL.
 
 Both scan scopes also share a full-universe snapshot after 15:30 Shanghai time.

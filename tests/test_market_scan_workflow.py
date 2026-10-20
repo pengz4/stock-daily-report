@@ -36,6 +36,7 @@ def test_market_scan_workflow_is_bounded_and_uses_locked_python():
     assert job["concurrency"] == {
         "group": "stock-daily-report-history",
         "cancel-in-progress": False,
+        "queue": "max",
     }
     daily = _daily_workflow()
     assert daily["concurrency"]["group"] != job["concurrency"]["group"]
@@ -84,6 +85,7 @@ def test_watchlist_scan_merges_history_and_serializes_history_writers():
     assert watchlist_job["concurrency"] == {
         "group": "stock-daily-report-history",
         "cancel-in-progress": False,
+        "queue": "max",
     }
     generate = next(
         step["run"] for step in watchlist_job["steps"]

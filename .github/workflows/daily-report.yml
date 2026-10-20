@@ -27,12 +27,14 @@ permissions:
 concurrency:
   group: stock-daily-report-pages
   cancel-in-progress: false
+  queue: max
 
 jobs:
   generate:
     concurrency:
       group: stock-daily-report-history
       cancel-in-progress: false
+      queue: max
     runs-on: ubuntu-latest
     timeout-minutes: 20
     outputs:
