@@ -1,5 +1,5 @@
 {
-  "config_hash": "5ef5d52df395dc1f192a5940cd4af4fc3a2b6d106f42d53a79f1a6d76678e6c5",
+  "config_hash": "d3f1b8473dca1a69907186e064adb539c6a8d98367d532e7971b9494de364140",
   "consensus": [
     {
       "balanced_rank": 1,
@@ -7,7 +7,7 @@
       "code": "000576",
       "latest_trade_date": "2026-10-20",
       "name": "甘化科工",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "trend_rank": 1,
       "trend_score": 90.85418846731267
     },
@@ -27,7 +27,7 @@
       "code": "300411",
       "latest_trade_date": "2026-10-20",
       "name": "金盾股份",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "trend_rank": 3,
       "trend_score": 88.25953211581228
     },
@@ -87,19 +87,19 @@
       "code": "002543",
       "latest_trade_date": "2026-10-20",
       "name": "万和电气",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "trend_rank": 9,
       "trend_score": 86.08625523184989
     },
     {
       "balanced_rank": 11,
-      "balanced_score": 87.41432198086932,
+      "balanced_score": 87.41431598045946,
       "code": "002292",
       "latest_trade_date": "2026-10-20",
       "name": "奥飞娱乐",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "trend_rank": 10,
-      "trend_score": 85.8812453944096
+      "trend_score": 85.88123939399973
     },
     {
       "balanced_rank": 5,
@@ -137,7 +137,7 @@
       "code": "300314",
       "latest_trade_date": "2026-10-20",
       "name": "戴维医疗",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "trend_rank": 14,
       "trend_score": 84.29823272851259
     },
@@ -147,7 +147,7 @@
       "code": "002959",
       "latest_trade_date": "2026-10-20",
       "name": "小熊电器",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "trend_rank": 15,
       "trend_score": 83.96229265509446
     },
@@ -173,13 +173,13 @@
     },
     {
       "balanced_rank": 15,
-      "balanced_score": 85.92062435510617,
+      "balanced_score": 85.92063978898845,
       "code": "002395",
       "latest_trade_date": "2026-10-20",
       "name": "双象股份",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "trend_rank": 18,
-      "trend_score": 82.88583030416288
+      "trend_score": 82.88584573804516
     },
     {
       "balanced_rank": 20,
@@ -197,7 +197,7 @@
       "code": "002086",
       "latest_trade_date": "2026-10-20",
       "name": "东方海洋",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "trend_rank": 20,
       "trend_score": 80.78062446797279
     },
@@ -223,13 +223,13 @@
     },
     {
       "balanced_rank": 21,
-      "balanced_score": 83.54641819084868,
+      "balanced_score": 83.54639231658197,
       "code": "002956",
       "latest_trade_date": "2026-10-20",
       "name": "西麦食品",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "trend_rank": 23,
-      "trend_score": 80.23233457604148
+      "trend_score": 80.23230870177477
     },
     {
       "balanced_rank": 24,
@@ -237,7 +237,7 @@
       "code": "000678",
       "latest_trade_date": "2026-10-20",
       "name": "襄阳轴承",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "trend_rank": 24,
       "trend_score": 79.50687225239204
     },
@@ -279,14 +279,13 @@
     "special_treatment_name": 3
   },
   "failure_counts": {},
-  "generated_at": "2026-10-20T12:42:06.210076Z",
-  "input_hash": "faec5ac0f8696985d5807c2b74a88d4f5aeb7d97a0e30033de61934445075435",
+  "generated_at": "2026-10-20T13:05:09.435134Z",
+  "input_hash": "574beb0a0fd8d9ab585f92b8e893468e77b7c6b70e5cec1b8903aae07c9b8dbd",
   "market_state": null,
   "market_state_identity": null,
   "provider_names": [
     "MarketDataService",
     "WatchlistUniverseProvider",
-    "akshare",
     "sina"
   ],
   "rankings": {
@@ -321,7 +320,7 @@
         "latest_trade_date": "2026-10-20",
         "name": "甘化科工",
         "profile": "balanced",
-        "provider_name": "akshare",
+        "provider_name": "sina",
         "rank": 1,
         "risk_codes": [
           "high_realized_volatility"
@@ -568,7 +567,7 @@
         "latest_trade_date": "2026-10-20",
         "name": "金盾股份",
         "profile": "balanced",
-        "provider_name": "akshare",
+        "provider_name": "sina",
         "rank": 8,
         "risk_codes": [
           "high_realized_volatility",
@@ -605,7 +604,7 @@
         "latest_trade_date": "2026-10-20",
         "name": "小熊电器",
         "profile": "balanced",
-        "provider_name": "akshare",
+        "provider_name": "sina",
         "rank": 9,
         "risk_codes": [
           "high_realized_volatility"
@@ -654,7 +653,7 @@
           "risk": 84.4571269378732,
           "structure": 100.0,
           "trend": 97.82360831656604,
-          "volume": 62.44128946213639
+          "volume": 62.441249459404006
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -677,10 +676,10 @@
         "latest_trade_date": "2026-10-20",
         "name": "奥飞娱乐",
         "profile": "balanced",
-        "provider_name": "akshare",
+        "provider_name": "sina",
         "rank": 11,
         "risk_codes": [],
-        "score": 87.41432198086932
+        "score": 87.41431598045946
       },
       {
         "code": "601225",
@@ -797,7 +796,7 @@
           "risk": 83.85896273447067,
           "structure": 100.0,
           "trend": 89.02089347239034,
-          "volume": 73.5031451558339
+          "volume": 73.50324804838245
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -820,10 +819,10 @@
         "latest_trade_date": "2026-10-20",
         "name": "双象股份",
         "profile": "balanced",
-        "provider_name": "akshare",
+        "provider_name": "sina",
         "rank": 15,
         "risk_codes": [],
-        "score": 85.92062435510617
+        "score": 85.92063978898845
       },
       {
         "code": "002086",
@@ -855,7 +854,7 @@
         "latest_trade_date": "2026-10-20",
         "name": "东方海洋",
         "profile": "balanced",
-        "provider_name": "akshare",
+        "provider_name": "sina",
         "rank": 16,
         "risk_codes": [],
         "score": 85.72300255547812
@@ -889,7 +888,7 @@
         "latest_trade_date": "2026-10-20",
         "name": "万和电气",
         "profile": "balanced",
-        "provider_name": "akshare",
+        "provider_name": "sina",
         "rank": 17,
         "risk_codes": [
           "high_realized_volatility"
@@ -1008,7 +1007,7 @@
           "risk": 68.16578553888553,
           "structure": 100.0,
           "trend": 78.64361386711406,
-          "volume": 87.55426023827813
+          "volume": 87.55408774316675
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -1030,12 +1029,12 @@
         "latest_trade_date": "2026-10-20",
         "name": "西麦食品",
         "profile": "balanced",
-        "provider_name": "akshare",
+        "provider_name": "sina",
         "rank": 21,
         "risk_codes": [
           "high_realized_volatility"
         ],
-        "score": 83.54641819084868
+        "score": 83.54639231658197
       },
       {
         "code": "300314",
@@ -1064,7 +1063,7 @@
         "latest_trade_date": "2026-10-20",
         "name": "戴维医疗",
         "profile": "balanced",
-        "provider_name": "akshare",
+        "provider_name": "sina",
         "rank": 22,
         "risk_codes": [
           "high_realized_volatility",
@@ -1134,7 +1133,7 @@
         "latest_trade_date": "2026-10-20",
         "name": "襄阳轴承",
         "profile": "balanced",
-        "provider_name": "akshare",
+        "provider_name": "sina",
         "rank": 24,
         "risk_codes": [
           "high_realized_volatility",
@@ -1251,11 +1250,11 @@
       {
         "code": "300012",
         "components": {
-          "momentum": 59.822854046416154,
+          "momentum": 59.75627545665412,
           "risk": 92.88142923505768,
           "structure": 100.0,
-          "trend": 74.21555648292315,
-          "volume": 82.82443621272212
+          "trend": 74.18444962210992,
+          "volume": 82.82442144018565
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -1278,10 +1277,10 @@
         "latest_trade_date": "2026-10-20",
         "name": "华测检测",
         "profile": "balanced",
-        "provider_name": "akshare",
+        "provider_name": "sina",
         "rank": 28,
         "risk_codes": [],
-        "score": 80.58511757132715
+        "score": 80.5624675792503
       },
       {
         "code": "600887",
@@ -1381,7 +1380,7 @@
         "latest_trade_date": "2026-10-20",
         "name": "甘化科工",
         "profile": "trend",
-        "provider_name": "akshare",
+        "provider_name": "sina",
         "rank": 1,
         "risk_codes": [
           "high_realized_volatility"
@@ -1444,7 +1443,7 @@
         "latest_trade_date": "2026-10-20",
         "name": "金盾股份",
         "profile": "trend",
-        "provider_name": "akshare",
+        "provider_name": "sina",
         "rank": 3,
         "risk_codes": [
           "high_realized_volatility",
@@ -1636,7 +1635,7 @@
         "latest_trade_date": "2026-10-20",
         "name": "万和电气",
         "profile": "trend",
-        "provider_name": "akshare",
+        "provider_name": "sina",
         "rank": 9,
         "risk_codes": [
           "high_realized_volatility"
@@ -1650,7 +1649,7 @@
           "risk": 84.4571269378732,
           "structure": 100.0,
           "trend": 97.82360831656604,
-          "volume": 62.44128946213639
+          "volume": 62.441249459404006
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -1669,10 +1668,10 @@
         "latest_trade_date": "2026-10-20",
         "name": "奥飞娱乐",
         "profile": "trend",
-        "provider_name": "akshare",
+        "provider_name": "sina",
         "rank": 10,
         "risk_codes": [],
-        "score": 85.8812453944096
+        "score": 85.88123939399973
       },
       {
         "code": "601328",
@@ -1792,7 +1791,7 @@
         "latest_trade_date": "2026-10-20",
         "name": "戴维医疗",
         "profile": "trend",
-        "provider_name": "akshare",
+        "provider_name": "sina",
         "rank": 14,
         "risk_codes": [
           "high_realized_volatility",
@@ -1825,7 +1824,7 @@
         "latest_trade_date": "2026-10-20",
         "name": "小熊电器",
         "profile": "trend",
-        "provider_name": "akshare",
+        "provider_name": "sina",
         "rank": 15,
         "risk_codes": [
           "high_realized_volatility"
@@ -1904,7 +1903,7 @@
           "risk": 83.85896273447067,
           "structure": 100.0,
           "trend": 89.02089347239034,
-          "volume": 73.5031451558339
+          "volume": 73.50324804838245
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -1923,10 +1922,10 @@
         "latest_trade_date": "2026-10-20",
         "name": "双象股份",
         "profile": "trend",
-        "provider_name": "akshare",
+        "provider_name": "sina",
         "rank": 18,
         "risk_codes": [],
-        "score": 82.88583030416288
+        "score": 82.88584573804516
       },
       {
         "code": "601900",
@@ -1985,7 +1984,7 @@
         "latest_trade_date": "2026-10-20",
         "name": "东方海洋",
         "profile": "trend",
-        "provider_name": "akshare",
+        "provider_name": "sina",
         "rank": 20,
         "risk_codes": [],
         "score": 80.78062446797279
@@ -2059,7 +2058,7 @@
           "risk": 68.16578553888553,
           "structure": 100.0,
           "trend": 78.64361386711406,
-          "volume": 87.55426023827813
+          "volume": 87.55408774316675
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -2077,12 +2076,12 @@
         "latest_trade_date": "2026-10-20",
         "name": "西麦食品",
         "profile": "trend",
-        "provider_name": "akshare",
+        "provider_name": "sina",
         "rank": 23,
         "risk_codes": [
           "high_realized_volatility"
         ],
-        "score": 80.23233457604148
+        "score": 80.23230870177477
       },
       {
         "code": "000678",
@@ -2107,7 +2106,7 @@
         "latest_trade_date": "2026-10-20",
         "name": "襄阳轴承",
         "profile": "trend",
-        "provider_name": "akshare",
+        "provider_name": "sina",
         "rank": 24,
         "risk_codes": [
           "high_realized_volatility",
@@ -2214,7 +2213,7 @@
           "risk": 96.47654724062002,
           "structure": 85.0,
           "trend": 85.79020934965249,
-          "volume": 61.911195657571554
+          "volume": 61.91075179826407
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -2233,10 +2232,10 @@
         "latest_trade_date": "2026-10-20",
         "name": "三诺生物",
         "profile": "trend",
-        "provider_name": "akshare",
+        "provider_name": "sina",
         "rank": 28,
         "risk_codes": [],
-        "score": 75.63966691914253
+        "score": 75.6396003402464
       },
       {
         "code": "001330",
@@ -2245,7 +2244,7 @@
           "risk": 50.21295089091699,
           "structure": 100.0,
           "trend": 80.5,
-          "volume": 68.20481762036673
+          "volume": 68.20482471389855
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -2261,12 +2260,12 @@
         "latest_trade_date": "2026-10-20",
         "name": "博纳影业",
         "profile": "trend",
-        "provider_name": "akshare",
+        "provider_name": "sina",
         "rank": 29,
         "risk_codes": [
           "high_realized_volatility"
         ],
-        "score": 75.4770177321467
+        "score": 75.47701879617648
       },
       {
         "code": "603366",
@@ -2308,7 +2307,7 @@
     {
       "code": "000001",
       "name": "平安银行",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2316,7 +2315,7 @@
     {
       "code": "000002",
       "name": "万 科Ａ",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2324,7 +2323,7 @@
     {
       "code": "000027",
       "name": "深圳能源",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2332,7 +2331,7 @@
     {
       "code": "000032",
       "name": "深桑达Ａ",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2340,7 +2339,7 @@
     {
       "code": "000063",
       "name": "中兴通讯",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2348,7 +2347,7 @@
     {
       "code": "000100",
       "name": "TCL科技",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2356,7 +2355,7 @@
     {
       "code": "000155",
       "name": "川能动力",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2364,7 +2363,7 @@
     {
       "code": "000157",
       "name": "中联重科",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2372,7 +2371,7 @@
     {
       "code": "000158",
       "name": "常山北明",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2380,7 +2379,7 @@
     {
       "code": "000333",
       "name": "美的集团",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2388,7 +2387,7 @@
     {
       "code": "000400",
       "name": "许继电气",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2406,7 +2405,7 @@
     {
       "code": "000422",
       "name": "湖北宜化",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2414,7 +2413,7 @@
     {
       "code": "000423",
       "name": "东阿阿胶",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2422,7 +2421,7 @@
     {
       "code": "000513",
       "name": "丽珠集团",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2430,7 +2429,7 @@
     {
       "code": "000516",
       "name": "国际医学",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2438,7 +2437,7 @@
     {
       "code": "000519",
       "name": "中兵红箭",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2446,7 +2445,7 @@
     {
       "code": "000528",
       "name": "柳 工",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2454,7 +2453,7 @@
     {
       "code": "000552",
       "name": "甘肃能化",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2462,7 +2461,7 @@
     {
       "code": "000560",
       "name": "我爱我家",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2470,7 +2469,7 @@
     {
       "code": "000576",
       "name": "甘化科工",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2486,7 +2485,7 @@
     {
       "code": "000600",
       "name": "建投能源",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2494,7 +2493,7 @@
     {
       "code": "000617",
       "name": "中油资本",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2502,7 +2501,7 @@
     {
       "code": "000629",
       "name": "钒钛股份",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2510,7 +2509,7 @@
     {
       "code": "000630",
       "name": "铜陵有色",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2518,7 +2517,7 @@
     {
       "code": "000651",
       "name": "格力电器",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2526,7 +2525,7 @@
     {
       "code": "000678",
       "name": "襄阳轴承",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2534,7 +2533,7 @@
     {
       "code": "000723",
       "name": "美锦能源",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2542,7 +2541,7 @@
     {
       "code": "000735",
       "name": "罗 牛 山",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2550,7 +2549,7 @@
     {
       "code": "000791",
       "name": "甘肃能源",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2558,7 +2557,7 @@
     {
       "code": "000799",
       "name": "酒鬼酒",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2566,7 +2565,7 @@
     {
       "code": "000803",
       "name": "山高环能",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2574,7 +2573,7 @@
     {
       "code": "000813",
       "name": "德展健康",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2582,7 +2581,7 @@
     {
       "code": "000823",
       "name": "超声电子",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2590,7 +2589,7 @@
     {
       "code": "000825",
       "name": "太钢不锈",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2598,7 +2597,7 @@
     {
       "code": "000831",
       "name": "中国稀土",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2606,7 +2605,7 @@
     {
       "code": "000837",
       "name": "秦川机床",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2624,7 +2623,7 @@
     {
       "code": "000858",
       "name": "五 粮 液",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2632,7 +2631,7 @@
     {
       "code": "000875",
       "name": "电投绿能",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2640,7 +2639,7 @@
     {
       "code": "000876",
       "name": "新 希 望",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2648,7 +2647,7 @@
     {
       "code": "000878",
       "name": "云南铜业",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2656,7 +2655,7 @@
     {
       "code": "000937",
       "name": "冀中能源",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2664,7 +2663,7 @@
     {
       "code": "000938",
       "name": "紫光股份",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2672,7 +2671,7 @@
     {
       "code": "000949",
       "name": "新乡化纤",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2680,7 +2679,7 @@
     {
       "code": "000958",
       "name": "电投产融",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2688,7 +2687,7 @@
     {
       "code": "000966",
       "name": "长源电力",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2696,7 +2695,7 @@
     {
       "code": "000977",
       "name": "浪潮信息",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2704,7 +2703,7 @@
     {
       "code": "000980",
       "name": "众泰汽车",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2712,7 +2711,7 @@
     {
       "code": "000983",
       "name": "山西焦煤",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2720,7 +2719,7 @@
     {
       "code": "000999",
       "name": "华润三九",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2758,7 +2757,7 @@
     {
       "code": "001314",
       "name": "亿道信息",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2766,7 +2765,7 @@
     {
       "code": "001330",
       "name": "博纳影业",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2774,7 +2773,7 @@
     {
       "code": "001696",
       "name": "宗申动力",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2782,7 +2781,7 @@
     {
       "code": "002006",
       "name": "精工科技",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2790,7 +2789,7 @@
     {
       "code": "002026",
       "name": "山东威达",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2798,7 +2797,7 @@
     {
       "code": "002027",
       "name": "分众传媒",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2806,7 +2805,7 @@
     {
       "code": "002031",
       "name": "巨轮智能",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2814,7 +2813,7 @@
     {
       "code": "002036",
       "name": "联创电子",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2822,7 +2821,7 @@
     {
       "code": "002041",
       "name": "登海种业",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2838,7 +2837,7 @@
     {
       "code": "002048",
       "name": "宁波华翔",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2846,7 +2845,7 @@
     {
       "code": "002050",
       "name": "三花智控",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2854,7 +2853,7 @@
     {
       "code": "002074",
       "name": "国轩高科",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2862,7 +2861,7 @@
     {
       "code": "002086",
       "name": "东方海洋",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2870,7 +2869,7 @@
     {
       "code": "002115",
       "name": "三维通信",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2878,7 +2877,7 @@
     {
       "code": "002126",
       "name": "银轮股份",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2886,7 +2885,7 @@
     {
       "code": "002130",
       "name": "沃尔核材",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2902,7 +2901,7 @@
     {
       "code": "002155",
       "name": "湖南黄金",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2918,7 +2917,7 @@
     {
       "code": "002163",
       "name": "海南发展",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2926,7 +2925,7 @@
     {
       "code": "002167",
       "name": "东方锆业",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2934,7 +2933,7 @@
     {
       "code": "002170",
       "name": "芭田股份",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2942,7 +2941,7 @@
     {
       "code": "002172",
       "name": "澳洋健康",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2950,7 +2949,7 @@
     {
       "code": "002173",
       "name": "创新医疗",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2958,7 +2957,7 @@
     {
       "code": "002180",
       "name": "奔图科技",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2966,7 +2965,7 @@
     {
       "code": "002195",
       "name": "岩山科技",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2974,7 +2973,7 @@
     {
       "code": "002212",
       "name": "天融信",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2982,7 +2981,7 @@
     {
       "code": "002219",
       "name": "新里程",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2990,7 +2989,7 @@
     {
       "code": "002230",
       "name": "科大讯飞",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2998,7 +2997,7 @@
     {
       "code": "002241",
       "name": "歌尔股份",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3006,7 +3005,7 @@
     {
       "code": "002243",
       "name": "力合科创",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3014,7 +3013,7 @@
     {
       "code": "002248",
       "name": "华东数控",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3022,7 +3021,7 @@
     {
       "code": "002254",
       "name": "泰和新材",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3030,7 +3029,7 @@
     {
       "code": "002261",
       "name": "拓维信息",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3038,7 +3037,7 @@
     {
       "code": "002263",
       "name": "大东南",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3046,7 +3045,7 @@
     {
       "code": "002281",
       "name": "光迅科技",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3054,7 +3053,7 @@
     {
       "code": "002292",
       "name": "奥飞娱乐",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3062,7 +3061,7 @@
     {
       "code": "002299",
       "name": "圣农发展",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3070,7 +3069,7 @@
     {
       "code": "002312",
       "name": "川发龙蟒",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3078,7 +3077,7 @@
     {
       "code": "002338",
       "name": "奥普光电",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3086,7 +3085,7 @@
     {
       "code": "002340",
       "name": "格林美",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3094,7 +3093,7 @@
     {
       "code": "002342",
       "name": "巨力索具",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3102,7 +3101,7 @@
     {
       "code": "002351",
       "name": "漫步者",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3120,7 +3119,7 @@
     {
       "code": "002371",
       "name": "北方华创",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3128,7 +3127,7 @@
     {
       "code": "002372",
       "name": "伟星新材",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3136,7 +3135,7 @@
     {
       "code": "002383",
       "name": "合众思壮",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3144,7 +3143,7 @@
     {
       "code": "002385",
       "name": "大北农",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3152,7 +3151,7 @@
     {
       "code": "002395",
       "name": "双象股份",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3160,7 +3159,7 @@
     {
       "code": "002407",
       "name": "多氟多",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3168,7 +3167,7 @@
     {
       "code": "002415",
       "name": "海康威视",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3176,7 +3175,7 @@
     {
       "code": "002418",
       "name": "康盛股份",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3184,7 +3183,7 @@
     {
       "code": "002429",
       "name": "兆驰股份",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3192,7 +3191,7 @@
     {
       "code": "002439",
       "name": "启明星辰",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3200,7 +3199,7 @@
     {
       "code": "002444",
       "name": "巨星科技",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3208,7 +3207,7 @@
     {
       "code": "002456",
       "name": "欧菲光",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3216,7 +3215,7 @@
     {
       "code": "002457",
       "name": "青龙管业",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3224,7 +3223,7 @@
     {
       "code": "002460",
       "name": "赣锋锂业",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3232,7 +3231,7 @@
     {
       "code": "002465",
       "name": "海格通信",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3240,7 +3239,7 @@
     {
       "code": "002466",
       "name": "天齐锂业",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3248,7 +3247,7 @@
     {
       "code": "002472",
       "name": "双环传动",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3256,7 +3255,7 @@
     {
       "code": "002475",
       "name": "立讯精密",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3264,7 +3263,7 @@
     {
       "code": "002497",
       "name": "雅化集团",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3272,7 +3271,7 @@
     {
       "code": "002517",
       "name": "恺英网络",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3280,7 +3279,7 @@
     {
       "code": "002520",
       "name": "日发精机",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3288,7 +3287,7 @@
     {
       "code": "002543",
       "name": "万和电气",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3296,7 +3295,7 @@
     {
       "code": "002549",
       "name": "凯美特气",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3314,7 +3313,7 @@
     {
       "code": "002555",
       "name": "三七互娱",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3322,7 +3321,7 @@
     {
       "code": "002582",
       "name": "好想你",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3330,7 +3329,7 @@
     {
       "code": "002594",
       "name": "比亚迪",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3338,7 +3337,7 @@
     {
       "code": "002600",
       "name": "领益智造",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3356,7 +3355,7 @@
     {
       "code": "002624",
       "name": "完美世界",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3364,7 +3363,7 @@
     {
       "code": "002631",
       "name": "德尔未来",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3382,7 +3381,7 @@
     {
       "code": "002668",
       "name": "TCL智家",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3400,7 +3399,7 @@
     {
       "code": "002734",
       "name": "利民股份",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3408,7 +3407,7 @@
     {
       "code": "002779",
       "name": "中坚科技",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3426,7 +3425,7 @@
     {
       "code": "002812",
       "name": "恩捷股份",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3434,7 +3433,7 @@
     {
       "code": "002819",
       "name": "东方中科",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3442,7 +3441,7 @@
     {
       "code": "002827",
       "name": "高争民爆",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3450,7 +3449,7 @@
     {
       "code": "002837",
       "name": "英维克",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3458,7 +3457,7 @@
     {
       "code": "002851",
       "name": "麦格米特",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3466,7 +3465,7 @@
     {
       "code": "002862",
       "name": "实丰文化",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3474,7 +3473,7 @@
     {
       "code": "002866",
       "name": "传艺科技",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3482,7 +3481,7 @@
     {
       "code": "002886",
       "name": "沃特股份",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3490,7 +3489,7 @@
     {
       "code": "002892",
       "name": "科力尔",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3498,7 +3497,7 @@
     {
       "code": "002915",
       "name": "中欣氟材",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3506,7 +3505,7 @@
     {
       "code": "002925",
       "name": "盈趣科技",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3514,7 +3513,7 @@
     {
       "code": "002938",
       "name": "鹏鼎控股",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3522,7 +3521,7 @@
     {
       "code": "002945",
       "name": "华林证券",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3530,7 +3529,7 @@
     {
       "code": "002956",
       "name": "西麦食品",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3538,7 +3537,7 @@
     {
       "code": "002959",
       "name": "小熊电器",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3546,7 +3545,7 @@
     {
       "code": "002962",
       "name": "五方光电",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3554,7 +3553,7 @@
     {
       "code": "002987",
       "name": "京北方",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3562,7 +3561,7 @@
     {
       "code": "003002",
       "name": "壶化股份",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3580,7 +3579,7 @@
     {
       "code": "003035",
       "name": "南网能源",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3588,7 +3587,7 @@
     {
       "code": "300003",
       "name": "乐普医疗",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3596,7 +3595,7 @@
     {
       "code": "300007",
       "name": "汉威科技",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3604,7 +3603,7 @@
     {
       "code": "300012",
       "name": "华测检测",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3612,7 +3611,7 @@
     {
       "code": "300024",
       "name": "机器人",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3620,7 +3619,7 @@
     {
       "code": "300033",
       "name": "同花顺",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3628,7 +3627,7 @@
     {
       "code": "300054",
       "name": "鼎龙股份",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3636,7 +3635,7 @@
     {
       "code": "300058",
       "name": "蓝色光标",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3644,7 +3643,7 @@
     {
       "code": "300059",
       "name": "东方财富",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3652,7 +3651,7 @@
     {
       "code": "300065",
       "name": "海兰信",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3660,7 +3659,7 @@
     {
       "code": "300085",
       "name": "银之杰",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3676,7 +3675,7 @@
     {
       "code": "300122",
       "name": "智飞生物",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3684,7 +3683,7 @@
     {
       "code": "300124",
       "name": "汇川技术",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3700,7 +3699,7 @@
     {
       "code": "300144",
       "name": "宋城演艺",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3708,7 +3707,7 @@
     {
       "code": "300161",
       "name": "华中数控",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3716,7 +3715,7 @@
     {
       "code": "300203",
       "name": "聚光科技",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3724,7 +3723,7 @@
     {
       "code": "300207",
       "name": "欣旺达",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3742,7 +3741,7 @@
     {
       "code": "300236",
       "name": "上海新阳",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3750,7 +3749,7 @@
     {
       "code": "300246",
       "name": "宝莱特",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3758,7 +3757,7 @@
     {
       "code": "300251",
       "name": "光线传媒",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3766,7 +3765,7 @@
     {
       "code": "300260",
       "name": "新莱应材",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3774,7 +3773,7 @@
     {
       "code": "300274",
       "name": "阳光电源",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3782,7 +3781,7 @@
     {
       "code": "300298",
       "name": "三诺生物",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3790,7 +3789,7 @@
     {
       "code": "300308",
       "name": "中际旭创",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3798,7 +3797,7 @@
     {
       "code": "300314",
       "name": "戴维医疗",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3814,7 +3813,7 @@
     {
       "code": "300321",
       "name": "同大股份",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3822,7 +3821,7 @@
     {
       "code": "300339",
       "name": "润和软件",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3830,7 +3829,7 @@
     {
       "code": "300341",
       "name": "麦克奥迪",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3838,7 +3837,7 @@
     {
       "code": "300348",
       "name": "长亮科技",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3857,7 +3856,7 @@
     {
       "code": "300377",
       "name": "赢时胜",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3883,7 +3882,7 @@
     {
       "code": "300394",
       "name": "天孚通信",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3891,7 +3890,7 @@
     {
       "code": "300411",
       "name": "金盾股份",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3899,7 +3898,7 @@
     {
       "code": "300429",
       "name": "强力新材",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3918,7 +3917,7 @@
     {
       "code": "300433",
       "name": "蓝思科技",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3926,7 +3925,7 @@
     {
       "code": "300435",
       "name": "中泰股份",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3934,7 +3933,7 @@
     {
       "code": "300442",
       "name": "润泽科技",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3942,7 +3941,7 @@
     {
       "code": "300450",
       "name": "先导智能",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3950,7 +3949,7 @@
     {
       "code": "300456",
       "name": "赛微电子",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3958,7 +3957,7 @@
     {
       "code": "300458",
       "name": "全志科技",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3966,7 +3965,7 @@
     {
       "code": "300459",
       "name": "汤姆猫",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3974,7 +3973,7 @@
     {
       "code": "300468",
       "name": "四方精创",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3982,7 +3981,7 @@
     {
       "code": "300475",
       "name": "香农芯创",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3990,7 +3989,7 @@
     {
       "code": "300482",
       "name": "万孚生物",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -3998,7 +3997,7 @@
     {
       "code": "300496",
       "name": "中科创达",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -4006,7 +4005,7 @@
     {
       "code": "300498",
       "name": "温氏股份",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -4014,7 +4013,7 @@
     {
       "code": "300499",
       "name": "高澜股份",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -4040,7 +4039,7 @@
     {
       "code": "300533",
       "name": "冰川网络",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -4048,7 +4047,7 @@
     {
       "code": "300537",
       "name": "广信材料",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -4066,7 +4065,7 @@
     {
       "code": "300552",
       "name": "万集科技",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -4074,7 +4073,7 @@
     {
       "code": "300566",
       "name": "激智科技",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -4106,7 +4105,7 @@
     {
       "code": "300595",
       "name": "欧普康视",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -4114,7 +4113,7 @@
     {
       "code": "300601",
       "name": "康泰生物",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
