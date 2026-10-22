@@ -141,6 +141,8 @@ class MarketDataSettings(BaseModel):
     fallback_provider: NonEmptyString = "fixture"
     cache_directory: NonEmptyString = ".cache/stock-daily-report"
     cache_ttl_seconds: int = Field(default=3600, ge=0)
+    history_request_interval_seconds: float = Field(default=0, ge=0, allow_inf_nan=False)
+    provider_cooldown_seconds: float = Field(default=0, ge=0, allow_inf_nan=False)
     minimum_history_bars: int = Field(default=60, ge=1)
     max_completed_trading_day_lag: int = Field(default=1, ge=0)
 

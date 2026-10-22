@@ -38,8 +38,8 @@ from stock_daily_report.pipeline import (
 )
 from stock_daily_report.providers.base import ProviderError
 from stock_daily_report.providers.fixture import FixtureMarketDataProvider
-from stock_daily_report.providers.index import AkShareIndexProvider
-from stock_daily_report.providers.service import CacheRollbackError
+from stock_daily_report.providers.index import AkShareIndexProvider, SinaIndexProvider
+from stock_daily_report.providers.service import CacheRollbackError, IndexHistoryService
 from stock_daily_report.providers.universe import (
     AkShareUniverseProvider,
     WatchlistUniverseProvider,
@@ -129,6 +129,10 @@ def main(argv: list[str] | None = None) -> int:
         "--resumable",
         action="store_true",
         help="process in resumable batches, persisting a checkpoint after each",
+    )
+    market_scan.add_argument(
+        "--refresh-market-state", action="store_true",
+        help="repair incomplete index state with --resumable; archive previous output",
     )
     market_scan.add_argument(
         "--max-batches",
@@ -234,6 +238,12 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "market-scan":
         try:
+            if args.refresh_market_state and (
+                not args.resumable or args.scope != "market"
+            ):
+                raise _MarketScanCliError(
+                    "--refresh-market-state requires --resumable and --scope market"
+                )
             if args.max_batches is not None and args.max_batches <= 0:
                 raise _MarketScanCliError(
                     "--max-batches must be a positive integer"
@@ -247,16 +257,32 @@ def main(argv: list[str] | None = None) -> int:
             directory = (
                 "watchlist-scans" if args.scope == "watchlist" else "market-scans"
             )
+            cache_directory = Path(data_settings.market_data.cache_directory)
+            if not cache_directory.is_absolute():
+                cache_directory = args.output_root / cache_directory
             index_provider = (
-                AkShareIndexProvider() if directory == "market-scans" else None
+                IndexHistoryService(
+                    {
+                        "sina-index": SinaIndexProvider(cache_directory=cache_directory),
+                        "akshare": AkShareIndexProvider(),
+                    },
+                    primary_provider="sina-index", fallback_provider="akshare",
+                ) if directory == "market-scans" else None
+            )
+            bulk_universe_provider = AkShareUniverseProvider(
+                cache_directory=cache_directory,
+                cache_ttl_seconds=data_settings.market_data.cache_ttl_seconds,
+                retries=2,
+                retry_delay_seconds=5,
             )
             if args.scope == "watchlist":
                 universe_provider: object = WatchlistUniverseProvider(
                     (stock.code for stock in load_watchlist(args.watchlist).stocks),
-                    AkShareUniverseProvider(),
+                    bulk_universe_provider,
+                    retries=0,
                 )
             else:
-                universe_provider = AkShareUniverseProvider()
+                universe_provider = bulk_universe_provider
             artifact_path = _scan_artifact_path(args.output_root, args.date, directory)
             artifact_exists = artifact_path.exists()
             if artifact_exists:
@@ -266,6 +292,7 @@ def main(argv: list[str] | None = None) -> int:
                     expected_config_hash=configuration_hash,
                     expected_rule_version=settings.rule_version,
                     market_state_settings=settings.market_state,
+                    rebuild_configuration=args.resumable,
                 )
             if args.resumable:
                 current_date = _current_market_date()
@@ -292,6 +319,7 @@ def main(argv: list[str] | None = None) -> int:
                     index_provider=index_provider,
                     max_batches=args.max_batches,
                     directory=directory,
+                    refresh_market_state=args.refresh_market_state,
                 )
                 if artifact_path is None:
                     print(
@@ -366,6 +394,7 @@ def _existing_scan_artifact(
     expected_config_hash: str,
     expected_rule_version: str,
     market_state_settings: MarketStateSettings,
+    rebuild_configuration: bool = False,
 ) -> Path:
     artifact = load_scan_artifact(
         path,
@@ -376,12 +405,21 @@ def _existing_scan_artifact(
             "Existing market scan artifact report_date does not match "
             f"requested date: {path}"
         )
-    if (
-        artifact.rule_version != expected_rule_version
-        or artifact.config_hash != expected_config_hash
-    ):
+    if artifact.rule_version != expected_rule_version:
         raise MarketScanArtifactError(
             f"Existing market scan artifact configuration does not match: {path}"
+        )
+    if artifact.config_hash != expected_config_hash:
+        if not rebuild_configuration:
+            raise MarketScanArtifactError(
+                f"Existing market scan artifact configuration does not match: {path}"
+            )
+        print(
+            f"Existing market scan configuration changed; rebuilding with "
+            f"--resumable: {path} "
+            f"(old={artifact.config_hash}, new={expected_config_hash}). "
+            "The previous artifact remains until replacement succeeds.",
+            file=sys.stderr,
         )
     return path
 

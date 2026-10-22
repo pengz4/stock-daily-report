@@ -255,3 +255,110 @@ def test_index_history_service_preserves_all_provider_failures():
 
     with pytest.raises(AllProvidersFailedError, match="offline"):
         service.fetch("000001")
+
+
+def test_sina_index_prices_do_not_fabricate_amount_and_use_index_symbols():
+    from stock_daily_report.providers.index import SinaIndexProvider
+
+    calls = []
+
+    def fetcher(symbol):
+        calls.append(symbol)
+        return [
+            {"day": "2026-09-11", "close": "3200.0"},
+            {"day": "2026-09-10", "close": "3190.0"},
+        ]
+
+    provider = SinaIndexProvider(fetcher=fetcher)
+    for code, symbol in [
+        ("000001", "sh000001"), ("399001", "sz399001"),
+        ("399006", "sz399006"), ("000300", "sh000300"),
+        ("000852", "sh000852"),
+    ]:
+        bars = provider.get_daily_bars(code, end=date(2026, 9, 11))
+        assert calls[-1] == symbol
+        assert [b.trade_date for b in bars] == [date(2026, 9, 10), date(2026, 9, 11)]
+        assert bars[-1].close == 3200
+        assert bars[-1].provider_name == "sina-index"
+        assert "amount" not in bars[-1].model_dump()
+
+
+@pytest.mark.parametrize("records", [
+    [], [{"day": "2026-09-11", "close": "nan"}],
+    [{"day": "2026-09-11", "close": True}],
+    [{"day": "2026-09-11", "close": -1}],
+    [{"day": "2026-09-11", "close": 3200}] * 2,
+    [{"day": "2026-09-10", "close": 3200}],
+])
+def test_sina_index_rejects_invalid_duplicate_or_stale_history(records):
+    from stock_daily_report.providers.index import SinaIndexProvider
+
+    with pytest.raises(ProviderDataError):
+        SinaIndexProvider(fetcher=lambda _: records).get_daily_bars(
+            "000001", end=date(2026, 9, 11)
+        )
+
+
+def test_sina_index_retries_transport_and_reuses_valid_same_date_cache(tmp_path):
+    from stock_daily_report.providers.index import SinaIndexProvider
+
+    calls = []
+    def fetcher(symbol):
+        calls.append(symbol)
+        if len(calls) == 1:
+            raise OSError("offline")
+        return [{"day": "2026-09-11", "close": 3200}]
+
+    provider = SinaIndexProvider(
+        fetcher=fetcher, cache_directory=tmp_path,
+        now=lambda: datetime(2026, 9, 11, 9, tzinfo=UTC),
+        sleep=lambda _: None,
+    )
+    first = provider.get_daily_bars("000001", end=date(2026, 9, 11))
+    assert provider.get_daily_bars("000001", end=date(2026, 9, 11)) == first
+    assert len(calls) == 2
+
+
+def test_sina_index_refuses_stock_codes_before_request():
+    from stock_daily_report.providers.index import SinaIndexProvider
+
+    with pytest.raises(ProviderDataError, match="invalid_index_code"):
+        SinaIndexProvider(fetcher=lambda _: pytest.fail("must not fetch")).get_daily_bars(
+            "600000"
+        )
+
+
+def test_price_only_index_history_builds_available_market_state():
+    from datetime import timedelta
+
+    from stock_daily_report.market_scan.state import calculate_index_state
+    from stock_daily_report.providers.index import SinaIndexProvider
+
+    bars = SinaIndexProvider(fetcher=lambda _: [
+        {"day": (date(2026, 9, 11) - timedelta(days=offset)).isoformat(),
+         "close": 3200 - offset}
+        for offset in range(60)
+    ]).get_daily_bars("000001", end=date(2026, 9, 11))
+    state = calculate_index_state(
+        name="Shanghai", code="000001", bars=bars, report_date=date(2026, 9, 11),
+    )
+    assert state.status == "available"
+    assert state.provider == "sina-index"
+    assert state.close_vs_ma60 == "above"
+
+
+def test_sina_index_cache_is_not_read_or_written_intraday(tmp_path):
+    from stock_daily_report.providers.index import SinaIndexProvider
+
+    calls = []
+    provider = SinaIndexProvider(
+        fetcher=lambda symbol: calls.append(symbol) or [
+            {"day": "2026-09-11", "close": 3200}
+        ],
+        cache_directory=tmp_path,
+        now=lambda: datetime(2026, 9, 11, 6, tzinfo=UTC),
+    )
+    provider.get_daily_bars("000001", end=date(2026, 9, 11))
+    provider.get_daily_bars("000001", end=date(2026, 9, 11))
+    assert len(calls) == 2
+    assert not list(tmp_path.glob("*.json"))

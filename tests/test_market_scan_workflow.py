@@ -1,3 +1,6 @@
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import yaml
@@ -11,6 +14,25 @@ def _workflow():
 def _daily_workflow():
     path = Path(__file__).parents[1] / ".github" / "workflows" / "daily-report.yml"
     return yaml.safe_load(path.read_text(encoding="utf-8"))
+
+
+def test_index_summary_allows_incomplete_scan_to_persist_checkpoint(tmp_path):
+    _, workflow = _workflow()
+    step = next(
+        step for step in workflow["jobs"]["market-scan"]["steps"]
+        if step["name"] == "Summarize index availability"
+    )
+    summary = tmp_path / "summary.txt"
+    script = step["run"].replace(
+        "${{ steps.report-date.outputs.report_date }}", "2026-10-20"
+    ).replace("python -", f'"{sys.executable}" -')
+    result = subprocess.run(
+        ["bash", "-e", "-c", script], cwd=tmp_path,
+        env={**os.environ, "GITHUB_STEP_SUMMARY": str(summary)},
+        capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "incomplete" in summary.read_text().lower()
 
 
 def test_market_scan_workflow_is_scheduled_before_daily_and_dispatchable():
@@ -36,6 +58,7 @@ def test_market_scan_workflow_is_bounded_and_uses_locked_python():
     assert job["concurrency"] == {
         "group": "stock-daily-report-history",
         "cancel-in-progress": False,
+        "queue": "max",
     }
     daily = _daily_workflow()
     assert daily["concurrency"]["group"] != job["concurrency"]["group"]
@@ -84,7 +107,13 @@ def test_watchlist_scan_merges_history_and_serializes_history_writers():
     assert watchlist_job["concurrency"] == {
         "group": "stock-daily-report-history",
         "cancel-in-progress": False,
+        "queue": "max",
     }
+    generate = next(
+        step["run"] for step in watchlist_job["steps"]
+        if step["name"] == "Generate watchlist scan"
+    )
+    assert "--resumable" in generate
 
 
 def test_history_publish_retries_fail_the_job_when_push_never_succeeds():
@@ -113,3 +142,33 @@ def test_daily_workflow_restores_same_date_market_scan_history_when_available():
 
     assert "if [ -d .report-history/market-scans ]; then" in merge
     assert "cp -a .report-history/market-scans ./market-scans" in merge
+
+
+def test_data_jobs_share_same_date_response_cache_without_recovery_files():
+    _, scan_workflow = _workflow()
+    daily = _daily_workflow()
+    jobs = [
+        scan_workflow["jobs"]["watchlist-scan"],
+        scan_workflow["jobs"]["market-scan"],
+        daily["jobs"]["generate"],
+    ]
+    prefixes = []
+    for job in jobs:
+        steps = job["steps"]
+        cache = next(
+            step for step in steps if step.get("uses") == "actions/cache@v4"
+        )
+        options = cache["with"]
+        assert options["path"] == ".cache/stock-daily-report/*.json"
+        assert "steps.report-date.outputs.report_date" in options["key"]
+        assert "github.run_id" in options["key"]
+        assert "github.job" in options["key"]
+        prefixes.append(options["restore-keys"])
+        assert steps.index(cache) > next(
+            index for index, step in enumerate(steps) if step.get("id") == "report-date"
+        )
+        assert steps.index(cache) < next(
+            index for index, step in enumerate(steps)
+            if step["name"].startswith("Generate ")
+        )
+    assert len(set(prefixes)) == 1

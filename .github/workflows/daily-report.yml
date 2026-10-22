@@ -27,12 +27,14 @@ permissions:
 concurrency:
   group: stock-daily-report-pages
   cancel-in-progress: false
+  queue: max
 
 jobs:
   generate:
     concurrency:
       group: stock-daily-report-history
       cancel-in-progress: false
+      queue: max
     runs-on: ubuntu-latest
     timeout-minutes: 20
     outputs:
@@ -91,6 +93,13 @@ jobs:
           if [ -d .report-history/watchlist-scans ]; then
             cp -a .report-history/watchlist-scans ./watchlist-scans
           fi
+      - name: Reuse same-date market data responses
+        uses: actions/cache@v4
+        with:
+          path: .cache/stock-daily-report/*.json
+          key: market-data-v1-${{ runner.os }}-${{ steps.report-date.outputs.report_date }}-${{ hashFiles('config/settings.yaml', 'requirements.lock', 'src/stock_daily_report/providers/**', 'src/stock_daily_report/models.py') }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
+          restore-keys: |
+            market-data-v1-${{ runner.os }}-${{ steps.report-date.outputs.report_date }}-${{ hashFiles('config/settings.yaml', 'requirements.lock', 'src/stock_daily_report/providers/**', 'src/stock_daily_report/models.py') }}-
       - name: Generate report artifacts
         env:
           WECOM_WEBHOOK_URL: ${{ secrets.WECOM_WEBHOOK_URL }}
@@ -249,7 +258,9 @@ jobs:
             # self-selected deep-analysis section. The deep set itself changed,
             # so refetch history (do NOT reuse the frozen snapshot, which only
             # holds the previous deep set's bars).
-            if [ "$reuse_report" = true ]; then
+            # Check independently even if a full-market change already forced
+            # report regeneration with snapshot reuse.
+            if [ -f "$report_path" ]; then
               if [ ! -f "$watchlist_scan_path" ]; then
                 reuse_report=false
                 reuse_snapshot=false

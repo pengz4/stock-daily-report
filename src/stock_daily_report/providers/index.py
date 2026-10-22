@@ -10,7 +10,12 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, date, datetime
 from http.client import HTTPException
+from pathlib import Path
+from time import sleep
 from typing import Any, Protocol, runtime_checkable
+from zoneinfo import ZoneInfo
+
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator
 
 from stock_daily_report.models import DailyBar
 from stock_daily_report.providers.base import (
@@ -28,6 +33,35 @@ _SOURCE_FIELDS = {
     "成交量": "volume",
     "成交额": "amount",
 }
+_INDEX_SYMBOLS = {
+    "000001": "sh000001",
+    "399001": "sz399001",
+    "399006": "sz399006",
+    "000300": "sh000300",
+    "000852": "sh000852",
+}
+
+
+class IndexCloseBar(BaseModel):
+    """Index-only price observation; no invented volume or turnover measures."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    trade_date: date
+    close: float = Field(gt=0, allow_inf_nan=False)
+    provider_name: str = Field(min_length=1)
+    source_timestamp: AwareDatetime
+
+    @field_validator("close", "trade_date", mode="before")
+    @classmethod
+    def reject_invalid_scalar_types(cls, value: object) -> object:
+        if isinstance(value, (bool, datetime)):
+            raise ValueError(  # noqa: TRY004
+                "index prices and dates must not be booleans or datetimes"
+            )
+        return value
+
+
+IndexBar = DailyBar | IndexCloseBar
 _PROVIDER_SCHEMA_ERRORS = (
     AttributeError,
     IndexError,
@@ -59,7 +93,7 @@ class IndexHistoryProvider(Protocol):
         *,
         start: date | None = None,
         end: date | None = None,
-    ) -> list[DailyBar]:
+    ) -> list[IndexBar]:
         """Return chronological index bars for ``code``."""
 
 
@@ -181,6 +215,101 @@ AkShareIndexHistoryProvider = AkShareIndexProvider
 IndexProvider = IndexHistoryProvider
 
 
+class SinaIndexProvider:
+    """Bounded HTTPS index-price requests, isolated from stock bar semantics."""
+
+    name = "sina-index"
+    supports_hard_timeout = True
+
+    def __init__(
+        self,
+        *,
+        fetcher: Callable[[str], object] | None = None,
+        cache_directory: str | Path | None = None,
+        now: Callable[[], datetime] | None = None,
+        sleep: Callable[[float], None] = sleep,
+    ) -> None:
+        from stock_daily_report.providers.service import RawResponseCache
+
+        self._fetcher = fetcher or self._fetch
+        self._now = now or (lambda: datetime.now(UTC))
+        self._sleep = sleep
+        self._cache = (
+            RawResponseCache(cache_directory, ttl_seconds=21600, now=self._now)
+            if cache_directory is not None else None
+        )
+
+    @staticmethod
+    def _fetch(symbol: str) -> object:
+        import requests
+
+        response = requests.get(
+            "https://quotes.sina.cn/cn/api/json_v2.php/"
+            "CN_MarketDataService.getKLineData",
+            params={"symbol": symbol, "scale": 240, "ma": "no", "datalen": 240},
+            timeout=(5, 20),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def get_daily_bars(
+        self, code: str, *, start: date | None = None, end: date | None = None,
+    ) -> list[IndexCloseBar]:
+        if code not in _INDEX_SYMBOLS:
+            raise ProviderDataError(self.name, "invalid_index_code", repr(code))
+        _validate_date_range(start, end, provider=self.name)
+        local_now = self._now().astimezone(ZoneInfo("Asia/Shanghai"))
+        cacheable = (
+            end == local_now.date()
+            and (local_now.hour, local_now.minute) >= (15, 30)
+        )
+        raw = (
+            self._cache.load("sina-index-v1", code, start, end)
+            if self._cache is not None and cacheable else None
+        )
+        from_cache = raw is not None
+        if raw is None:
+            for attempt in range(2):
+                try:
+                    raw = self._fetcher(_INDEX_SYMBOLS[code])
+                    break
+                except _PROVIDER_TRANSPORT_ERRORS as error:
+                    if attempt:
+                        raise ProviderAvailabilityError(
+                            self.name, "network_error", str(error)
+                        ) from error
+                    self._sleep(2)
+                except _PROVIDER_SCHEMA_ERRORS as error:
+                    raise ProviderDataError(
+                        self.name, "provider_schema_invalid", str(error)
+                    ) from error
+        try:
+            records = _records_from_response(raw)
+            bars = sorted(
+                (IndexCloseBar(
+                    trade_date=row["day"], close=row["close"],
+                    provider_name=self.name, source_timestamp=self._now(),
+                ) for row in records),
+                key=lambda bar: bar.trade_date,
+            )
+            if len({bar.trade_date for bar in bars}) != len(bars):
+                raise ValueError("duplicate index dates")
+            bars = [
+                bar for bar in bars
+                if (start is None or bar.trade_date >= start)
+                and bar.trade_date <= (end or local_now.date())
+            ]
+            if not bars or (end is not None and bars[-1].trade_date != end):
+                raise ValueError("empty or stale index history")
+        except _PROVIDER_SCHEMA_ERRORS as error:
+            raise ProviderDataError(
+                self.name, "provider_schema_invalid", f"code={code}: {error}"
+            ) from error
+        if self._cache is not None and cacheable and not from_cache:
+            self._cache.store("sina-index-v1", code, start, end, raw)
+        return bars
+
+
 def _records_from_response(response: object) -> Sequence[Mapping[str, object]]:
     if hasattr(response, "to_dict"):
         response = response.to_dict("records")  # type: ignore[union-attr]
@@ -217,6 +346,9 @@ def _validate_date_range(
 __all__ = [
     "AkShareIndexHistoryProvider",
     "AkShareIndexProvider",
+    "IndexBar",
+    "IndexCloseBar",
     "IndexHistoryProvider",
     "IndexProvider",
+    "SinaIndexProvider",
 ]

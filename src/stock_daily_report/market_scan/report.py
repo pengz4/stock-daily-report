@@ -33,6 +33,7 @@ def write_scan_artifact(
     *,
     directory: str | Path = "market-scans",
     replace_existing: bool = False,
+    refresh_market_state: MarketStateSettings | None = None,
 ) -> Path:
     """Persist an artifact, optionally replacing a resumable rerun's output."""
 
@@ -46,7 +47,9 @@ def write_scan_artifact(
         path.parent.mkdir(parents=True, exist_ok=True)
         with _scan_write_lock(path.parent):
             if path.exists():
-                existing = load_scan_artifact(path)
+                existing = load_scan_artifact(
+                    path, market_state_settings=refresh_market_state,
+                )
                 if _identity_payload(existing) == _identity_payload(artifact):
                     if (
                         existing.market_state_identity is None
@@ -63,9 +66,32 @@ def write_scan_artifact(
                     and existing.market_state_identity
                     != artifact.market_state_identity
                 ):
-                    raise MarketScanConflictError(
-                        "Refusing to overwrite market scan with mismatched "
-                        f"market-state identity: {path}"
+                    if (
+                        not replace_existing or refresh_market_state is None
+                        or existing.config_hash != artifact.config_hash
+                        or existing.market_state is None
+                        or existing.market_state.status == "available"
+                        or artifact.market_state is None
+                        or artifact.market_state.status != "available"
+                    ):
+                        raise MarketScanConflictError(
+                            "Refusing to overwrite market scan with mismatched "
+                            f"market-state identity: {path}"
+                        )
+                    try:
+                        resolve_market_state_identity(
+                            refresh_market_state, artifact.market_state,
+                            artifact.market_state_identity,
+                        )
+                    except MarketStateIdentityError as error:
+                        raise MarketScanArtifactError(
+                            f"Invalid refreshed market-state identity: {path}: {error}"
+                        ) from error
+                    archive = path.parent / "scan-archive"
+                    archive.mkdir(exist_ok=True)
+                    _atomic_write(
+                        archive / f"{existing.market_state_identity}.json",
+                        path.read_text(encoding="utf-8"),
                     )
                 if not replace_existing:
                     raise MarketScanConflictError(

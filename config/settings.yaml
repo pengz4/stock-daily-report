@@ -10,7 +10,10 @@ market_data:
   fallback_provider: sina
   # Local ignored cache. TTL is in seconds; weekday staleness omits holidays.
   cache_directory: .cache/stock-daily-report
-  cache_ttl_seconds: 3600
+  cache_ttl_seconds: 21600
+  # Shared across history workers using this cache directory.
+  history_request_interval_seconds: 1.0
+  provider_cooldown_seconds: 15
   minimum_history_bars: 60
   max_completed_trading_day_lag: 1
 risk_rules:

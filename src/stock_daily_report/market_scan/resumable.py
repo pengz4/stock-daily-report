@@ -14,12 +14,15 @@ matching the existing gate in ``runner.scan_market``.
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, date, datetime
 from pathlib import Path
+from time import sleep
 from zoneinfo import ZoneInfo
 
+from stock_daily_report.market_scan import runner
 from stock_daily_report.market_scan.models import MarketState
 from stock_daily_report.market_scan.resume import (
     ScanCheckpoint,
@@ -43,10 +46,17 @@ from stock_daily_report.market_scan.runner import (
     scoring_config_hash,
 )
 from stock_daily_report.models import MarketScanSettings
+from stock_daily_report.providers.base import ProviderAvailabilityError
 from stock_daily_report.providers.universe import UniverseQuote
 
 _SHANGHAI = ZoneInfo("Asia/Shanghai")
 HISTORY_FAILURE_ATTEMPTS = 3
+_RETRYABLE_HISTORY_FAILURES = frozenset({
+    "network_error",
+    "all_providers_failed",
+    "provider_circuit_open",
+    "invalid_remote_response",
+})
 
 __all__ = ["run_resumable_scan"]
 
@@ -65,6 +75,7 @@ def run_resumable_scan(
     max_batches: int | None = None,
     batch_size: int | None = None,
     directory: str | Path = "market-scans",
+    refresh_market_state: bool = False,
 ) -> Path | None:
     """Run one resumable scan, returning the artifact path once complete.
 
@@ -89,6 +100,7 @@ def run_resumable_scan(
             max_batches=max_batches,
             batch_size=batch_size,
             directory=directory,
+            refresh_market_state=refresh_market_state,
         )
 
 
@@ -106,9 +118,16 @@ def _run_resumable_scan(
     max_batches: int | None = None,
     batch_size: int | None = None,
     directory: str | Path = "market-scans",
+    refresh_market_state: bool = False,
 ) -> Path | None:
     semantic_hash = scoring_config_hash(settings)
-    per_batch = batch_size or settings.max_candidates
+    if configuration_hash is not None:
+        # Checkpoints contain normalized histories and scores; changing the
+        # data settings must not relabel old results as a new configuration.
+        semantic_hash = hashlib.sha256(
+            f"{semantic_hash}:{configuration_hash}".encode()
+        ).hexdigest()
+    per_batch = batch_size or min(settings.max_candidates, 100)
     execution_date = _current_shanghai_date()
 
     checkpoint = load_checkpoint(output_root, report_date, directory=directory)
@@ -133,8 +152,15 @@ def _run_resumable_scan(
         completed = {}
         last_batch = 0
 
-    if market_state is None and index_provider is not None:
-        market_state = _build_market_state(
+    artifact_exists = (
+        Path(output_root) / directory / report_date.isoformat() / "scan.json"
+    ).exists()
+    retry_incomplete_state = (
+        market_state is not None and market_state.status != "available"
+        and (refresh_market_state or not artifact_exists)
+    )
+    if (market_state is None or retry_incomplete_state) and index_provider is not None:
+        refreshed_state = _build_market_state(
             settings,
             index_provider,
             quotes,
@@ -144,6 +170,16 @@ def _run_resumable_scan(
             ),
             breadth_provider=_provider_name(universe_provider),
         )
+        if refresh_market_state and refreshed_state.status != "available":
+            raise ProviderAvailabilityError(
+                "index-history", "index_refresh_incomplete",
+                "; ".join(
+                    f"{index.code}: {index.error_code}: {index.error_message}"
+                    for index in refreshed_state.indices
+                    if index.status != "available"
+                ) or "market breadth unavailable",
+            )
+        market_state = refreshed_state
 
     eligible = _eligible_quotes(quotes, report_date, settings)
     eligible_codes = {quote.code for quote in eligible}
@@ -240,6 +276,7 @@ def _run_resumable_scan(
         configuration_hash,
         index_provider,
         directory=directory,
+        refresh_market_state=refresh_market_state,
     )
 
     save_checkpoint(
@@ -341,6 +378,8 @@ def _process_batch(
             results,
             quotes_by_code={quote.code: quote for quote in batch},
             provider_name=_provider_name(history_provider),
+            max_workers=settings.max_workers,
+            timeout_seconds=HISTORY_FAILURE_ATTEMPTS * runner._FETCH_TIMEOUT_SECONDS + 6,
         )
     finally:
         executor.shutdown(wait=False, cancel_futures=True)
@@ -354,9 +393,13 @@ def _process_candidate_with_retries(
     settings: MarketScanSettings,
 ) -> _CandidateResult:
     result = _process_candidate(quote, history_provider, report_date, settings)
-    for _ in range(1, HISTORY_FAILURE_ATTEMPTS):
-        if result.status.status != "history_failed":
+    for attempt in range(1, HISTORY_FAILURE_ATTEMPTS):
+        if (
+            result.status.status != "history_failed"
+            or not set(result.status.reason_codes) & _RETRYABLE_HISTORY_FAILURES
+        ):
             break
+        sleep(2 ** attempt)
         result = _process_candidate(quote, history_provider, report_date, settings)
     return result
 
@@ -374,6 +417,7 @@ def _finalize(
     configuration_hash: str | None,
     index_provider: object | None,
     directory: str | Path = "market-scans",
+    refresh_market_state: bool = False,
 ) -> Path:
     """Rebuild the immutable artifact from completed results via ``scan_market``."""
 
@@ -396,6 +440,7 @@ def _finalize(
         artifact,
         directory=directory,
         replace_existing=True,
+        refresh_market_state=settings.market_state if refresh_market_state else None,
     )
 
 
