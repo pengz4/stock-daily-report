@@ -52,7 +52,7 @@
       "trend_score": 95.56155374641956
     },
     {
-      "balanced_rank": 13,
+      "balanced_rank": 14,
       "balanced_score": 93.32523585863221,
       "code": "603236",
       "latest_trade_date": "2026-10-21",
@@ -62,43 +62,53 @@
       "trend_score": 95.55015723908815
     },
     {
-      "balanced_rank": 18,
+      "balanced_rank": 11,
+      "balanced_score": 93.37560929489874,
+      "code": "605388",
+      "latest_trade_date": "2026-10-22",
+      "name": "均瑶健康",
+      "provider_name": "sina",
+      "trend_rank": 7,
+      "trend_score": 95.28836281760371
+    },
+    {
+      "balanced_rank": 19,
       "balanced_score": 91.49445338638961,
       "code": "300314",
       "latest_trade_date": "2026-10-21",
       "name": "戴维医疗",
       "provider_name": "sina",
-      "trend_rank": 8,
+      "trend_rank": 9,
       "trend_score": 94.3296355909264
     },
     {
-      "balanced_rank": 12,
+      "balanced_rank": 13,
       "balanced_score": 93.3303230583345,
       "code": "600661",
       "latest_trade_date": "2026-10-21",
       "name": "昂立教育",
       "provider_name": "sina",
-      "trend_rank": 9,
+      "trend_rank": 10,
       "trend_score": 94.29547870895422
     },
     {
-      "balanced_rank": 16,
+      "balanced_rank": 17,
       "balanced_score": 92.10006022902002,
       "code": "600408",
       "latest_trade_date": "2026-10-21",
       "name": "安泰集团",
       "provider_name": "sina",
-      "trend_rank": 10,
+      "trend_rank": 11,
       "trend_score": 94.20515054100689
     },
     {
-      "balanced_rank": 24,
+      "balanced_rank": 25,
       "balanced_score": 90.78941183735154,
       "code": "001318",
       "latest_trade_date": "2026-10-21",
       "name": "阳光乳业",
       "provider_name": "sina",
-      "trend_rank": 11,
+      "trend_rank": 12,
       "trend_score": 93.44595236612355
     },
     {
@@ -108,17 +118,17 @@
       "latest_trade_date": "2026-10-21",
       "name": "日辰股份",
       "provider_name": "sina",
-      "trend_rank": 12,
+      "trend_rank": 13,
       "trend_score": 93.25257892778316
     },
     {
-      "balanced_rank": 15,
+      "balanced_rank": 16,
       "balanced_score": 92.24753995644596,
       "code": "002889",
       "latest_trade_date": "2026-10-21",
       "name": "东方嘉盛",
       "provider_name": "sina",
-      "trend_rank": 13,
+      "trend_rank": 14,
       "trend_score": 93.12709222744954
     },
     {
@@ -128,7 +138,7 @@
       "latest_trade_date": "2026-10-21",
       "name": "城市传媒",
       "provider_name": "sina",
-      "trend_rank": 15,
+      "trend_rank": 16,
       "trend_score": 92.89171129221347
     },
     {
@@ -138,7 +148,7 @@
       "latest_trade_date": "2026-10-21",
       "name": "新媒股份",
       "provider_name": "sina",
-      "trend_rank": 16,
+      "trend_rank": 17,
       "trend_score": 92.65628845345591
     },
     {
@@ -148,27 +158,27 @@
       "latest_trade_date": "2026-10-21",
       "name": "XD味知香",
       "provider_name": "sina",
-      "trend_rank": 17,
+      "trend_rank": 18,
       "trend_score": 92.61347008905798
     },
     {
-      "balanced_rank": 28,
+      "balanced_rank": 29,
       "balanced_score": 90.42054829710335,
       "code": "603188",
       "latest_trade_date": "2026-10-21",
       "name": "亚邦股份",
       "provider_name": "sina",
-      "trend_rank": 18,
+      "trend_rank": 19,
       "trend_score": 92.60858248513755
     },
     {
-      "balanced_rank": 11,
+      "balanced_rank": 12,
       "balanced_score": 93.33757573919272,
       "code": "002908",
       "latest_trade_date": "2026-10-21",
       "name": "德生科技",
       "provider_name": "sina",
-      "trend_rank": 19,
+      "trend_rank": 20,
       "trend_score": 92.53349956686921
     },
     {
@@ -178,89 +188,75 @@
       "latest_trade_date": "2026-10-21",
       "name": "甬金股份",
       "provider_name": "sina",
-      "trend_rank": 20,
+      "trend_rank": 21,
       "trend_score": 92.3120264393099
     },
     {
-      "balanced_rank": 17,
+      "balanced_rank": 18,
       "balanced_score": 92.0125516720756,
       "code": "002835",
       "latest_trade_date": "2026-10-21",
       "name": "同为股份",
       "provider_name": "sina",
-      "trend_rank": 21,
+      "trend_rank": 22,
       "trend_score": 92.13105973275515
     },
     {
-      "balanced_rank": 14,
+      "balanced_rank": 15,
       "balanced_score": 93.09291005987889,
       "code": "600560",
       "latest_trade_date": "2026-10-21",
       "name": "金自天正",
       "provider_name": "sina",
-      "trend_rank": 23,
+      "trend_rank": 24,
       "trend_score": 91.96660132905775
     },
     {
-      "balanced_rank": 21,
+      "balanced_rank": 22,
       "balanced_score": 91.2144821274748,
       "code": "603355",
       "latest_trade_date": "2026-10-21",
       "name": "莱克电气",
       "provider_name": "sina",
-      "trend_rank": 24,
+      "trend_rank": 25,
       "trend_score": 91.807229560336
     },
     {
-      "balanced_rank": 19,
+      "balanced_rank": 20,
       "balanced_score": 91.37273450750338,
       "code": "920873",
       "latest_trade_date": "2026-10-22",
       "name": "中设咨询",
       "provider_name": "sina",
-      "trend_rank": 25,
+      "trend_rank": 26,
       "trend_score": 91.75706543748367
     },
     {
-      "balanced_rank": 20,
+      "balanced_rank": 21,
       "balanced_score": 91.29871003397153,
       "code": "001323",
       "latest_trade_date": "2026-10-21",
       "name": "慕思股份",
       "provider_name": "sina",
-      "trend_rank": 27,
+      "trend_rank": 28,
       "trend_score": 91.38717263490597
-    },
-    {
-      "balanced_rank": 23,
-      "balanced_score": 90.82310867649491,
-      "code": "000995",
-      "latest_trade_date": "2026-10-21",
-      "name": "皇台酒业",
-      "provider_name": "sina",
-      "trend_rank": 30,
-      "trend_score": 91.20201616283627
     }
   ],
-  "coverage": 0.9822657490735839,
+  "coverage": 0.9854420328215987,
   "eligible_count": 3778,
   "exclusion_counts": {
-    "data_quality_rejected": 54,
+    "data_quality_rejected": 55,
     "delisting_risk_warning_name": 1,
-    "insufficient_history": 53,
+    "insufficient_history": 54,
     "insufficient_latest_amount": 1765,
     "invalid_latest_quote": 7,
     "special_treatment_name": 199,
     "stale_last_trade_date": 1,
     "suspended_quote": 7
   },
-  "failure_counts": {
-    "all_providers_failed": 2,
-    "fetch_timeout": 10,
-    "history_fetch_failed": 1
-  },
-  "generated_at": "2026-10-22T08:36:10.734468Z",
-  "input_hash": "c32a3ee7f84b348d6b4c5bc593d742f657e871f31fec2aa1c82987b92eb09337",
+  "failure_counts": {},
+  "generated_at": "2026-10-22T12:59:08.915296Z",
+  "input_hash": "5c6fac5aab82c82681345b0697825e6b3063a8535ce15d27d65135203325fd52",
   "market_state": {
     "breadth": {
       "advance_decline_ratio": 0.10704281712685074,
@@ -360,7 +356,6 @@
   "provider_names": [
     "MarketDataService",
     "akshare",
-    "selection",
     "sina",
     "sina-index"
   ],
@@ -729,6 +724,43 @@
         "score": 93.47715643472534
       },
       {
+        "code": "605388",
+        "components": {
+          "momentum": 98.22773972602738,
+          "risk": 58.20040899795502,
+          "structure": 100.0,
+          "trend": 100.0,
+          "volume": 100.0
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "latest_trade_date": "2026-10-22",
+        "name": "均瑶健康",
+        "profile": "balanced",
+        "provider_name": "sina",
+        "rank": 11,
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "score": 93.37560929489874
+      },
+      {
         "code": "002908",
         "components": {
           "momentum": 96.47569444444443,
@@ -759,7 +791,7 @@
         "name": "德生科技",
         "profile": "balanced",
         "provider_name": "sina",
-        "rank": 11,
+        "rank": 12,
         "risk_codes": [],
         "score": 93.33757573919272
       },
@@ -794,7 +826,7 @@
         "name": "昂立教育",
         "profile": "balanced",
         "provider_name": "sina",
-        "rank": 12,
+        "rank": 13,
         "risk_codes": [
           "high_realized_volatility"
         ],
@@ -831,7 +863,7 @@
         "name": "移远通信",
         "profile": "balanced",
         "provider_name": "sina",
-        "rank": 13,
+        "rank": 14,
         "risk_codes": [
           "high_realized_volatility",
           "price_extended_above_ma20"
@@ -868,7 +900,7 @@
         "name": "金自天正",
         "profile": "balanced",
         "provider_name": "sina",
-        "rank": 14,
+        "rank": 15,
         "risk_codes": [
           "high_realized_volatility"
         ],
@@ -905,7 +937,7 @@
         "name": "东方嘉盛",
         "profile": "balanced",
         "provider_name": "sina",
-        "rank": 15,
+        "rank": 16,
         "risk_codes": [
           "high_realized_volatility"
         ],
@@ -942,7 +974,7 @@
         "name": "安泰集团",
         "profile": "balanced",
         "provider_name": "sina",
-        "rank": 16,
+        "rank": 17,
         "risk_codes": [
           "high_realized_volatility"
         ],
@@ -978,7 +1010,7 @@
         "name": "同为股份",
         "profile": "balanced",
         "provider_name": "sina",
-        "rank": 17,
+        "rank": 18,
         "risk_codes": [
           "high_realized_volatility",
           "price_extended_above_ma20"
@@ -1016,7 +1048,7 @@
         "name": "戴维医疗",
         "profile": "balanced",
         "provider_name": "sina",
-        "rank": 18,
+        "rank": 19,
         "risk_codes": [
           "high_realized_volatility",
           "deep_trailing_drawdown"
@@ -1053,7 +1085,7 @@
         "name": "中设咨询",
         "profile": "balanced",
         "provider_name": "sina",
-        "rank": 19,
+        "rank": 20,
         "risk_codes": [
           "high_realized_volatility"
         ],
@@ -1089,7 +1121,7 @@
         "name": "慕思股份",
         "profile": "balanced",
         "provider_name": "sina",
-        "rank": 20,
+        "rank": 21,
         "risk_codes": [
           "high_realized_volatility"
         ],
@@ -1125,7 +1157,7 @@
         "name": "莱克电气",
         "profile": "balanced",
         "provider_name": "sina",
-        "rank": 21,
+        "rank": 22,
         "risk_codes": [
           "high_realized_volatility"
         ],
@@ -1163,7 +1195,7 @@
         "name": "比音勒芬",
         "profile": "balanced",
         "provider_name": "sina",
-        "rank": 22,
+        "rank": 23,
         "risk_codes": [],
         "score": 91.16989270890225
       },
@@ -1197,7 +1229,7 @@
         "name": "皇台酒业",
         "profile": "balanced",
         "provider_name": "sina",
-        "rank": 23,
+        "rank": 24,
         "risk_codes": [
           "high_realized_volatility"
         ],
@@ -1234,7 +1266,7 @@
         "name": "阳光乳业",
         "profile": "balanced",
         "provider_name": "sina",
-        "rank": 24,
+        "rank": 25,
         "risk_codes": [
           "high_realized_volatility",
           "deep_trailing_drawdown"
@@ -1272,7 +1304,7 @@
         "name": "中国石油",
         "profile": "balanced",
         "provider_name": "sina",
-        "rank": 25,
+        "rank": 26,
         "risk_codes": [],
         "score": 90.69492418720081
       },
@@ -1308,7 +1340,7 @@
         "name": "晨光生物",
         "profile": "balanced",
         "provider_name": "sina",
-        "rank": 26,
+        "rank": 27,
         "risk_codes": [],
         "score": 90.69410357751369
       },
@@ -1343,7 +1375,7 @@
         "name": "万和电气",
         "profile": "balanced",
         "provider_name": "sina",
-        "rank": 27,
+        "rank": 28,
         "risk_codes": [
           "high_realized_volatility"
         ],
@@ -1380,7 +1412,7 @@
         "name": "亚邦股份",
         "profile": "balanced",
         "provider_name": "sina",
-        "rank": 28,
+        "rank": 29,
         "risk_codes": [
           "high_realized_volatility"
         ],
@@ -1416,47 +1448,11 @@
         "name": "洪都航空",
         "profile": "balanced",
         "provider_name": "sina",
-        "rank": 29,
-        "risk_codes": [
-          "high_realized_volatility"
-        ],
-        "score": 90.35966653146139
-      },
-      {
-        "code": "300516",
-        "components": {
-          "momentum": 100.0,
-          "risk": 59.50235431242227,
-          "structure": 100.0,
-          "trend": 87.6060757857509,
-          "volume": 100.0
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma20_above_ma60",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "ma60_slope_positive",
-          "positive_20_day_momentum",
-          "positive_60_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_above_20_day_average",
-          "volume_with_positive_price_change",
-          "confirmed_fractal_structure",
-          "confirmed_stroke_structure",
-          "confirmed_central_structure",
-          "confirmed_central_breakout_observation"
-        ],
-        "latest_trade_date": "2026-10-21",
-        "name": "久之洋",
-        "profile": "balanced",
-        "provider_name": "sina",
         "rank": 30,
         "risk_codes": [
           "high_realized_volatility"
         ],
-        "score": 90.20717588258861
+        "score": 90.35966653146139
       }
     ],
     "trend": [
@@ -1659,6 +1655,39 @@
         "score": 95.55015723908815
       },
       {
+        "code": "605388",
+        "components": {
+          "momentum": 98.22773972602738,
+          "risk": 58.20040899795502,
+          "structure": 100.0,
+          "trend": 100.0,
+          "volume": 100.0
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change"
+        ],
+        "latest_trade_date": "2026-10-22",
+        "name": "均瑶健康",
+        "profile": "trend",
+        "provider_name": "sina",
+        "rank": 7,
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "score": 95.28836281760371
+      },
+      {
         "code": "603999",
         "components": {
           "momentum": 100.0,
@@ -1685,7 +1714,7 @@
         "name": "读者传媒",
         "profile": "trend",
         "provider_name": "sina",
-        "rank": 7,
+        "rank": 8,
         "risk_codes": [
           "high_realized_volatility"
         ],
@@ -1718,7 +1747,7 @@
         "name": "戴维医疗",
         "profile": "trend",
         "provider_name": "sina",
-        "rank": 8,
+        "rank": 9,
         "risk_codes": [
           "high_realized_volatility",
           "deep_trailing_drawdown"
@@ -1752,7 +1781,7 @@
         "name": "昂立教育",
         "profile": "trend",
         "provider_name": "sina",
-        "rank": 9,
+        "rank": 10,
         "risk_codes": [
           "high_realized_volatility"
         ],
@@ -1785,7 +1814,7 @@
         "name": "安泰集团",
         "profile": "trend",
         "provider_name": "sina",
-        "rank": 10,
+        "rank": 11,
         "risk_codes": [
           "high_realized_volatility"
         ],
@@ -1818,7 +1847,7 @@
         "name": "阳光乳业",
         "profile": "trend",
         "provider_name": "sina",
-        "rank": 11,
+        "rank": 12,
         "risk_codes": [
           "high_realized_volatility",
           "deep_trailing_drawdown"
@@ -1851,7 +1880,7 @@
         "name": "日辰股份",
         "profile": "trend",
         "provider_name": "sina",
-        "rank": 12,
+        "rank": 13,
         "risk_codes": [
           "price_extended_above_ma20"
         ],
@@ -1884,7 +1913,7 @@
         "name": "东方嘉盛",
         "profile": "trend",
         "provider_name": "sina",
-        "rank": 13,
+        "rank": 14,
         "risk_codes": [
           "high_realized_volatility"
         ],
@@ -1917,7 +1946,7 @@
         "name": "东方海洋",
         "profile": "trend",
         "provider_name": "sina",
-        "rank": 14,
+        "rank": 15,
         "risk_codes": [
           "high_realized_volatility"
         ],
@@ -1950,7 +1979,7 @@
         "name": "城市传媒",
         "profile": "trend",
         "provider_name": "sina",
-        "rank": 15,
+        "rank": 16,
         "risk_codes": [],
         "score": 92.89171129221347
       },
@@ -1982,7 +2011,7 @@
         "name": "新媒股份",
         "profile": "trend",
         "provider_name": "sina",
-        "rank": 16,
+        "rank": 17,
         "risk_codes": [],
         "score": 92.65628845345591
       },
@@ -2013,7 +2042,7 @@
         "name": "XD味知香",
         "profile": "trend",
         "provider_name": "sina",
-        "rank": 17,
+        "rank": 18,
         "risk_codes": [],
         "score": 92.61347008905798
       },
@@ -2044,7 +2073,7 @@
         "name": "亚邦股份",
         "profile": "trend",
         "provider_name": "sina",
-        "rank": 18,
+        "rank": 19,
         "risk_codes": [
           "high_realized_volatility"
         ],
@@ -2077,7 +2106,7 @@
         "name": "德生科技",
         "profile": "trend",
         "provider_name": "sina",
-        "rank": 19,
+        "rank": 20,
         "risk_codes": [],
         "score": 92.53349956686921
       },
@@ -2109,7 +2138,7 @@
         "name": "甬金股份",
         "profile": "trend",
         "provider_name": "sina",
-        "rank": 20,
+        "rank": 21,
         "risk_codes": [],
         "score": 92.3120264393099
       },
@@ -2139,7 +2168,7 @@
         "name": "同为股份",
         "profile": "trend",
         "provider_name": "sina",
-        "rank": 21,
+        "rank": 22,
         "risk_codes": [
           "high_realized_volatility",
           "price_extended_above_ma20"
@@ -2173,7 +2202,7 @@
         "name": "掌阅科技",
         "profile": "trend",
         "provider_name": "sina",
-        "rank": 22,
+        "rank": 23,
         "risk_codes": [
           "high_realized_volatility"
         ],
@@ -2205,7 +2234,7 @@
         "name": "金自天正",
         "profile": "trend",
         "provider_name": "sina",
-        "rank": 23,
+        "rank": 24,
         "risk_codes": [
           "high_realized_volatility"
         ],
@@ -2237,7 +2266,7 @@
         "name": "莱克电气",
         "profile": "trend",
         "provider_name": "sina",
-        "rank": 24,
+        "rank": 25,
         "risk_codes": [
           "high_realized_volatility"
         ],
@@ -2269,7 +2298,7 @@
         "name": "中设咨询",
         "profile": "trend",
         "provider_name": "sina",
-        "rank": 25,
+        "rank": 26,
         "risk_codes": [
           "high_realized_volatility"
         ],
@@ -2301,7 +2330,7 @@
         "name": "路畅科技",
         "profile": "trend",
         "provider_name": "sina",
-        "rank": 26,
+        "rank": 27,
         "risk_codes": [
           "high_realized_volatility"
         ],
@@ -2333,7 +2362,7 @@
         "name": "慕思股份",
         "profile": "trend",
         "provider_name": "sina",
-        "rank": 27,
+        "rank": 28,
         "risk_codes": [
           "high_realized_volatility"
         ],
@@ -2366,7 +2395,7 @@
         "name": "中国科传",
         "profile": "trend",
         "provider_name": "sina",
-        "rank": 28,
+        "rank": 29,
         "risk_codes": [
           "high_realized_volatility",
           "deep_trailing_drawdown"
@@ -2399,43 +2428,11 @@
         "name": "华阳新材",
         "profile": "trend",
         "provider_name": "sina",
-        "rank": 29,
-        "risk_codes": [
-          "high_realized_volatility"
-        ],
-        "score": 91.23362430466608
-      },
-      {
-        "code": "000995",
-        "components": {
-          "momentum": 100.0,
-          "risk": 63.171850273172765,
-          "structure": 100.0,
-          "trend": 90.25,
-          "volume": 95.1488742367933
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma20_above_ma60",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "ma60_slope_positive",
-          "positive_20_day_momentum",
-          "positive_60_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_above_20_day_average",
-          "volume_with_positive_price_change"
-        ],
-        "latest_trade_date": "2026-10-21",
-        "name": "皇台酒业",
-        "profile": "trend",
-        "provider_name": "sina",
         "rank": 30,
         "risk_codes": [
           "high_realized_volatility"
         ],
-        "score": 91.20201616283627
+        "score": 91.23362430466608
       }
     ]
   },
@@ -27525,12 +27522,13 @@
     {
       "code": "301718",
       "name": "N通则",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [
-        "history_fetch_failed"
+        "insufficient_history",
+        "data_quality_rejected"
       ],
-      "status": "history_failed"
+      "status": "history_excluded"
     },
     {
       "code": "302132",
@@ -38891,12 +38889,10 @@
     {
       "code": "603500",
       "name": "祥和实业",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "603501",
@@ -38909,12 +38905,10 @@
     {
       "code": "603505",
       "name": "金石资源",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "603506",
@@ -39029,22 +39023,18 @@
     {
       "code": "603529",
       "name": "爱玛科技",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "603530",
       "name": "神马电力",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "603533",
@@ -39122,22 +39112,18 @@
     {
       "code": "603559",
       "name": "中通国脉",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "603565",
       "name": "中谷物流",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "603566",
@@ -39252,15 +39238,10 @@
     {
       "code": "603588",
       "name": "高能环境",
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "sina"
-      ],
-      "reason_codes": [
-        "all_providers_failed"
-      ],
-      "status": "history_failed"
+      "provider_name": "sina",
+      "provider_names": [],
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "603589",
@@ -39367,12 +39348,10 @@
     {
       "code": "603608",
       "name": "天创股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "603609",
@@ -39407,15 +39386,10 @@
     {
       "code": "603612",
       "name": "索通发展",
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "sina"
-      ],
-      "reason_codes": [
-        "all_providers_failed"
-      ],
-      "status": "history_failed"
+      "provider_name": "sina",
+      "provider_names": [],
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "603613",
@@ -42120,32 +42094,26 @@
     {
       "code": "605388",
       "name": "均瑶健康",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "605389",
       "name": "长龄液压",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "605398",
       "name": "新炬网络",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "605399",
@@ -51024,5 +50992,5 @@
     }
   ],
   "universe_count": 5576,
-  "valid_count": 3711
+  "valid_count": 3723
 }

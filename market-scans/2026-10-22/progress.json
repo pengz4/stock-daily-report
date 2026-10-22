@@ -160790,35 +160790,6 @@
     {
       "history_hash": null,
       "latest_trade_date": null,
-      "provider_name": "MarketDataService",
-      "provider_names": [
-        "MarketDataService"
-      ],
-      "quote": {
-        "amount": 2187703775.0,
-        "change_pct": 171.54,
-        "code": "301718",
-        "latest_price": 72.99,
-        "market": "SZ",
-        "name": "N通则",
-        "quote_date": "2026-10-22",
-        "volume": 27128677.0
-      },
-      "scores": null,
-      "status": {
-        "code": "301718",
-        "name": "N通则",
-        "provider_name": "MarketDataService",
-        "provider_names": [],
-        "reason_codes": [
-          "history_fetch_failed"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
       "provider_name": "sina",
       "provider_names": [
         "sina"
@@ -236265,64 +236236,6 @@
       }
     },
     {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_name": "MarketDataService",
-      "provider_names": [
-        "MarketDataService"
-      ],
-      "quote": {
-        "amount": 118866460.0,
-        "change_pct": -5.028,
-        "code": "603500",
-        "latest_price": 10.01,
-        "market": "SH",
-        "name": "祥和实业",
-        "quote_date": "2026-10-22",
-        "volume": 11667599.0
-      },
-      "scores": null,
-      "status": {
-        "code": "603500",
-        "name": "祥和实业",
-        "provider_name": "MarketDataService",
-        "provider_names": [],
-        "reason_codes": [
-          "fetch_timeout"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_name": "MarketDataService",
-      "provider_names": [
-        "MarketDataService"
-      ],
-      "quote": {
-        "amount": 81442952.0,
-        "change_pct": -3.011,
-        "code": "603505",
-        "latest_price": 12.24,
-        "market": "SH",
-        "name": "金石资源",
-        "quote_date": "2026-10-22",
-        "volume": 6576960.0
-      },
-      "scores": null,
-      "status": {
-        "code": "603505",
-        "name": "金石资源",
-        "provider_name": "MarketDataService",
-        "provider_names": [],
-        "reason_codes": [
-          "fetch_timeout"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
       "history_hash": "43869a0a71775a52921ddf87ca5cb9b77527e08ac811b0dfceb9dd2140a5bf49",
       "latest_trade_date": "2026-10-21",
       "provider_name": "sina",
@@ -236646,64 +236559,6 @@
         "provider_names": [],
         "reason_codes": [],
         "status": "valid"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_name": "MarketDataService",
-      "provider_names": [
-        "MarketDataService"
-      ],
-      "quote": {
-        "amount": 278313855.0,
-        "change_pct": -10.0,
-        "code": "603529",
-        "latest_price": 19.62,
-        "market": "SH",
-        "name": "爱玛科技",
-        "quote_date": "2026-10-22",
-        "volume": 13831100.0
-      },
-      "scores": null,
-      "status": {
-        "code": "603529",
-        "name": "爱玛科技",
-        "provider_name": "MarketDataService",
-        "provider_names": [],
-        "reason_codes": [
-          "fetch_timeout"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_name": "MarketDataService",
-      "provider_names": [
-        "MarketDataService"
-      ],
-      "quote": {
-        "amount": 252923147.0,
-        "change_pct": -0.381,
-        "code": "603530",
-        "latest_price": 34.0,
-        "market": "SH",
-        "name": "神马电力",
-        "quote_date": "2026-10-22",
-        "volume": 7321494.0
-      },
-      "scores": null,
-      "status": {
-        "code": "603530",
-        "name": "神马电力",
-        "provider_name": "MarketDataService",
-        "provider_names": [],
-        "reason_codes": [
-          "fetch_timeout"
-        ],
-        "status": "history_failed"
       }
     },
     {
@@ -237825,74 +237680,6 @@
       }
     },
     {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "selection",
-        "sina"
-      ],
-      "quote": {
-        "amount": 344742262.0,
-        "change_pct": -2.37,
-        "code": "603588",
-        "latest_price": 12.36,
-        "market": "SH",
-        "name": "高能环境",
-        "quote_date": "2026-10-22",
-        "volume": 27691920.0
-      },
-      "scores": null,
-      "status": {
-        "code": "603588",
-        "name": "高能环境",
-        "provider_name": "selection",
-        "provider_names": [
-          "akshare",
-          "sina"
-        ],
-        "reason_codes": [
-          "all_providers_failed"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "selection",
-        "sina"
-      ],
-      "quote": {
-        "amount": 75951597.0,
-        "change_pct": -2.535,
-        "code": "603612",
-        "latest_price": 14.61,
-        "market": "SH",
-        "name": "索通发展",
-        "quote_date": "2026-10-22",
-        "volume": 5144098.0
-      },
-      "scores": null,
-      "status": {
-        "code": "603612",
-        "name": "索通发展",
-        "provider_name": "selection",
-        "provider_names": [
-          "akshare",
-          "sina"
-        ],
-        "reason_codes": [
-          "all_providers_failed"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
       "history_hash": "9f5f8e1373e08a8865ccb76785ed7c9fafa8d0a62fc6cd2f26906eebf70e494c",
       "latest_trade_date": "2026-10-21",
       "provider_name": "sina",
@@ -238948,35 +238735,6 @@
       }
     },
     {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_name": "MarketDataService",
-      "provider_names": [
-        "MarketDataService"
-      ],
-      "quote": {
-        "amount": 65100429.0,
-        "change_pct": -3.638,
-        "code": "603559",
-        "latest_price": 8.21,
-        "market": "SH",
-        "name": "中通国脉",
-        "quote_date": "2026-10-22",
-        "volume": 7726800.0
-      },
-      "scores": null,
-      "status": {
-        "code": "603559",
-        "name": "中通国脉",
-        "provider_name": "MarketDataService",
-        "provider_names": [],
-        "reason_codes": [
-          "fetch_timeout"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
       "history_hash": "78b70770652d7f9fc69b9144fb38ed2d24733a397ee6f0fb8d85e485c37fe572",
       "latest_trade_date": "2026-10-21",
       "provider_name": "sina",
@@ -239045,35 +238803,6 @@
         "provider_names": [],
         "reason_codes": [],
         "status": "valid"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_name": "MarketDataService",
-      "provider_names": [
-        "MarketDataService"
-      ],
-      "quote": {
-        "amount": 213688513.0,
-        "change_pct": -6.65,
-        "code": "603565",
-        "latest_price": 11.23,
-        "market": "SH",
-        "name": "中谷物流",
-        "quote_date": "2026-10-22",
-        "volume": 18608690.0
-      },
-      "scores": null,
-      "status": {
-        "code": "603565",
-        "name": "中谷物流",
-        "provider_name": "MarketDataService",
-        "provider_names": [],
-        "reason_codes": [
-          "fetch_timeout"
-        ],
-        "status": "history_failed"
       }
     },
     {
@@ -240963,35 +240692,6 @@
         "provider_names": [],
         "reason_codes": [],
         "status": "valid"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_name": "MarketDataService",
-      "provider_names": [
-        "MarketDataService"
-      ],
-      "quote": {
-        "amount": 164360166.0,
-        "change_pct": -5.853,
-        "code": "603608",
-        "latest_price": 18.82,
-        "market": "SH",
-        "name": "天创股份",
-        "quote_date": "2026-10-22",
-        "volume": 8426401.0
-      },
-      "scores": null,
-      "status": {
-        "code": "603608",
-        "name": "天创股份",
-        "provider_name": "MarketDataService",
-        "provider_names": [],
-        "reason_codes": [
-          "fetch_timeout"
-        ],
-        "status": "history_failed"
       }
     },
     {
@@ -254953,35 +254653,6 @@
       }
     },
     {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_name": "MarketDataService",
-      "provider_names": [
-        "MarketDataService"
-      ],
-      "quote": {
-        "amount": 302970743.0,
-        "change_pct": -8.88,
-        "code": "605388",
-        "latest_price": 6.67,
-        "market": "SH",
-        "name": "均瑶健康",
-        "quote_date": "2026-10-22",
-        "volume": 44081504.0
-      },
-      "scores": null,
-      "status": {
-        "code": "605388",
-        "name": "均瑶健康",
-        "provider_name": "MarketDataService",
-        "provider_names": [],
-        "reason_codes": [
-          "fetch_timeout"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
       "history_hash": "0074da00906145fdb13b2ae8efe8283b8bd018f508f77c4afeb0a74319f8fca4",
       "latest_trade_date": "2026-10-21",
       "provider_name": "sina",
@@ -255056,64 +254727,6 @@
         "provider_names": [],
         "reason_codes": [],
         "status": "valid"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_name": "MarketDataService",
-      "provider_names": [
-        "MarketDataService"
-      ],
-      "quote": {
-        "amount": 158041191.0,
-        "change_pct": 1.254,
-        "code": "605389",
-        "latest_price": 56.52,
-        "market": "SH",
-        "name": "长龄液压",
-        "quote_date": "2026-10-22",
-        "volume": 2751053.0
-      },
-      "scores": null,
-      "status": {
-        "code": "605389",
-        "name": "长龄液压",
-        "provider_name": "MarketDataService",
-        "provider_names": [],
-        "reason_codes": [
-          "fetch_timeout"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_name": "MarketDataService",
-      "provider_names": [
-        "MarketDataService"
-      ],
-      "quote": {
-        "amount": 133517811.0,
-        "change_pct": -6.826,
-        "code": "605398",
-        "latest_price": 21.84,
-        "market": "SH",
-        "name": "新炬网络",
-        "quote_date": "2026-10-22",
-        "volume": 5951100.0
-      },
-      "scores": null,
-      "status": {
-        "code": "605398",
-        "name": "新炬网络",
-        "provider_name": "MarketDataService",
-        "provider_names": [],
-        "reason_codes": [
-          "fetch_timeout"
-        ],
-        "status": "history_failed"
       }
     },
     {
@@ -292920,10 +292533,990 @@
         "reason_codes": [],
         "status": "valid"
       }
+    },
+    {
+      "history_hash": "49846ba932685e63c7c26945b2139efcc4475fabc2ecd623bccde0bfad2119b0",
+      "latest_trade_date": "2026-10-22",
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 278313855.0,
+        "change_pct": -10.0,
+        "code": "603529",
+        "latest_price": 19.62,
+        "market": "SH",
+        "name": "爱玛科技",
+        "quote_date": "2026-10-22",
+        "volume": 13831100.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-10-22",
+          "code": "603529",
+          "components": {
+            "momentum": 3.330129745314759,
+            "risk": 73.05420985332141,
+            "structure": 85.0,
+            "trend": 50.08729516102034,
+            "volume": 100.0
+          },
+          "evidence_codes": [
+            "ma20_above_ma60",
+            "ma60_above_ma120",
+            "ma20_slope_positive",
+            "ma60_slope_positive",
+            "trailing_volume_observed",
+            "volume_above_20_day_average",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure"
+          ],
+          "profile": "balanced",
+          "risk_codes": [
+            "high_realized_volatility"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 58.650345975367266
+        },
+        "trend": {
+          "as_of": "2026-10-22",
+          "code": "603529",
+          "components": {
+            "momentum": 3.330129745314759,
+            "risk": 73.05420985332141,
+            "structure": 85.0,
+            "trend": 50.08729516102034,
+            "volume": 100.0
+          },
+          "evidence_codes": [
+            "ma20_above_ma60",
+            "ma60_above_ma120",
+            "ma20_slope_positive",
+            "ma60_slope_positive",
+            "trailing_volume_observed",
+            "volume_above_20_day_average"
+          ],
+          "profile": "trend",
+          "risk_codes": [
+            "high_realized_volatility"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 45.843742731385724
+        }
+      },
+      "status": {
+        "code": "603529",
+        "name": "爱玛科技",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "5801800683e97b218ef1a621c1e8aa6d244a00116126680fe49a398d264055a1",
+      "latest_trade_date": "2026-10-22",
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 81442952.0,
+        "change_pct": -3.011,
+        "code": "603505",
+        "latest_price": 12.24,
+        "market": "SH",
+        "name": "金石资源",
+        "quote_date": "2026-10-22",
+        "volume": 6576960.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-10-22",
+          "code": "603505",
+          "components": {
+            "momentum": 0.0,
+            "risk": 71.65128709610534,
+            "structure": 85.0,
+            "trend": 0.0,
+            "volume": 39.131367019756325
+          },
+          "evidence_codes": [
+            "trailing_volume_observed",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure"
+          ],
+          "profile": "balanced",
+          "risk_codes": [
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 33.61739811737925
+        },
+        "trend": {
+          "as_of": "2026-10-22",
+          "code": "603505",
+          "components": {
+            "momentum": 0.0,
+            "risk": 71.65128709610534,
+            "structure": 85.0,
+            "trend": 0.0,
+            "volume": 39.131367019756325
+          },
+          "evidence_codes": [
+            "trailing_volume_observed"
+          ],
+          "profile": "trend",
+          "risk_codes": [
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 13.034833762573982
+        }
+      },
+      "status": {
+        "code": "603505",
+        "name": "金石资源",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": null,
+      "latest_trade_date": null,
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 2187703775.0,
+        "change_pct": 171.54,
+        "code": "301718",
+        "latest_price": 72.99,
+        "market": "SZ",
+        "name": "N通则",
+        "quote_date": "2026-10-22",
+        "volume": 27128677.0
+      },
+      "scores": null,
+      "status": {
+        "code": "301718",
+        "name": "N通则",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [
+          "insufficient_history",
+          "data_quality_rejected"
+        ],
+        "status": "history_excluded"
+      }
+    },
+    {
+      "history_hash": "d232fec7d56240b37698dabe13dc92e9cc54b7928dcac019ecf4c7a4f38846fd",
+      "latest_trade_date": "2026-10-22",
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 252923147.0,
+        "change_pct": -0.381,
+        "code": "603530",
+        "latest_price": 34.0,
+        "market": "SH",
+        "name": "神马电力",
+        "quote_date": "2026-10-22",
+        "volume": 7321494.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-10-22",
+          "code": "603530",
+          "components": {
+            "momentum": 0.0,
+            "risk": 57.26257369403928,
+            "structure": 85.0,
+            "trend": 0.0,
+            "volume": 100.0
+          },
+          "evidence_codes": [
+            "trailing_volume_observed",
+            "volume_above_20_day_average",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure"
+          ],
+          "profile": "balanced",
+          "risk_codes": [
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 40.589386054105894
+        },
+        "trend": {
+          "as_of": "2026-10-22",
+          "code": "603530",
+          "components": {
+            "momentum": 0.0,
+            "risk": 57.26257369403928,
+            "structure": 85.0,
+            "trend": 0.0,
+            "volume": 100.0
+          },
+          "evidence_codes": [
+            "trailing_volume_observed",
+            "volume_above_20_day_average"
+          ],
+          "profile": "trend",
+          "risk_codes": [
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 20.72625736940393
+        }
+      },
+      "status": {
+        "code": "603530",
+        "name": "神马电力",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "a1d4a3e3abc488efa5504f9a993d01a39032dce590e9bd19709e98e7a1eb2dc0",
+      "latest_trade_date": "2026-10-22",
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 118866460.0,
+        "change_pct": -5.028,
+        "code": "603500",
+        "latest_price": 10.01,
+        "market": "SH",
+        "name": "祥和实业",
+        "quote_date": "2026-10-22",
+        "volume": 11667599.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-10-22",
+          "code": "603500",
+          "components": {
+            "momentum": 60.6801571069715,
+            "risk": 62.08802014942451,
+            "structure": 100.0,
+            "trend": 57.75,
+            "volume": 38.75513047685109
+          },
+          "evidence_codes": [
+            "ma20_above_ma60",
+            "ma20_slope_positive",
+            "ma60_slope_positive",
+            "positive_20_day_momentum",
+            "positive_60_day_momentum",
+            "trailing_volume_observed",
+            "volume_with_positive_price_change",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure",
+            "confirmed_central_breakout_observation"
+          ],
+          "profile": "balanced",
+          "risk_codes": [
+            "high_realized_volatility"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 64.58750401533564
+        },
+        "trend": {
+          "as_of": "2026-10-22",
+          "code": "603500",
+          "components": {
+            "momentum": 60.6801571069715,
+            "risk": 62.08802014942451,
+            "structure": 100.0,
+            "trend": 57.75,
+            "volume": 38.75513047685109
+          },
+          "evidence_codes": [
+            "ma20_above_ma60",
+            "ma20_slope_positive",
+            "ma60_slope_positive",
+            "positive_20_day_momentum",
+            "positive_60_day_momentum",
+            "trailing_volume_observed",
+            "volume_with_positive_price_change"
+          ],
+          "profile": "trend",
+          "risk_codes": [
+            "high_realized_volatility"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 56.21361871856156
+        }
+      },
+      "status": {
+        "code": "603500",
+        "name": "祥和实业",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "c00cc880ab8a3f3847bccbed506ec2b42ff2015f02d3c3e2901933b530a5f021",
+      "latest_trade_date": "2026-10-22",
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 65100429.0,
+        "change_pct": -3.638,
+        "code": "603559",
+        "latest_price": 8.21,
+        "market": "SH",
+        "name": "中通国脉",
+        "quote_date": "2026-10-22",
+        "volume": 7726800.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-10-22",
+          "code": "603559",
+          "components": {
+            "momentum": 13.910059862753686,
+            "risk": 72.12434172760713,
+            "structure": 85.0,
+            "trend": 20.218112174218177,
+            "volume": 41.88908555147848
+          },
+          "evidence_codes": [
+            "ma60_above_ma120",
+            "ma60_slope_positive",
+            "positive_60_day_momentum",
+            "trailing_volume_observed",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure"
+          ],
+          "profile": "balanced",
+          "risk_codes": [
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 42.94945971667903
+        },
+        "trend": {
+          "as_of": "2026-10-22",
+          "code": "603559",
+          "components": {
+            "momentum": 13.910059862753686,
+            "risk": 72.12434172760713,
+            "structure": 85.0,
+            "trend": 20.218112174218177,
+            "volume": 41.88908555147848
+          },
+          "evidence_codes": [
+            "ma60_above_ma120",
+            "ma60_slope_positive",
+            "positive_60_day_momentum",
+            "trailing_volume_observed"
+          ],
+          "profile": "trend",
+          "risk_codes": [
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 26.76696544270677
+        }
+      },
+      "status": {
+        "code": "603559",
+        "name": "中通国脉",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "756e36f2815e74ac8d22659193c1289d0e669a098e7f599fa8fbca0316044a42",
+      "latest_trade_date": "2026-10-22",
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 213688513.0,
+        "change_pct": -6.65,
+        "code": "603565",
+        "latest_price": 11.23,
+        "market": "SH",
+        "name": "中谷物流",
+        "quote_date": "2026-10-22",
+        "volume": 18608690.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-10-22",
+          "code": "603565",
+          "components": {
+            "momentum": 17.522207925018815,
+            "risk": 78.35337029553483,
+            "structure": 100.0,
+            "trend": 54.17900898089829,
+            "volume": 50.018824464321426
+          },
+          "evidence_codes": [
+            "ma20_above_ma60",
+            "ma60_above_ma120",
+            "ma20_slope_positive",
+            "ma60_slope_positive",
+            "positive_60_day_momentum",
+            "trailing_volume_observed",
+            "risk_measures_within_moderate_ranges",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure",
+            "confirmed_central_breakout_observation"
+          ],
+          "profile": "balanced",
+          "risk_codes": [],
+          "rule_version": "market-scan-v1",
+          "total": 59.01397349325168
+        },
+        "trend": {
+          "as_of": "2026-10-22",
+          "code": "603565",
+          "components": {
+            "momentum": 17.522207925018815,
+            "risk": 78.35337029553483,
+            "structure": 100.0,
+            "trend": 54.17900898089829,
+            "volume": 50.018824464321426
+          },
+          "evidence_codes": [
+            "ma20_above_ma60",
+            "ma60_above_ma120",
+            "ma20_slope_positive",
+            "ma60_slope_positive",
+            "positive_60_day_momentum",
+            "trailing_volume_observed",
+            "risk_measures_within_moderate_ranges"
+          ],
+          "profile": "trend",
+          "risk_codes": [],
+          "rule_version": "market-scan-v1",
+          "total": 44.975377118111574
+        }
+      },
+      "status": {
+        "code": "603565",
+        "name": "中谷物流",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "490b1c1fb4509ea2e3446a7bee96266534ba6ad4d0c38b1f0c9489463a59a6b5",
+      "latest_trade_date": "2026-10-22",
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 75951597.0,
+        "change_pct": -2.535,
+        "code": "603612",
+        "latest_price": 14.61,
+        "market": "SH",
+        "name": "索通发展",
+        "quote_date": "2026-10-22",
+        "volume": 5144098.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-10-22",
+          "code": "603612",
+          "components": {
+            "momentum": 2.841880341880343,
+            "risk": 87.83470828265308,
+            "structure": 85.0,
+            "trend": 3.0194343845883167,
+            "volume": 29.04846388484929
+          },
+          "evidence_codes": [
+            "trailing_volume_observed",
+            "risk_measures_within_moderate_ranges",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure"
+          ],
+          "profile": "balanced",
+          "risk_codes": [],
+          "rule_version": "market-scan-v1",
+          "total": 36.00668220887792
+        },
+        "trend": {
+          "as_of": "2026-10-22",
+          "code": "603612",
+          "components": {
+            "momentum": 2.841880341880343,
+            "risk": 87.83470828265308,
+            "structure": 85.0,
+            "trend": 3.0194343845883167,
+            "volume": 29.04846388484929
+          },
+          "evidence_codes": [
+            "trailing_volume_observed",
+            "risk_measures_within_moderate_ranges"
+          ],
+          "profile": "trend",
+          "risk_codes": [],
+          "rule_version": "market-scan-v1",
+          "total": 15.352049986621546
+        }
+      },
+      "status": {
+        "code": "603612",
+        "name": "索通发展",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "c8a91167917574ed82f283c6e1a15d5b7c8901d613415e498953f7729cc14cd7",
+      "latest_trade_date": "2026-10-22",
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 302970743.0,
+        "change_pct": -8.88,
+        "code": "605388",
+        "latest_price": 6.67,
+        "market": "SH",
+        "name": "均瑶健康",
+        "quote_date": "2026-10-22",
+        "volume": 44081504.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-10-22",
+          "code": "605388",
+          "components": {
+            "momentum": 98.22773972602738,
+            "risk": 58.20040899795502,
+            "structure": 100.0,
+            "trend": 100.0,
+            "volume": 100.0
+          },
+          "evidence_codes": [
+            "close_above_ma20",
+            "ma20_above_ma60",
+            "ma60_above_ma120",
+            "macd_line_above_signal",
+            "ma20_slope_positive",
+            "ma60_slope_positive",
+            "positive_20_day_momentum",
+            "positive_60_day_momentum",
+            "positive_macd_histogram",
+            "trailing_volume_observed",
+            "volume_above_20_day_average",
+            "volume_with_positive_price_change",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure",
+            "confirmed_central_breakout_observation"
+          ],
+          "profile": "balanced",
+          "risk_codes": [
+            "high_realized_volatility"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 93.37560929489874
+        },
+        "trend": {
+          "as_of": "2026-10-22",
+          "code": "605388",
+          "components": {
+            "momentum": 98.22773972602738,
+            "risk": 58.20040899795502,
+            "structure": 100.0,
+            "trend": 100.0,
+            "volume": 100.0
+          },
+          "evidence_codes": [
+            "close_above_ma20",
+            "ma20_above_ma60",
+            "ma60_above_ma120",
+            "macd_line_above_signal",
+            "ma20_slope_positive",
+            "ma60_slope_positive",
+            "positive_20_day_momentum",
+            "positive_60_day_momentum",
+            "positive_macd_histogram",
+            "trailing_volume_observed",
+            "volume_above_20_day_average",
+            "volume_with_positive_price_change"
+          ],
+          "profile": "trend",
+          "risk_codes": [
+            "high_realized_volatility"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 95.28836281760371
+        }
+      },
+      "status": {
+        "code": "605388",
+        "name": "均瑶健康",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "3a1d41e6c0607ab3198683ad799df14f270d5ad0d1c388aa7660d69ee04fb396",
+      "latest_trade_date": "2026-10-22",
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 164360166.0,
+        "change_pct": -5.853,
+        "code": "603608",
+        "latest_price": 18.82,
+        "market": "SH",
+        "name": "天创股份",
+        "quote_date": "2026-10-22",
+        "volume": 8426401.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-10-22",
+          "code": "603608",
+          "components": {
+            "momentum": 14.758412146947176,
+            "risk": 59.09894053771672,
+            "structure": 85.0,
+            "trend": 22.75,
+            "volume": 31.87114321527746
+          },
+          "evidence_codes": [
+            "ma20_above_ma60",
+            "positive_60_day_momentum",
+            "trailing_volume_observed",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure"
+          ],
+          "profile": "balanced",
+          "risk_codes": [
+            "high_realized_volatility",
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 40.42219499233856
+        },
+        "trend": {
+          "as_of": "2026-10-22",
+          "code": "603608",
+          "components": {
+            "momentum": 14.758412146947176,
+            "risk": 59.09894053771672,
+            "structure": 85.0,
+            "trend": 22.75,
+            "volume": 31.87114321527746
+          },
+          "evidence_codes": [
+            "ma20_above_ma60",
+            "positive_60_day_momentum",
+            "trailing_volume_observed"
+          ],
+          "profile": "trend",
+          "risk_codes": [
+            "high_realized_volatility",
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 25.355589180147447
+        }
+      },
+      "status": {
+        "code": "603608",
+        "name": "天创股份",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "ea0e8559ac243c08d58431c20d72ea0ecc162f7397cdcbc060556848b923020b",
+      "latest_trade_date": "2026-10-22",
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 344742262.0,
+        "change_pct": -2.37,
+        "code": "603588",
+        "latest_price": 12.36,
+        "market": "SH",
+        "name": "高能环境",
+        "quote_date": "2026-10-22",
+        "volume": 27691920.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-10-22",
+          "code": "603588",
+          "components": {
+            "momentum": 8.797814207650278,
+            "risk": 47.757369128383395,
+            "structure": 85.0,
+            "trend": 29.518214618249345,
+            "volume": 22.459137899344512
+          },
+          "evidence_codes": [
+            "ma20_above_ma60",
+            "ma60_slope_positive",
+            "positive_60_day_momentum",
+            "trailing_volume_observed",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure"
+          ],
+          "profile": "balanced",
+          "risk_codes": [
+            "high_realized_volatility",
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 38.14750328116405
+        },
+        "trend": {
+          "as_of": "2026-10-22",
+          "code": "603588",
+          "components": {
+            "momentum": 8.797814207650278,
+            "risk": 47.757369128383395,
+            "structure": 85.0,
+            "trend": 29.518214618249345,
+            "volume": 22.459137899344512
+          },
+          "evidence_codes": [
+            "ma20_above_ma60",
+            "ma60_slope_positive",
+            "positive_60_day_momentum",
+            "trailing_volume_observed"
+          ],
+          "profile": "trend",
+          "risk_codes": [
+            "high_realized_volatility",
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 24.067148438247305
+        }
+      },
+      "status": {
+        "code": "603588",
+        "name": "高能环境",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "89b60058e13b14620424432a4b2416d624f3e705f3f9e85b8f61edbb4b05d51a",
+      "latest_trade_date": "2026-10-22",
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 133517811.0,
+        "change_pct": -6.826,
+        "code": "605398",
+        "latest_price": 21.84,
+        "market": "SH",
+        "name": "新炬网络",
+        "quote_date": "2026-10-22",
+        "volume": 5951100.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-10-22",
+          "code": "605398",
+          "components": {
+            "momentum": 52.08771728671505,
+            "risk": 47.2858924704727,
+            "structure": 100.0,
+            "trend": 56.78091184911397,
+            "volume": 47.35634094173829
+          },
+          "evidence_codes": [
+            "ma20_above_ma60",
+            "ma20_slope_positive",
+            "ma60_slope_positive",
+            "positive_20_day_momentum",
+            "positive_60_day_momentum",
+            "trailing_volume_observed",
+            "volume_with_positive_price_change",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure",
+            "confirmed_central_breakout_observation"
+          ],
+          "profile": "balanced",
+          "risk_codes": [
+            "high_realized_volatility",
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 61.64815202390885
+        },
+        "trend": {
+          "as_of": "2026-10-22",
+          "code": "605398",
+          "components": {
+            "momentum": 52.08771728671505,
+            "risk": 47.2858924704727,
+            "structure": 100.0,
+            "trend": 56.78091184911397,
+            "volume": 47.35634094173829
+          },
+          "evidence_codes": [
+            "ma20_above_ma60",
+            "ma20_slope_positive",
+            "ma60_slope_positive",
+            "positive_20_day_momentum",
+            "positive_60_day_momentum",
+            "trailing_volume_observed",
+            "volume_with_positive_price_change"
+          ],
+          "profile": "trend",
+          "risk_codes": [
+            "high_realized_volatility",
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 53.009765906423816
+        }
+      },
+      "status": {
+        "code": "605398",
+        "name": "新炬网络",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "80ff1a86183ea1db46ae7a9667f83fc80a4c1c6dd4e5538c4c80496fbd98bdaa",
+      "latest_trade_date": "2026-10-22",
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 158041191.0,
+        "change_pct": 1.254,
+        "code": "605389",
+        "latest_price": 56.52,
+        "market": "SH",
+        "name": "长龄液压",
+        "quote_date": "2026-10-22",
+        "volume": 2751053.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-10-22",
+          "code": "605389",
+          "components": {
+            "momentum": 20.0,
+            "risk": 48.69801380082259,
+            "structure": 85.0,
+            "trend": 9.75,
+            "volume": 100.0
+          },
+          "evidence_codes": [
+            "macd_line_above_signal",
+            "positive_macd_histogram",
+            "trailing_volume_observed",
+            "volume_above_20_day_average",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure"
+          ],
+          "profile": "balanced",
+          "risk_codes": [
+            "high_realized_volatility",
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 46.22970207012339
+        },
+        "trend": {
+          "as_of": "2026-10-22",
+          "code": "605389",
+          "components": {
+            "momentum": 20.0,
+            "risk": 48.69801380082259,
+            "structure": 85.0,
+            "trend": 9.75,
+            "volume": 100.0
+          },
+          "evidence_codes": [
+            "macd_line_above_signal",
+            "positive_macd_histogram",
+            "trailing_volume_observed",
+            "volume_above_20_day_average"
+          ],
+          "profile": "trend",
+          "risk_codes": [
+            "high_realized_volatility",
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 30.25730138008226
+        }
+      },
+      "status": {
+        "code": "605389",
+        "name": "长龄液压",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
     }
   ],
   "execution_date": "2026-10-22",
-  "last_batch": 38,
+  "last_batch": 39,
   "manifest_hash": "ac3844c1baee77b9cde1f4bfb366fca08b927fd44218a0dfd042ee723f7ef352",
   "market_state": {
     "breadth": {
@@ -348788,5 +349381,5 @@
       "volume": 743354.0
     }
   ],
-  "updated_at": "2026-10-22T08:36:10.941681Z"
+  "updated_at": "2026-10-22T12:59:09.183311Z"
 }
