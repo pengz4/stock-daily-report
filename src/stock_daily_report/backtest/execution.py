@@ -86,7 +86,7 @@ def execute_signal(
             continue
         if is_suspended(bar) or index == 0:
             continue
-        if _is_limit_up(
+        if is_limit_up(
             bar,
             bars[index - 1],
             costs.price_limit_pct,
@@ -115,12 +115,14 @@ def is_suspended(bar: DailyBar) -> bool:
     return bar.volume <= 0 or bar.amount <= 0
 
 
-def _is_limit_up(
+def is_limit_up(
     bar: DailyBar,
     previous: DailyBar,
     limit_pct: float,
-    price_tick: float,
+    price_tick: float = 0.01,
 ) -> bool:
+    """Return whether a bar is locked at its daily up limit."""
+
     return (
         bar.open + 1e-9
         >= _rounded_limit(previous.close * (1 + limit_pct), price_tick)
@@ -151,4 +153,11 @@ def _rounded_limit(price: float, price_tick: float) -> float:
     return float(value * Decimal(str(price_tick)))
 
 
-__all__ = ["Costs", "Trade", "execute_signal", "is_limit_down", "is_suspended"]
+__all__ = [
+    "Costs",
+    "Trade",
+    "execute_signal",
+    "is_limit_down",
+    "is_limit_up",
+    "is_suspended",
+]

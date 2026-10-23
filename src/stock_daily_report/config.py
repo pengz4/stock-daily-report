@@ -9,6 +9,7 @@ from pydantic import BaseModel, ValidationError
 from stock_daily_report.models import (
     BacktestSettings,
     MarketScanSettings,
+    PortfolioBacktestSettings,
     Settings,
     Watchlist,
 )
@@ -72,6 +73,14 @@ def load_backtest_settings(path: str | Path) -> BacktestSettings:
     """Load and validate execution-aware backtest assumptions."""
 
     return _load_model(path, BacktestSettings, "backtest")
+
+
+def load_portfolio_backtest_settings(
+    path: str | Path,
+) -> PortfolioBacktestSettings:
+    """Load and validate portfolio-level backtest assumptions."""
+
+    return _load_model(path, PortfolioBacktestSettings, "portfolio backtest")
 
 
 def load_market_scan_settings(path: str | Path) -> MarketScanSettings:

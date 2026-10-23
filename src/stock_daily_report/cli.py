@@ -11,11 +11,13 @@ from zoneinfo import ZoneInfo
 
 from pydantic import ValidationError
 
+from stock_daily_report.backtest.portfolio_runner import run_portfolio_backtest
 from stock_daily_report.backtest.runner import run_backtest
 from stock_daily_report.config import (
     ConfigurationError,
     load_backtest_settings,
     load_market_scan_settings,
+    load_portfolio_backtest_settings,
     load_settings,
     load_watchlist,
 )
@@ -105,6 +107,28 @@ def main(argv: list[str] | None = None) -> int:
     backtest.add_argument("--fixture-directory", type=Path, required=True)
     backtest.add_argument("--output-root", type=Path, default=Path.cwd())
     backtest.add_argument("--date", type=date.fromisoformat)
+    portfolio_backtest = subparsers.add_parser(
+        "portfolio-backtest",
+        help="evaluate historical market-scan rankings as an equal-weight portfolio",
+    )
+    portfolio_backtest.add_argument(
+        "--settings",
+        type=Path,
+        default=_project_root() / "config/portfolio_backtest.yaml",
+    )
+    portfolio_backtest.add_argument(
+        "--market-scan-settings",
+        type=Path,
+        default=_project_root() / "config/market_scan.yaml",
+    )
+    portfolio_backtest.add_argument(
+        "--watchlist",
+        type=Path,
+        default=_project_root() / "config/watchlist.yaml",
+    )
+    portfolio_backtest.add_argument("--fixture-directory", type=Path, required=True)
+    portfolio_backtest.add_argument("--output-root", type=Path, default=Path.cwd())
+    portfolio_backtest.add_argument("--date", type=date.fromisoformat)
     market_scan = subparsers.add_parser(
         "market-scan", help="run one full-market opportunity scan"
     )
@@ -226,6 +250,24 @@ def main(argv: list[str] | None = None) -> int:
             watchlist = load_watchlist(args.watchlist)
             report_path = run_backtest(
                 settings,
+                watchlist,
+                FixtureMarketDataProvider(args.fixture_directory),
+                output_root=args.output_root,
+                report_date=args.date,
+            )
+        except (ConfigurationError, OSError, ProviderError, ValueError) as error:
+            print(error, file=sys.stderr)
+            return 1
+        print(report_path)
+        return 0
+    if args.command == "portfolio-backtest":
+        try:
+            settings = load_portfolio_backtest_settings(args.settings)
+            scan_settings = load_market_scan_settings(args.market_scan_settings)
+            watchlist = load_watchlist(args.watchlist)
+            report_path = run_portfolio_backtest(
+                settings,
+                scan_settings,
                 watchlist,
                 FixtureMarketDataProvider(args.fixture_directory),
                 output_root=args.output_root,

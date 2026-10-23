@@ -159,6 +159,41 @@ marked `not_enough_evidence`; they are research diagnostics, not return
 guarantees or trading instructions. GitHub Actions runs this separately from
 the daily report workflow and uploads the report as an artifact.
 
+## Portfolio backtest
+
+Replay the configured market-scan profile as an equal-weight portfolio using
+offline normalized daily-bar CSVs:
+
+```bash
+stock-daily-report portfolio-backtest \
+  --settings config/portfolio_backtest.yaml \
+  --market-scan-settings config/market_scan.yaml \
+  --watchlist config/portfolio_backtest_fixture_watchlist.yaml \
+  --fixture-directory fixtures/bars \
+  --output-root .
+```
+
+Signals are recalculated from each symbol's history available at that session's
+close. Rebalances execute no earlier than the next session's open, in 100-share
+lots, using configured commission/slippage and handling locked price-limit bars
+and suspensions according to the configured limit rate. The report compares the
+portfolio with an equal-weight buy-and-hold baseline using the same watchlist at
+`reports/backtests/portfolio/YYYY-MM-DD/report.json`. Configure
+`out_of_sample_start` before interpreting any result; otherwise the report
+labels evidence as `holdout_not_configured`.
+Annualized return, annualized volatility, and Sharpe are omitted until the
+configured holdout contains at least `minimum_sample_count` daily observations.
+
+The command only reads local data and does not download market history. The
+committed fixture is only a smoke test. Reports explicitly warn that the
+watchlist is not reconstructed point-in-time (so survivorship bias is possible),
+corporate actions and dividends are not modeled separately, stale holdings are
+marked at the last observed close, and the baseline is not a broad-market index.
+This version evaluates one holdout and does not do walk-forward testing or
+correct for parameter-selection bias. A meaningful evaluation still requires a
+licensed, multi-symbol historical dataset with delisted securities, validated
+corporate actions, and a predeclared holdout period.
+
 ## GitHub Actions
 
 Pull requests targeting `master` run Ruff and the full pytest suite.

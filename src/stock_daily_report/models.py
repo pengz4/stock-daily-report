@@ -257,6 +257,30 @@ class BacktestSettings(BaseModel):
         return value
 
 
+class PortfolioBacktestSettings(BaseModel):
+    """Frozen assumptions for point-in-time market-scan portfolio research."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    rule_version: Literal["portfolio-backtest-v1"]
+    profile: Literal["trend", "balanced"]
+    max_positions: StrictInt = Field(ge=1, le=30)
+    rebalance_every_sessions: StrictInt = Field(ge=1)
+    initial_cash: float = Field(gt=0.0, allow_inf_nan=False)
+    minimum_sample_count: StrictInt = Field(ge=1)
+    out_of_sample_start: date | None = None
+    costs: BacktestCostsSettings
+
+    @field_validator("initial_cash", mode="before")
+    @classmethod
+    def reject_non_finite_initial_cash(cls, value: object) -> object:
+        if isinstance(value, bool):
+            raise ValueError(  # noqa: TRY004
+                "initial_cash must be a finite positive number"
+            )
+        return value
+
+
 MARKET_STATE_INDEX_CODES = (
     "000001",
     "399001",

@@ -1,0 +1,12 @@
+rule_version: portfolio-backtest-v1
+profile: trend
+max_positions: 5
+rebalance_every_sessions: 5
+initial_cash: 1000000
+minimum_sample_count: 20
+out_of_sample_start: null
+costs:
+  commission_bps: 3
+  slippage_bps: 5
+  price_limit_pct: 0.10
+  price_tick: 0.01

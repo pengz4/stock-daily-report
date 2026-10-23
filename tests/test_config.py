@@ -8,6 +8,7 @@ from stock_daily_report.config import (
     ConfigurationError,
     load_backtest_settings,
     load_market_scan_settings,
+    load_portfolio_backtest_settings,
     load_settings,
     load_watchlist,
 )
@@ -387,6 +388,73 @@ def test_load_backtest_settings_rejects_infinite_price_tick(tmp_path):
 
     with pytest.raises(ConfigurationError, match="finite"):
         load_backtest_settings(path)
+
+
+def test_load_portfolio_backtest_settings_validates_rebalance_contract(tmp_path):
+    path = tmp_path / "portfolio-backtest.yaml"
+    path.write_text(
+        "rule_version: portfolio-backtest-v1\n"
+        "profile: trend\n"
+        "max_positions: 5\n"
+        "rebalance_every_sessions: 5\n"
+        "initial_cash: 1000000\n"
+        "minimum_sample_count: 20\n"
+        "out_of_sample_start: 2025-01-01\n"
+        "costs:\n"
+        "  commission_bps: 3\n"
+        "  slippage_bps: 5\n"
+        "  price_limit_pct: 0.1\n"
+        "  price_tick: 0.01\n",
+        encoding="utf-8",
+    )
+
+    settings = load_portfolio_backtest_settings(path)
+
+    assert settings.profile == "trend"
+    assert settings.max_positions == 5
+    assert settings.rebalance_every_sessions == 5
+    assert settings.initial_cash == 1_000_000
+    assert settings.out_of_sample_start.isoformat() == "2025-01-01"
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("max_positions", 0),
+        ("rebalance_every_sessions", 0),
+        ("initial_cash", 0),
+        ("profile", "future"),
+    ],
+)
+def test_load_portfolio_backtest_settings_rejects_invalid_parameters(
+    tmp_path, field, value
+):
+    path = tmp_path / "portfolio-backtest.yaml"
+    values = {
+        "rule_version": "portfolio-backtest-v1",
+        "profile": "trend",
+        "max_positions": "5",
+        "rebalance_every_sessions": "5",
+        "initial_cash": "1000000",
+        "minimum_sample_count": "20",
+        "costs": (
+            "  commission_bps: 3\n"
+            "  slippage_bps: 5\n"
+            "  price_limit_pct: 0.1\n"
+            "  price_tick: 0.01\n"
+        ),
+    }
+    values[field] = str(value)
+    path.write_text(
+        "\n".join(
+            f"{key}:\n{value}" if key == "costs" else f"{key}: {value}"
+            for key, value in values.items()
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ConfigurationError):
+        load_portfolio_backtest_settings(path)
 
 
 def test_load_market_scan_settings_validates_versioned_limits(tmp_path):

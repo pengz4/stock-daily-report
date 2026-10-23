@@ -2,7 +2,7 @@
 
 ## Current state
 
-Status checked 2026-10-23 against `master` at `41ac1f6` (PR #6). The repository
+Status checked 2026-10-23 against `master` at `f3102e1` (PR #7). The repository
 default branch is `master`.
 
 The project generates auditable A-share close research reports, full-market and
@@ -26,6 +26,11 @@ orders or promise returns.
   fallback and resumable-fetch retries, failure rate, and latency. Metrics do
   not include provider-client internal retries; forcibly terminated requests
   may lack timing data.
+- Offline `portfolio-backtest` replays the configured market-scan profile
+  against historical watchlist bars, rebalances at the next session's open,
+  and reports an equal-weight buy-and-hold baseline. It is a simulator, not a
+  performance claim; one explicit holdout is supported, not walk-forward
+  evaluation.
 - Market-state breadth and five configured index histories; dedicated Sina
   index-price retrieval with AkShare/Eastmoney fallback.
 - PR CI on `master` for Ruff and the complete pytest suite. The CI installation
@@ -44,13 +49,13 @@ concurrency groups with `queue: max` (up to 100 pending jobs per group).
 Provider response caching is best-effort and date/configuration scoped.
 
 The latest confirmed daily-report and full-market scan Actions on `master`
-completed successfully on 2026-10-22. CI was added by PR #6 and its quality job
-passed on the merged change. Check GitHub Actions for runs after this status
-date before relying on current service health.
+completed successfully on 2026-10-22. PR #7's quality check passed before this
+portfolio-backtest feature branch was created; the new feature is locally
+validated but has not yet run in GitHub Actions.
 
 ## Verification
 
-- Latest local full-suite run on the current code: 682 passed, 2 skipped.
+- Latest local full-suite run on the current code: 700 passed, 2 skipped.
 - `ruff check .` passed.
 - The suite reports a known Python multiprocessing fork/thread deprecation
   warning; it does not fail the tests.
@@ -66,8 +71,10 @@ date before relying on current service health.
   backtesting remains deferred until data provenance, usage rights, adjustment
   methodology, corporate actions, delisted-symbol treatment, date coverage,
   and a predeclared holdout split are available and validated.
-- The current backtest evaluates symbols individually. It does not produce a
-  portfolio-level, equal-weight out-of-sample result.
+- The existing structural backtest still evaluates symbols individually.
+  Portfolio simulation requires multi-symbol input and a predeclared holdout;
+  it does not remove survivorship, corporate-action, or delisting bias by
+  itself. Its baseline is the same watchlist, not an index.
 - Before portfolio evaluation, obtain a sufficiently long, multi-symbol
   historical dataset with documented provenance/usage rights, consistent
   adjustment semantics, trading calendars, survivorship treatment, and a
