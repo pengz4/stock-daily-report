@@ -17,6 +17,6 @@ def test_ci_workflow_runs_tests_and_lint_for_pull_requests_to_master():
     assert workflow["permissions"] == {"contents": "read"}
     assert job["timeout-minutes"] > 0
     assert "requirements.lock" in install
-    assert ".[dev]" in install
+    assert 'install --no-build-isolation -e ".[dev]"' in install
     assert "ruff check ." in checks
     assert "pytest -q" in checks
