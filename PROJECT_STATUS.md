@@ -2,97 +2,82 @@
 
 ## Current state
 
-- Branch: `feature/a-share-daily-report`
-- Repository: `git@github.com:pengz4/stock-daily-report.git`
-- Scope: A-share close research reports with simplified/strict Chan-style
-  structure analysis, full-market trend/balanced scanning, WeCom/Feishu
-  notifications, GitHub Pages publication, and an execution-aware backtest CLI.
-- Latest implementation commit: `088f1e8` (`fix: refresh reports from immutable snapshots`)
-- Latest implementation commit: run `git log -1 --oneline` after pulling.
+Status checked 2026-10-23 against `master` at `41ac1f6` (PR #6). The repository
+default branch is `master`.
 
-## Completed
+The project generates auditable A-share close research reports, full-market and
+watchlist scans, market-state summaries, notifications, GitHub Pages output, and
+execution-aware backtest diagnostics. It is research-only and does not place
+orders or promise returns.
 
-- Deterministic daily report pipeline with JSON, Markdown, and HTML output.
-- Input snapshots, SHA-256 hashes, transactional publication, recovery, and
-  `reports-history` persistence.
-- WeCom and Feishu notifications with retries, timeouts, byte limits, and
-  channel-isolated failures.
-- GitHub Actions scheduling, Pages deployment, and post-deployment
-  notifications.
-- `simplified-v1` and versioned `strict-v1` structural analyzers.
-- No-lookahead prefix replay with formed/confirmed/tradable timestamps and
-  structural precision/recall/F1 metrics.
-- Execution-aware long-only backtest with costs, slippage, price limits,
-  suspensions, holding horizons, overlap suppression, and evidence status.
-- Independent `.github/workflows/structural-backtest.yml` and
-  `stock-daily-report backtest` command.
-- Versioned full-market scanner with strict universe completeness checks,
-  provider fallbacks, eligibility filtering, explainable trend/balanced scores,
-  coverage gates, failure isolation, and immutable `market-scans/YYYY-MM-DD/scan.json`
-  artifacts.
-- Independent `.github/workflows/market-scan.yml` with `market-scan` CLI.
-- Daily report integration for scan metadata, rankings, consensus, and explicit
-  unavailable states; an existing report is refreshed when a new same-date scan
-  arrives without replacing its immutable input snapshot.
+## Delivered capabilities
+
+- Deterministic JSON, Markdown, and HTML reports with validated inputs,
+  immutable snapshots, hashes, transactional publication, and recovery.
+- WeCom/Feishu notification adapters and scheduled GitHub Actions/Pages
+  deployment.
+- Versioned simplified and strict Chan-style analyzers, no-lookahead replay,
+  structural evaluation, and execution-aware long-only backtest assumptions.
+- Full-market screening with primary/fallback data providers, data-quality and
+  coverage gates, explainable rankings, checkpoints, retry/resume, and
+  immutable date-partitioned scan artifacts.
+- Per-candidate provider attempt telemetry is retained in resumable checkpoints
+  and summarized in scan logs by provider: requests, cache hits, provider
+  fallback and resumable-fetch retries, failure rate, and latency. Metrics do
+  not include provider-client internal retries; forcibly terminated requests
+  may lack timing data.
+- Market-state breadth and five configured index histories; dedicated Sina
+  index-price retrieval with AkShare/Eastmoney fallback.
+- PR CI on `master` for Ruff and the complete pytest suite. The CI installation
+  uses the checkout in editable mode because tests and CLI defaults resolve
+  configuration and site files relative to the source tree.
+
+## Verified operational configuration
+
+`config/market_scan.yaml` currently sets 4 history workers, a maximum of 6,000
+eligible candidates, an 80% minimum successful-history coverage ratio, and 120
+minimum history bars. Rankings remain unavailable when the scan is incomplete
+or coverage is below threshold.
+
+The market-scan and daily-report history writers use serialized Actions
+concurrency groups with `queue: max` (up to 100 pending jobs per group).
+Provider response caching is best-effort and date/configuration scoped.
+
+The latest confirmed daily-report and full-market scan Actions on `master`
+completed successfully on 2026-10-22. CI was added by PR #6 and its quality job
+passed on the merged change. Check GitHub Actions for runs after this status
+date before relying on current service health.
 
 ## Verification
 
-The latest local verification completed with:
+- Latest local full-suite run on the current code: 682 passed, 2 skipped.
+- `ruff check .` passed.
+- The suite reports a known Python multiprocessing fork/thread deprecation
+  warning; it does not fail the tests.
+- CI runtime dependencies are pinned in `requirements.lock`; pytest, Ruff, and
+  their test-time dependencies are pinned in `requirements-dev.lock`.
 
-- `pytest -q`: 532 tests passed.
-- `ruff check .`: passed.
-- `git diff --check`: passed.
-- Fixture CLI smoke report: `reports/backtests/2026-09-04/report.json`.
+## Data and backtest limitations
 
-The committed fixture is intentionally a small deterministic smoke fixture.
-Its backtest evaluations are expected to report `not_enough_evidence`; they
-must not be interpreted as performance evidence.
+- The committed bar fixture contains one symbol (`600519`) and only three
+  trading days. It is a deterministic smoke fixture, not real historical
+  evidence and not enough to estimate out-of-sample performance.
+- No approved multi-symbol historical dataset is currently bundled. Portfolio
+  backtesting remains deferred until data provenance, usage rights, adjustment
+  methodology, corporate actions, delisted-symbol treatment, date coverage,
+  and a predeclared holdout split are available and validated.
+- The current backtest evaluates symbols individually. It does not produce a
+  portfolio-level, equal-weight out-of-sample result.
+- Before portfolio evaluation, obtain a sufficiently long, multi-symbol
+  historical dataset with documented provenance/usage rights, consistent
+  adjustment semantics, trading calendars, survivorship treatment, and a
+  predeclared out-of-sample date split. Validate coverage and corporate-action
+  handling before making any performance claim.
+- Do not interpret fixture outcomes or a green CI/Actions run as investment
+  performance evidence.
 
-## Daily publication status
+## Local development
 
-- The 2026-09-10 daily workflow completed successfully.
-- The 2026-09-11 daily workflow completed successfully after scan-aware
-  regeneration; report artifacts and the scan artifact are persisted on
-  `reports-history` under `reports/2026-09-11/` and
-  `market-scans/2026-09-11/`.
-- The 2026-09-11 scan discovered 5,561 universe entries and 4,035 eligible
-  entries, but only 1,194 histories completed successfully (29.59% coverage).
-  The coverage gate therefore marks rankings unavailable and records
-  `candidate_limit_exceeded=2835`; no incomplete Top 30 is published.
-- GitHub Pages is enabled with GitHub Actions as its build source.
-- Production market data uses AkShare/Eastmoney first and the independent
-  AkShare/Sina endpoint as fallback; the short fixture is no longer the
-  production fallback.
-
-## Known boundaries
-
-- The repository does not yet bundle a sufficiently long historical dataset
-  or an index data source. A real out-of-sample index baseline and a
-  statistically meaningful watchlist portfolio comparison require those data.
-- The current backtest report evaluates each watchlist symbol independently;
-  equal-weight portfolio aggregation is not yet a production result.
-- Full-market ranking output remains gated until the history scan reaches the
-  configured 80% coverage threshold; the current runner processes at most
-  1,200 candidates and suppresses rankings when the cap leaves candidates
-  unprocessed.
-- The simplified execution rule is explicitly versioned as
-  `simplified-breakout-v1`; simplified structural observations remain
-  descriptive outside that adapter.
-- The system is research-only: it does not place orders or promise returns.
-
-## Pull and resume at home
-
-```bash
-git clone git@github.com:pengz4/stock-daily-report.git
-cd stock-daily-report
-git fetch origin
-git checkout --track origin/feature/a-share-daily-report
-python3.11 -m venv .venv
-.venv/bin/pip install -r requirements.lock
-.venv/bin/pip install --no-build-isolation --no-deps .
-.venv/bin/stock-daily-report backtest \
-  --settings config/backtest.yaml \
-  --watchlist config/watchlist.yaml \
-  --fixture-directory fixtures/bars \
-  --output-root .
-```
+Install `requirements.lock`, install the checkout editable, then install
+`requirements-dev.lock` to reproduce CI. Run `ruff check .` and `pytest -q`
+before opening or updating a PR.

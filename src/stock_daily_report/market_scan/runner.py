@@ -7,7 +7,7 @@ import inspect
 import json
 import multiprocessing
 import time
-from collections import Counter
+from collections import Counter, defaultdict
 from collections.abc import Mapping, Sequence
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from dataclasses import dataclass
@@ -43,7 +43,11 @@ from stock_daily_report.market_scan.state import (
     calculate_market_state,
 )
 from stock_daily_report.models import DailyBar, MarketDataSettings, MarketScanSettings
-from stock_daily_report.providers.base import ProviderDataError, ProviderError
+from stock_daily_report.providers.base import (
+    ProviderDataError,
+    ProviderError,
+    ProviderRequestMetric,
+)
 from stock_daily_report.providers.index import IndexBar, IndexCloseBar
 from stock_daily_report.providers.service import (
     AllProvidersFailedError,
@@ -64,7 +68,15 @@ def _fetch_history_worker(
     """Fetch one symbol in a process that can be terminated on timeout."""
 
     try:
-        payload = ("ok", _fetch_history(history_provider, code, report_date))
+        bars, provider_name, metrics = _fetch_history(
+            history_provider, code, report_date
+        )
+        payload = (
+            "ok",
+            bars,
+            provider_name,
+            tuple(metric.model_dump(mode="json") for metric in metrics),
+        )
     except AllProvidersFailedError as error:
         payload = (
             "all_providers_failed",
@@ -72,9 +84,15 @@ def _fetch_history_worker(
                 (failure.provider, failure.code, failure.detail)
                 for failure in error.failures
             ),
+            tuple(metric.model_dump(mode="json") for metric in error.provider_metrics),
         )
     except DataQualityError as error:
-        payload = ("data_quality", error.provider, error.quality)
+        payload = (
+            "data_quality",
+            error.provider,
+            error.quality,
+            tuple(metric.model_dump(mode="json") for metric in error.provider_metrics),
+        )
     except ProviderError as error:
         payload = ("provider_error", error.provider, error.code, error.detail)
     except Exception as error:  # noqa: BLE001
@@ -87,7 +105,11 @@ def _fetch_history_with_timeout(
     history_provider: object,
     code: str,
     report_date: date,
-) -> tuple[Sequence[DailyBar | Mapping[str, object]], str]:
+) -> tuple[
+    Sequence[DailyBar | Mapping[str, object]],
+    str,
+    tuple[ProviderRequestMetric, ...],
+]:
     """Run provider I/O in a killable child process on POSIX runners."""
 
     if not getattr(history_provider, "supports_hard_timeout", False):
@@ -122,13 +144,28 @@ def _fetch_history_with_timeout(
 
     kind = payload[0]
     if kind == "ok":
-        return payload[1]
+        return (
+            payload[1],
+            payload[2],
+            tuple(
+                ProviderRequestMetric.model_validate(metric) for metric in payload[3]
+            ),
+        )
     if kind == "all_providers_failed":
         raise AllProvidersFailedError(
-            [ProviderError(provider, code, detail) for provider, code, detail in payload[1]]
+            [ProviderError(provider, code, detail) for provider, code, detail in payload[1]],
+            provider_metrics=[
+                ProviderRequestMetric.model_validate(metric) for metric in payload[2]
+            ],
         )
     if kind == "data_quality":
-        raise DataQualityError(payload[1], payload[2])
+        raise DataQualityError(
+            payload[1],
+            payload[2],
+            provider_metrics=[
+                ProviderRequestMetric.model_validate(metric) for metric in payload[3]
+            ],
+        )
     if kind == "provider_error":
         raise ProviderError(payload[1], payload[2], payload[3])
     raise RuntimeError(f"{payload[1]}: {payload[2]}")
@@ -167,6 +204,7 @@ class _CandidateResult:
     provider_name: str | None
     history_hash: str | None
     provider_names: tuple[str, ...]
+    provider_metrics: tuple[ProviderRequestMetric, ...] = ()
 
 
 def scan_market(
@@ -319,6 +357,7 @@ def scan_market(
         if market_state.breadth.provider is not None:
             provider_names.add(market_state.breadth.provider)
     normalized_statuses = tuple(statuses[code] for code in sorted(statuses))
+    _log_provider_metrics(results)
     market_state_identity = (
         build_market_state_identity(settings.market_state, market_state)
         if market_state is not None
@@ -378,7 +417,7 @@ def _process_candidate(
     settings: MarketScanSettings,
 ) -> _CandidateResult:
     try:
-        raw_bars, provider_name = _fetch_history_with_timeout(
+        raw_bars, provider_name, provider_metrics = _fetch_history_with_timeout(
             history_provider,
             quote.code,
             report_date,
@@ -390,6 +429,7 @@ def _process_candidate(
             quote,
             reasons=reasons,
             provider_name=error.provider,
+            provider_metrics=error.provider_metrics,
         )
     except AllProvidersFailedError as error:
         return _failed_result(
@@ -405,6 +445,7 @@ def _process_candidate(
                     }
                 )
             ),
+            provider_metrics=error.provider_metrics,
         )
     except ProviderError as error:
         return _failed_result(
@@ -448,6 +489,7 @@ def _process_candidate(
             provider_name=provider_name,
             history_hash=history_hash,
             provider_names=providers,
+            provider_metrics=provider_metrics,
         )
     try:
         scores = score_candidate(quote.code, bars, as_of=report_date)
@@ -466,6 +508,7 @@ def _process_candidate(
             provider_name=provider_name,
             history_hash=history_hash,
             provider_names=providers,
+            provider_metrics=provider_metrics,
         )
     return _CandidateResult(
         quote=quote,
@@ -481,6 +524,7 @@ def _process_candidate(
         provider_name=provider_name,
         history_hash=history_hash,
         provider_names=providers,
+        provider_metrics=provider_metrics,
     )
 
 
@@ -565,7 +609,11 @@ def _fetch_history(
     history_provider: object,
     code: str,
     report_date: date,
-) -> tuple[Sequence[DailyBar | Mapping[str, object]], str]:
+) -> tuple[
+    Sequence[DailyBar | Mapping[str, object]],
+    str,
+    tuple[ProviderRequestMetric, ...],
+]:
     fetch = getattr(history_provider, "fetch", None)
     if callable(fetch):
         parameters = inspect.signature(fetch).parameters
@@ -578,11 +626,19 @@ def _fetch_history(
             if accepts_as_of
             else fetch(code, end=report_date)
         )
-        return fetched.bars, fetched.provider_name
+        return (
+            fetched.bars,
+            fetched.provider_name,
+            tuple(getattr(fetched, "provider_metrics", ())),
+        )
     get_daily_bars = getattr(history_provider, "get_daily_bars", None)
     if not callable(get_daily_bars):
         raise TypeError("history provider must expose fetch or get_daily_bars")
-    return get_daily_bars(code, end=report_date), _provider_name(history_provider)
+    return (
+        get_daily_bars(code, end=report_date),
+        _provider_name(history_provider),
+        (),
+    )
 
 
 def _normalize_bar(value: DailyBar | Mapping[str, object]) -> DailyBar:
@@ -599,6 +655,7 @@ def _failed_result(
     reason: str,
     provider_name: str,
     provider_names: tuple[str, ...] = (),
+    provider_metrics: tuple[ProviderRequestMetric, ...] = (),
 ) -> _CandidateResult:
     providers = tuple(
         sorted({name for name in (*provider_names, provider_name) if name})
@@ -618,6 +675,7 @@ def _failed_result(
         provider_name=provider_name,
         history_hash=None,
         provider_names=providers,
+        provider_metrics=provider_metrics,
     )
 
 
@@ -626,6 +684,7 @@ def _excluded_result(
     *,
     reasons: tuple[str, ...],
     provider_name: str,
+    provider_metrics: tuple[ProviderRequestMetric, ...] = (),
 ) -> _CandidateResult:
     return _CandidateResult(
         quote=quote,
@@ -641,6 +700,7 @@ def _excluded_result(
         provider_name=provider_name,
         history_hash=None,
         provider_names=(provider_name,) if provider_name else (),
+        provider_metrics=provider_metrics,
     )
 
 
@@ -752,7 +812,7 @@ def _build_market_state(
     index_bars: dict[str, Sequence[IndexBar] | BaseException] = {}
     for code in settings.market_state.index_codes:
         try:
-            raw_bars, _index_provider_name = _fetch_history_with_timeout(
+            raw_bars, _index_provider_name, _provider_metrics = _fetch_history_with_timeout(
                 index_provider,
                 code,
                 report_date,
@@ -905,6 +965,9 @@ def _candidate_result_to_json(result: _CandidateResult) -> dict[str, object]:
         "provider_name": result.provider_name,
         "history_hash": result.history_hash,
         "provider_names": list(result.provider_names),
+        "provider_metrics": [
+            metric.model_dump(mode="json") for metric in result.provider_metrics
+        ],
     }
 
 
@@ -922,6 +985,10 @@ def _candidate_result_from_json(
         date.fromisoformat(latest) if isinstance(latest, str) else latest
     )
     provider_names = tuple(document.get("provider_names") or ())
+    provider_metrics = tuple(
+        ProviderRequestMetric.model_validate(metric)
+        for metric in document.get("provider_metrics", ())
+    )
     return _CandidateResult(
         quote=quote,
         status=status,
@@ -930,6 +997,57 @@ def _candidate_result_from_json(
         provider_name=document.get("provider_name"),
         history_hash=document.get("history_hash"),
         provider_names=provider_names,
+        provider_metrics=provider_metrics,
+    )
+
+
+def _log_provider_metrics(results: Mapping[str, _CandidateResult]) -> None:
+    totals: dict[str, dict[str, object]] = defaultdict(
+        lambda: {
+            "requests": 0,
+            "cache_hits": 0,
+            "retries": 0,
+            "failures": 0,
+            "latency_ms": [],
+        }
+    )
+    for result in results.values():
+        for metric in result.provider_metrics:
+            values = totals[metric.provider_name]
+            if metric.cache_hit:
+                values["cache_hits"] = int(values["cache_hits"]) + 1
+                continue
+            values["requests"] = int(values["requests"]) + 1
+            values["retries"] = int(values["retries"]) + int(metric.retry)
+            values["failures"] = int(values["failures"]) + int(
+                metric.outcome in {"failure", "data_rejected"}
+            )
+            latencies = values["latency_ms"]
+            assert isinstance(latencies, list)
+            latencies.append(metric.duration_ms)
+
+    summary: dict[str, dict[str, int | float]] = {}
+    for provider_name, values in sorted(totals.items()):
+        request_count = int(values["requests"])
+        latencies = values["latency_ms"]
+        assert isinstance(latencies, list)
+        summary[provider_name] = {
+            "requests": request_count,
+            "cache_hits": int(values["cache_hits"]),
+            "retries": int(values["retries"]),
+            "failures": int(values["failures"]),
+            "failure_rate": (
+                int(values["failures"]) / request_count if request_count else 0.0
+            ),
+            "average_latency_ms": (
+                round(sum(latencies) / len(latencies), 1) if latencies else 0.0
+            ),
+            "max_latency_ms": max(latencies, default=0),
+        }
+    print(
+        "[market-scan] provider_metrics="
+        + json.dumps(summary, sort_keys=True, separators=(",", ":")),
+        flush=True,
     )
 
 

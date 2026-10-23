@@ -1,10 +1,15 @@
+import json
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, date, datetime, timedelta
+from types import SimpleNamespace
 
 from stock_daily_report.models import DailyBar, MarketScanSettings
-from stock_daily_report.providers.base import ProviderAvailabilityError
+from stock_daily_report.providers.base import (
+    ProviderAvailabilityError,
+    ProviderRequestMetric,
+)
 from stock_daily_report.providers.service import (
     AllProvidersFailedError,
     DataQualityError,
@@ -620,3 +625,62 @@ def test_market_state_inputs_contribute_to_artifact_identity():
     assert first.market_state_identity is not None
     assert changed.market_state_identity is not None
     assert first.market_state_identity != changed.market_state_identity
+
+
+def test_scan_prints_provider_cache_retry_failure_and_latency_metrics(capsys):
+    code = _codes(1)[0]
+
+    class MeasuredHistoryProvider:
+        name = "selection"
+        supports_hard_timeout = True
+
+        def fetch(self, code, *, end=None, as_of):
+            del code, end, as_of
+            return SimpleNamespace(
+                bars=_bars(_codes(1)[0]),
+                provider_name="fallback",
+                provider_metrics=(
+                    ProviderRequestMetric(
+                        provider_name="primary",
+                        outcome="failure",
+                        duration_ms=25,
+                        cache_hit=False,
+                        retry=False,
+                        error_code="network_error",
+                    ),
+                    ProviderRequestMetric(
+                        provider_name="fallback",
+                        outcome="success",
+                        duration_ms=75,
+                        cache_hit=False,
+                        retry=True,
+                    ),
+                    ProviderRequestMetric(
+                        provider_name="cached",
+                        outcome="cache_hit",
+                        duration_ms=0,
+                        cache_hit=True,
+                        retry=False,
+                    ),
+                ),
+            )
+
+    _scan([code], MeasuredHistoryProvider())
+
+    metric_line = next(
+        line for line in capsys.readouterr().out.splitlines()
+        if line.startswith("[market-scan] provider_metrics=")
+    )
+    metrics = json.loads(metric_line.partition("provider_metrics=")[2])
+
+    assert metrics["primary"] == {
+        "requests": 1,
+        "cache_hits": 0,
+        "retries": 0,
+        "failures": 1,
+        "failure_rate": 1.0,
+        "average_latency_ms": 25.0,
+        "max_latency_ms": 25,
+    }
+    assert metrics["fallback"]["retries"] == 1
+    assert metrics["cached"]["cache_hits"] == 1

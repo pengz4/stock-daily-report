@@ -2,9 +2,24 @@
 
 from collections.abc import Mapping
 from datetime import date
-from typing import Protocol, runtime_checkable
+from typing import Literal, Protocol, runtime_checkable
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from stock_daily_report.models import DailyBar
+
+
+class ProviderRequestMetric(BaseModel):
+    """Safe, bounded telemetry for one provider lookup or network attempt."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    provider_name: str = Field(min_length=1)
+    outcome: Literal["success", "failure", "data_rejected", "cache_hit"]
+    duration_ms: int = Field(ge=0)
+    cache_hit: bool
+    retry: bool
+    error_code: str | None = None
 
 
 class ProviderError(RuntimeError):
@@ -47,4 +62,5 @@ __all__ = [
     "ProviderAvailabilityError",
     "ProviderDataError",
     "ProviderError",
+    "ProviderRequestMetric",
 ]

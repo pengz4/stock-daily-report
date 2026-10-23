@@ -159,6 +159,10 @@ def test_service_falls_back_only_for_expected_provider_failure(tmp_path, bars):
     assert fetched.provider_name == "fallback"
     assert fetched.quality.analysis_allowed is True
     assert (primary.calls, fallback.calls) == (1, 1)
+    assert [(attempt.provider_name, attempt.outcome, attempt.retry) for attempt in fetched.provider_metrics] == [
+        ("primary", "failure", False),
+        ("fallback", "success", True),
+    ]
 
 
 def test_service_reuses_cached_fallback_before_requesting_primary(tmp_path, bars):
@@ -179,6 +183,8 @@ def test_service_reuses_cached_fallback_before_requesting_primary(tmp_path, bars
     assert fetched.from_cache
     assert fetched.provider_name == "fallback"
     assert (primary.calls, fallback.calls) == (1, 1)
+    assert fetched.provider_metrics[0].provider_name == "fallback"
+    assert fetched.provider_metrics[0].outcome == "cache_hit"
 
 
 def test_configured_cooldown_skips_failing_provider_for_next_symbol(tmp_path, bars):

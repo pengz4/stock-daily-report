@@ -8,6 +8,7 @@ import re
 import shutil
 import tempfile
 import threading
+import time
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -23,6 +24,7 @@ from stock_daily_report.providers.base import (
     ProviderAvailabilityError,
     ProviderDataError,
     ProviderError,
+    ProviderRequestMetric,
 )
 from stock_daily_report.providers.index import IndexBar, IndexHistoryProvider
 from stock_daily_report.providers.requests import ProviderRequestGate
@@ -75,8 +77,15 @@ def _fsync_directory(directory: Path) -> None:
 class DataQualityError(ProviderDataError):
     """Raised when a provider returned data that may not enter analysis."""
 
-    def __init__(self, provider: str, quality: DataQualityResult) -> None:
+    def __init__(
+        self,
+        provider: str,
+        quality: DataQualityResult,
+        *,
+        provider_metrics: Sequence[ProviderRequestMetric] = (),
+    ) -> None:
         self.quality = quality
+        self.provider_metrics = tuple(provider_metrics)
         super().__init__(
             provider,
             "data_quality_rejected",
@@ -87,8 +96,14 @@ class DataQualityError(ProviderDataError):
 class AllProvidersFailedError(ProviderError):
     """Raised after both configured providers had expected operational failures."""
 
-    def __init__(self, failures: Sequence[ProviderError]) -> None:
+    def __init__(
+        self,
+        failures: Sequence[ProviderError],
+        *,
+        provider_metrics: Sequence[ProviderRequestMetric] = (),
+    ) -> None:
         self.failures = tuple(failures)
+        self.provider_metrics = tuple(provider_metrics)
         detail = "; ".join(str(failure) for failure in self.failures)
         super().__init__("selection", "all_providers_failed", detail)
 
@@ -114,6 +129,7 @@ class FetchedBars:
     bars: tuple[DailyBar, ...]
     quality: DataQualityResult
     from_cache: bool
+    provider_metrics: tuple[ProviderRequestMetric, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -1114,6 +1130,7 @@ class MarketDataService:
         """
 
         failures: list[ProviderAvailabilityError] = []
+        provider_metrics: list[ProviderRequestMetric] = []
         cached_responses = {
             name: self._cache.load(name, code, start, end)
             for name in self._selection
@@ -1126,30 +1143,72 @@ class MarketDataService:
             from_cache = cached_response is not None
             if from_cache:
                 response = cached_response
+                provider_metrics.append(
+                    ProviderRequestMetric(
+                        provider_name=provider_name,
+                        outcome="cache_hit",
+                        duration_ms=0,
+                        cache_hit=True,
+                        retry=bool(failures),
+                    )
+                )
             else:
+                started = time.perf_counter()
                 try:
                     self._request_gate.acquire(provider_name)
                     response = self._providers[provider_name].get_daily_bars(
                         code, start=start, end=end
                     )
                 except ProviderAvailabilityError as error:
+                    provider_metrics.append(
+                        ProviderRequestMetric(
+                            provider_name=provider_name,
+                            outcome="failure",
+                            duration_ms=round(
+                                (time.perf_counter() - started) * 1000
+                            ),
+                            cache_hit=False,
+                            retry=bool(failures),
+                            error_code=error.code,
+                        )
+                    )
                     if error.code != "provider_circuit_open":
                         self._request_gate.record_failure(provider_name)
                     failures.append(error)
                     continue
+                provider_metrics.append(
+                    ProviderRequestMetric(
+                        provider_name=provider_name,
+                        outcome="success",
+                        duration_ms=round((time.perf_counter() - started) * 1000),
+                        cache_hit=False,
+                        retry=bool(failures),
+                    )
+                )
 
             raw_bars = _require_sequence(response, provider_name, code, as_of)
             quality = validate_bars(
                 code, raw_bars, as_of=as_of, settings=self._quality_settings
             )
             if not quality.analysis_allowed:
-                raise DataQualityError(provider_name, quality)
+                last_metric = provider_metrics[-1]
+                provider_metrics[-1] = last_metric.model_copy(
+                    update={"outcome": "data_rejected", "error_code": "data_quality_rejected"}
+                )
+                raise DataQualityError(
+                    provider_name, quality, provider_metrics=provider_metrics
+                )
             try:
                 normalized_bars = tuple(_normalize_bar(item) for item in raw_bars)
             except (TypeError, ValidationError) as error:
+                last_metric = provider_metrics[-1]
+                provider_metrics[-1] = last_metric.model_copy(
+                    update={"outcome": "data_rejected", "error_code": "invalid_bar"}
+                )
                 raise DataQualityError(
                     provider_name,
                     quality.with_issue("invalid_bar", f"Could not normalize bar: {error}"),
+                    provider_metrics=provider_metrics,
                 ) from error
 
             if not from_cache:
@@ -1165,8 +1224,11 @@ class MarketDataService:
                 bars=normalized_bars,
                 quality=quality,
                 from_cache=from_cache,
+                provider_metrics=tuple(provider_metrics),
             )
-        raise AllProvidersFailedError(failures)
+        raise AllProvidersFailedError(
+            failures, provider_metrics=provider_metrics
+        )
 
     def commit_staged_cache_writes(self) -> None:
         """Persist deferred responses after publication finalization succeeds.

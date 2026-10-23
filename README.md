@@ -38,6 +38,13 @@ History writers and the daily Pages lifecycle use `queue: max`, retaining up to
 When a group reaches that limit, GitHub cancels additional requests.
 Cache reuse is best effort, subject to Actions cache availability and TTL.
 
+Completed market scans emit one `[market-scan] provider_metrics=<JSON>` summary
+to the workflow log. It reports stock-history network attempts, cache hits,
+fallback and resumable-fetch retries, failures/failure rate, and
+average/maximum request latency by provider. Retry counts exclude retries
+internal to a provider client. A timed-out or forcibly terminated request may
+not return per-provider timing telemetry.
+
 Both scan scopes also share a full-universe snapshot after 15:30 Shanghai time.
 The snapshot is cached only after the provider's existing completeness checks,
 before watchlist filtering, and is validated for schema, digest, count, unique
@@ -158,3 +165,5 @@ Pull requests targeting `master` run Ruff and the full pytest suite.
 The workflow runs at 16:30 China Standard Time on Monday-Friday and supports
 `workflow_dispatch` with an optional `report_date`. Configure GitHub Pages
 with the Actions deployment source before the first scheduled run.
+CI development tools are pinned in `requirements-dev.lock`; local CI-equivalent
+checks are `ruff check .` and `pytest -q`.
