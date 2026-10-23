@@ -11,12 +11,17 @@ def test_ci_workflow_runs_tests_and_lint_for_pull_requests_to_master():
     steps = job["steps"]
     install = next(step["run"] for step in steps if step["name"] == "Install dependencies")
     checks = next(step["run"] for step in steps if step["name"] == "Run lint and tests")
+    dev_lock = Path(__file__).parents[1] / "requirements-dev.lock"
 
     assert triggers["pull_request"]["branches"] == ["master"]
     assert triggers["push"]["branches"] == ["master"]
     assert workflow["permissions"] == {"contents": "read"}
     assert job["timeout-minutes"] > 0
     assert "requirements.lock" in install
-    assert 'install --no-build-isolation -e ".[dev]"' in install
+    assert 'install --no-build-isolation -e .' in install
+    assert "requirements-dev.lock" in install
+    pinned_tools = dev_lock.read_text(encoding="utf-8")
+    assert "pytest==" in pinned_tools
+    assert "ruff==" in pinned_tools
     assert "ruff check ." in checks
     assert "pytest -q" in checks

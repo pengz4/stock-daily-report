@@ -17,6 +17,7 @@ from __future__ import annotations
 import hashlib
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from datetime import UTC, date, datetime
 from pathlib import Path
 from time import sleep
@@ -393,6 +394,7 @@ def _process_candidate_with_retries(
     settings: MarketScanSettings,
 ) -> _CandidateResult:
     result = _process_candidate(quote, history_provider, report_date, settings)
+    provider_metrics = list(result.provider_metrics)
     for attempt in range(1, HISTORY_FAILURE_ATTEMPTS):
         if (
             result.status.status != "history_failed"
@@ -401,7 +403,11 @@ def _process_candidate_with_retries(
             break
         sleep(2 ** attempt)
         result = _process_candidate(quote, history_provider, report_date, settings)
-    return result
+        provider_metrics.extend(
+            metric.model_copy(update={"retry": True})
+            for metric in result.provider_metrics
+        )
+    return replace(result, provider_metrics=tuple(provider_metrics))
 
 
 def _finalize(

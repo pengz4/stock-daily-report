@@ -66,6 +66,67 @@ def test_history_retries_back_off_and_do_not_retry_schema_errors(monkeypatch):
     assert result.status.reason_codes == ("provider_schema_invalid",)
 
 
+def test_resumable_retry_telemetry_keeps_failed_attempts(monkeypatch):
+    from types import SimpleNamespace
+
+    from stock_daily_report.market_scan.resumable import (
+        _process_candidate_with_retries,
+    )
+    from stock_daily_report.providers.base import ProviderRequestMetric
+    from stock_daily_report.providers.service import AllProvidersFailedError
+
+    class FlakyMeasuredProvider:
+        name = "measured-selection"
+
+        def __init__(self):
+            self.calls = 0
+
+        def fetch(self, code, *, end=None, as_of):
+            del code, end, as_of
+            self.calls += 1
+            if self.calls == 1:
+                raise AllProvidersFailedError(
+                    [ProviderError("primary", "network_error", "offline")],
+                    provider_metrics=[
+                        ProviderRequestMetric(
+                            provider_name="primary",
+                            outcome="failure",
+                            duration_ms=10,
+                            cache_hit=False,
+                            retry=False,
+                            error_code="network_error",
+                        )
+                    ],
+                )
+            return SimpleNamespace(
+                bars=_bars("600000"),
+                provider_name="fallback",
+                provider_metrics=(
+                    ProviderRequestMetric(
+                        provider_name="fallback",
+                        outcome="success",
+                        duration_ms=20,
+                        cache_hit=False,
+                        retry=False,
+                    ),
+                ),
+            )
+
+    monkeypatch.setattr("stock_daily_report.market_scan.resumable.sleep", lambda _: None)
+    result = _process_candidate_with_retries(
+        _quote("600000"),
+        FlakyMeasuredProvider(),
+        REPORT_DATE,
+        _settings(),
+    )
+
+    assert [metric.provider_name for metric in result.provider_metrics] == [
+        "primary",
+        "fallback",
+    ]
+    assert [metric.retry for metric in result.provider_metrics] == [False, True]
+
+
 def test_resumable_batch_does_not_timeout_queued_symbols(monkeypatch):
     from stock_daily_report.market_scan import runner
     from stock_daily_report.market_scan.resumable import _process_batch
@@ -353,6 +414,7 @@ def test_resumable_batch_fuses_hung_symbol(monkeypatch):
 def test_candidate_result_serialization_roundtrip():
     from stock_daily_report.market_scan.models import ScanStatus
     from stock_daily_report.market_scan.runner import _CandidateResult
+    from stock_daily_report.providers.base import ProviderRequestMetric
 
     quote = _quote("600000")
     status = ScanStatus(
@@ -370,6 +432,15 @@ def test_candidate_result_serialization_roundtrip():
         provider_name="fake-history",
         history_hash="a" * 64,
         provider_names=("fake-history",),
+        provider_metrics=(
+            ProviderRequestMetric(
+                provider_name="fake-history",
+                outcome="success",
+                duration_ms=42,
+                cache_hit=False,
+                retry=True,
+            ),
+        ),
     )
 
     document = _candidate_result_to_json(result)
@@ -379,6 +450,9 @@ def test_candidate_result_serialization_roundtrip():
     assert restored.status.status == "history_excluded"
     assert restored.status.reason_codes == ("insufficient_history",)
     assert restored.history_hash == "a" * 64
+    assert restored.provider_metrics == result.provider_metrics
+    document.pop("provider_metrics")
+    assert _candidate_result_from_json(document).provider_metrics == ()
 
 
 def test_checkpoint_roundtrip_preserves_execution_date(tmp_path):
