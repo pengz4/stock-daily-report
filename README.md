@@ -154,6 +154,7 @@ the daily report workflow and uploads the report as an artifact.
 
 ## GitHub Actions
 
+Pull requests targeting `master` run Ruff and the full pytest suite.
 The workflow runs at 16:30 China Standard Time on Monday-Friday and supports
 `workflow_dispatch` with an optional `report_date`. Configure GitHub Pages
 with the Actions deployment source before the first scheduled run.
