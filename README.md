@@ -111,6 +111,60 @@ are not silently refreshed. Actions summaries list actual index availability
 and latest dates rather than treating a green workflow as proof of complete
 index coverage.
 
+## CSI300 ETF tracker
+
+The daily report's market panel includes **沪深300 ETF市值占比**, a
+national-team observation **proxy, not attributed national-team holdings**.
+The fixed basket is `510300`, `510310`, `510330`, and `159919`; it does not
+silently reselect today's largest funds.
+
+```bash
+stock-daily-report etf-tracker --date "$(TZ=Asia/Shanghai date +%F)" --output-root .
+# Then run the normal daily command to include the saved observation.
+```
+
+The numerator is the sum of **closing price × latest quoted fund shares**,
+in CNY. This is a market-value size proxy, **not NAV-based assets under
+management**. The denominator is the sum of the 300 constituents' circulating
+market capitalizations, **not CSI's adjusted free-float capitalization**.
+Neither the ratio nor changes in the quoted shares identify the owner,
+prove primary-market subscriptions, or imply national-team buying/selling.
+Quote vendors may update share counts later than prices. Distributions,
+share conversions, premiums/discounts, index rebalances, and circulating-share
+changes can all affect comparisons.
+
+Sources and gates:
+
+- [CSI official constituent file](https://oss-ch.csindex.com.cn/static/html/csindex/public/uploads/file/autofile/cons/000300cons.xls):
+  exactly 300 distinct securities, with the file's date equal to the report date.
+- Eastmoney `https://push2.eastmoney.com/api/qt/ulist.np/get`: `f2` price in
+  CNY, `f38` latest shares in units, `f21` circulating market value in CNY,
+  and `f124` quote timestamp. No inferred shares from turnover or trading volume.
+- New live captures require the current Asia/Shanghai weekday after 15:10.
+  All 304 quote timestamps must be same-date, at/after 15:00, and no later than
+  capture time. Missing/suspended/stale quotes or a late constituent file
+  suppress the entire ratio rather than produce a partial denominator.
+  A later manual rerun can collect data once all sources are ready.
+- Requests have 15-second timeouts and at most two attempts. Live source
+  availability and update times are not guaranteed.
+
+Validated inputs are stored immutably with a SHA-256 digest under
+`etf-tracker/YYYY-MM-DD/input.json`. Existing valid captures can be reused
+offline, including past dates; current quotes are never relabeled as history.
+History begins with the first successful capture, not a synthetic backfill.
+The scheduled workflow restores and persists these inputs on `reports-history`
+**before** generating the stock report, so a later stock-provider outage does
+not discard a valid observation. Raw inputs are not published to Pages.
+Capture failure does not block the daily stock report, which shows an explicit
+unavailable state.
+
+JSON/HTML embed up to 252 valid observations; Markdown shows the latest 20.
+All daily input files remain retained. Ratio changes are in **percentage points**,
+and per-fund share changes compare with the **previous valid observation date**,
+not necessarily the previous trading day. The report flags changed constituent
+membership and skipped corrupt historical inputs. A same-date report is
+regenerated if its tracker payload no longer matches the persisted inputs.
+
 ## Notifications
 
 Enable one or both channels in `config/settings.yaml`:

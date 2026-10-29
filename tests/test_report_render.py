@@ -429,6 +429,45 @@ def _document_with_market_state(*, escaped: bool = False) -> ReportDocument:
     return ReportDocument.model_validate(document)
 
 
+def test_etf_proxy_renders_dated_comparison_history_and_escapes_names(tmp_path):
+    from test_etf_tracker import make_snapshot, snapshot_payload
+
+    from stock_daily_report.etf_tracker import (
+        EtfSnapshot,
+        build_tracker_report,
+        save_snapshot,
+    )
+
+    save_snapshot(tmp_path, make_snapshot(date(2026, 9, 1), shares=90_000_000))
+    payload = snapshot_payload()
+    payload["etfs"][0]["name"] = '<script>alert("ETF")</script>'
+    save_snapshot(tmp_path, EtfSnapshot.model_validate(payload))
+    report = _document().model_dump()
+    report["etf_tracker"] = build_tracker_report(tmp_path, date(2026, 9, 4))
+    document = ReportDocument.model_validate(report)
+    for text in (render_markdown(document), render_html(document)):
+        text = text.replace("\\", "")
+        assert "2026-09-01" in text
+        assert "0.0533" in text
+        assert "百分点" in text
+        assert "11.1111%" in text
+        assert "国家队观察代理" in text
+        assert "流通市值" in text
+    html = render_html(document)
+    assert '<script>alert("ETF")</script>' not in html
+    assert "&lt;script&gt;" in html
+    assert "历史观测" in html
+    assert "0.4800%" in html
+
+
+def test_etf_missing_is_explicit_and_never_renders_a_zero_ratio():
+    document = _document()
+    assert document.etf_tracker.status == "unavailable"
+    for text in (render_markdown(document), render_html(document)):
+        assert "ETF追踪不可用" in text
+        assert "非国家队实际持仓" in text
+
+
 def test_market_rankings_no_consensus_fixture_is_isolated_and_valid():
     rankings = _market_rankings_no_consensus()
 
@@ -1051,7 +1090,7 @@ def test_missing_market_state_is_explicitly_unavailable_in_markdown_and_html():
 
 
 def test_market_state_layout_uses_a_new_renderer_version():
-    assert report_models.REPORT_RENDER_VERSION == "cn-v3"
+    assert report_models.REPORT_RENDER_VERSION == "cn-v4-etf-proxy"
 
 
 def test_missing_pool_overview_is_explicitly_unavailable_in_html():
