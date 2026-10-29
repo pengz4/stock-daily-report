@@ -2,10 +2,10 @@
   "schema_version": 2,
   "metadata": {
     "report_date": "2026-10-29",
-    "generated_at": "2026-10-29T09:00:15.998417Z",
+    "generated_at": "2026-10-29T09:40:47.669972Z",
     "latest_source_timestamp": "2026-10-29T09:00:15.998417Z",
     "snapshot_path": "snapshots/2026-10-29/input.json",
-    "snapshot_hash": "c94fd049df553a8827110d2e6d896fb6fdc079da879cb174e29a4d47c3661d71",
+    "snapshot_hash": "d5450ec879f533b06c0b794420fa8a77ad6f07974aa83af619e4da89cff3b8a3",
     "provider_names": [
       "sina"
     ],
