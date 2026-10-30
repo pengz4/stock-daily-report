@@ -440,6 +440,7 @@ def test_etf_proxy_renders_dated_comparison_history_and_escapes_names(tmp_path):
 
     save_snapshot(tmp_path, make_snapshot(date(2026, 9, 1), shares=90_000_000))
     payload = snapshot_payload()
+    payload["membership_date"] = date(2026, 9, 3)
     payload["etfs"][0]["name"] = '<script>alert("ETF")</script>'
     save_snapshot(tmp_path, EtfSnapshot.model_validate(payload))
     report = _document().model_dump()
@@ -447,6 +448,7 @@ def test_etf_proxy_renders_dated_comparison_history_and_escapes_names(tmp_path):
     document = ReportDocument.model_validate(report)
     for text in (render_markdown(document), render_html(document)):
         text = text.replace("\\", "")
+        assert "2026-09-03" in text
         assert "2026-09-01" in text
         assert "0.0533" in text
         assert "百分点" in text

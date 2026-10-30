@@ -46,9 +46,20 @@ def _membership() -> list[dict[str, object]]:
     frame = pd.read_excel(BytesIO(_request(MEMBERSHIP_URL)))
     if len(frame.columns) != 9:
         raise ValueError("unexpected CSI membership schema")
+
+    def parse_date(value: object) -> date:
+        if isinstance(value, datetime):
+            return value.date()
+        if isinstance(value, date):
+            return value
+        text = str(value).strip()
+        if len(text) == 8 and text.isdigit():
+            return date(int(text[:4]), int(text[4:6]), int(text[6:]))
+        return date.fromisoformat(text[:10])
+
     return [
         {
-            "date": date.fromisoformat(str(row[0])),
+            "date": parse_date(row[0]),
             "index_code": str(row[1]).zfill(6),
             "code": str(row[4]).zfill(6),
         }
@@ -92,15 +103,20 @@ class Csi300EtfProvider:
     def fetch(self, report_date: date) -> EtfSnapshot:
         try:
             members = self._membership()
-            codes = [str(row["code"]) for row in members]
+            codes = [str(row["code"]).zfill(6) for row in members]
+            membership_dates = {row["date"] for row in members}
             if (
                 len(codes) != 300 or len(set(codes)) != 300
+                or len(membership_dates) != 1
                 or any(
-                    row["index_code"] != "000300" or row["date"] != report_date
+                    str(row["index_code"]).zfill(6) != "000300"
                     for row in members
                 )
             ):
-                raise ValueError("CSI 300 membership incomplete or not dated report date")
+                raise ValueError("CSI 300 membership incomplete or inconsistent")
+            membership_date = next(iter(membership_dates))
+            if not isinstance(membership_date, date) or membership_date > report_date:
+                raise ValueError("CSI 300 membership effective date is in the future")
             requested = [*ETF_CODES, *sorted(codes)]
             quotes = {}
             for start in range(0, len(requested), 100):
@@ -118,7 +134,7 @@ class Csi300EtfProvider:
 
             return EtfSnapshot(
                 report_date=report_date,
-                membership_date=report_date,
+                membership_date=membership_date,
                 generated_at=self._now(),
                 etfs=tuple(EtfQuote(
                     code=code,

@@ -64,8 +64,8 @@ class EtfSnapshot(_Model):
             or len({row.code for row in self.constituents}) != 300
         ):
             raise ValueError("exactly four unique ETFs and 300 constituents required")
-        if self.membership_date != self.report_date:
-            raise ValueError("membership date must match report date")
+        if self.membership_date > self.report_date:
+            raise ValueError("membership effective date must not be in the future")
         captured = self.generated_at.astimezone(SHANGHAI)
         if captured.date() != self.report_date or captured.time() < time(15, 10):
             raise ValueError("snapshot must be captured on report date after 15:10")
@@ -113,6 +113,7 @@ class EtfTrackerReport(_Model):
         "not_provided"
     )
     current: EtfPoint | None = None
+    membership_date: date | None = None
     funds: tuple[EtfFundChange, ...] = ()
     comparison_date: date | None = None
     ratio_change_pp: Finite | None = None
@@ -123,7 +124,13 @@ class EtfTrackerReport(_Model):
     @model_validator(mode="after")
     def require_consistent_state(self) -> EtfTrackerReport:
         if self.status == "available":
-            if self.reason is not None or self.current is None or len(self.funds) != 4:
+            if (
+                self.reason is not None
+                or self.current is None
+                or self.membership_date is None
+                or self.membership_date > self.current.report_date
+                or len(self.funds) != 4
+            ):
                 raise ValueError("available tracker requires complete data")
             if (
                 not self.history
@@ -132,7 +139,13 @@ class EtfTrackerReport(_Model):
                 != sorted({p.report_date for p in self.history})
             ):
                 raise ValueError("tracker history must end at current observation")
-        elif self.reason is None or self.current is not None or self.funds or self.history:
+        elif (
+            self.reason is None
+            or self.current is not None
+            or self.membership_date is not None
+            or self.funds
+            or self.history
+        ):
             raise ValueError("unavailable tracker cannot contain computed observations")
         return self
 
@@ -278,6 +291,7 @@ def build_tracker_report(root: str | Path, report_date: date) -> EtfTrackerRepor
         status="available",
         reason=None,
         current=current_point,
+        membership_date=current.membership_date,
         funds=tuple(funds),
         comparison_date=previous.report_date if previous else None,
         ratio_change_pp=(

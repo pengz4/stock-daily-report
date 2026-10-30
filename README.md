@@ -136,7 +136,9 @@ changes can all affect comparisons.
 Sources and gates:
 
 - [CSI official constituent file](https://oss-ch.csindex.com.cn/static/html/csindex/public/uploads/file/autofile/cons/000300cons.xls):
-  exactly 300 distinct securities, with the file's date equal to the report date.
+  exactly 300 distinct securities with one shared effective date no later than
+  the report date. CSI constituent files are effective on rebalance dates, not
+  republished every trading day; both dates are retained separately.
 - Eastmoney `https://push2.eastmoney.com/api/qt/ulist.np/get`: `f2` price in
   CNY, `f38` latest shares in units, `f21` circulating market value in CNY,
   and `f124` quote timestamp. No inferred shares from turnover or trading volume.

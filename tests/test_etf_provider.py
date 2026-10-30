@@ -47,7 +47,26 @@ def test_provider_joins_exact_members_and_preserves_quote_units():
     assert snapshot.membership_date == DAY
 
 
-@pytest.mark.parametrize("kind", ["missing", "duplicate", "stale", "wrong-index"])
+def test_provider_accepts_the_latest_effective_membership_before_report_date():
+    from stock_daily_report.providers.etf import Csi300EtfProvider
+
+    effective_date = date(2026, 9, 1)
+    historical_members = [
+        {**row, "date": effective_date} for row in members()
+    ]
+    snapshot = Csi300EtfProvider(
+        membership_fetcher=lambda: historical_members,
+        quote_fetcher=lambda codes: quotes(codes),
+        now=lambda: NOW,
+    ).fetch(DAY)
+
+    assert snapshot.report_date == DAY
+    assert snapshot.membership_date == effective_date
+
+
+@pytest.mark.parametrize(
+    "kind", ["missing", "duplicate", "stale", "wrong-index", "mixed-date"]
+)
 def test_provider_rejects_incomplete_or_misdated_sources(kind):
     from stock_daily_report.providers.etf import Csi300EtfProvider
 
@@ -64,10 +83,26 @@ def test_provider_rejects_incomplete_or_misdated_sources(kind):
     membership = members()
     if kind == "wrong-index":
         membership[0]["index_code"] = "000905"
+    if kind == "mixed-date":
+        membership[0]["date"] = date(2026, 9, 3)
     with pytest.raises(ValueError):
         Csi300EtfProvider(
             membership_fetcher=lambda: membership,
             quote_fetcher=fetch,
+            now=lambda: NOW,
+        ).fetch(DAY)
+
+
+def test_provider_rejects_membership_effective_after_report_date():
+    from stock_daily_report.providers.etf import Csi300EtfProvider
+
+    future_members = [
+        {**row, "date": date(2026, 10, 30)} for row in members()
+    ]
+    with pytest.raises(ValueError, match="future"):
+        Csi300EtfProvider(
+            membership_fetcher=lambda: future_members,
+            quote_fetcher=lambda codes: quotes(codes),
             now=lambda: NOW,
         ).fetch(DAY)
 
@@ -93,7 +128,11 @@ def test_quote_transport_requests_explicit_codes_fields_and_timeout(monkeypatch)
     assert captured[0][1] == 15
 
 
-def test_membership_reader_uses_official_dated_excel_layout(monkeypatch):
+@pytest.mark.parametrize(
+    "source_date",
+    [date(2026, 9, 1), datetime(2026, 9, 1, tzinfo=UTC), 20260901, "2026-09-01"],
+)
+def test_membership_reader_uses_official_dated_excel_layout(monkeypatch, source_date):
     import sys
     from types import SimpleNamespace
 
@@ -102,7 +141,7 @@ def test_membership_reader_uses_official_dated_excel_layout(monkeypatch):
     frame = SimpleNamespace(
         columns=range(9),
         itertuples=lambda **kwargs: [
-            (20260904, 300, "HS300", "CSI300", 1, "Bank", "Bank", "SZ", "SZ")
+            (source_date, 300, "HS300", "CSI300", 1, "Bank", "Bank", "SZ", "SZ")
         ],
     )
     monkeypatch.setitem(
@@ -110,7 +149,7 @@ def test_membership_reader_uses_official_dated_excel_layout(monkeypatch):
     )
     monkeypatch.setattr(module, "_request", lambda url: b"excel-fixture")
     assert module._membership() == [
-        {"date": DAY, "index_code": "000300", "code": "000001"}
+        {"date": date(2026, 9, 1), "index_code": "000300", "code": "000001"}
     ]
 
 

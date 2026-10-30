@@ -154,7 +154,10 @@ def _etf_summary(tracker: EtfTrackerReport) -> list[str]:
         }.get(tracker.reason, "数据不可用")
         return [*lines, f"ETF追踪不可用：{reason}。"]
     lines.extend([
-        f"观测日期：{current.report_date}；覆盖：4/4只ETF、300/300只成分股。",
+        (
+            f"观测日期：{current.report_date}；沪深300成分名单生效日："
+            f"{tracker.membership_date}；覆盖：4/4只ETF、300/300只成分股。"
+        ),
         (
             f"市值占比：{current.ratio:.4%}；"
             f"ETF市值合计：{current.etf_market_cap / 1e8:,.2f}亿元；"

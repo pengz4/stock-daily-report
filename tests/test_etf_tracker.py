@@ -69,7 +69,6 @@ def test_tracker_calculates_ratio_and_changes_against_prior_observation(tmp_path
         lambda p: p["etfs"].__setitem__(0, p["etfs"][1]),
         lambda p: p["constituents"].pop(),
         lambda p: p["constituents"].__setitem__(0, p["constituents"][1]),
-        lambda p: p.update(membership_date=DAY - timedelta(days=1)),
         lambda p: p["etfs"][0].update(shares=float("nan")),
         lambda p: p["etfs"][0].update(price=0),
         lambda p: p["etfs"][0].update(shares=True),
@@ -91,6 +90,24 @@ def test_snapshot_rejects_partial_stale_intraday_or_invalid_inputs(change):
     payload = snapshot_payload()
     change(payload)
     with pytest.raises(ValueError):
+        EtfSnapshot.model_validate(payload)
+
+
+def test_snapshot_accepts_effective_membership_older_than_closing_observation():
+    from stock_daily_report.etf_tracker import EtfSnapshot
+
+    payload = snapshot_payload()
+    payload["membership_date"] = date(2026, 9, 1)
+    snapshot = EtfSnapshot.model_validate(payload)
+    assert snapshot.membership_date == date(2026, 9, 1)
+
+
+def test_snapshot_rejects_future_membership_effective_date():
+    from stock_daily_report.etf_tracker import EtfSnapshot
+
+    payload = snapshot_payload()
+    payload["membership_date"] = DAY + timedelta(days=1)
+    with pytest.raises(ValueError, match="future"):
         EtfSnapshot.model_validate(payload)
 
 
