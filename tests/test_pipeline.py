@@ -305,6 +305,40 @@ def test_daily_pipeline_writes_json_markdown_and_html(tmp_path, fixture_settings
     assert outputs.snapshot_path == tmp_path / "snapshots/2026-09-04/input.json"
 
 
+def test_etf_tracker_arrival_refreshes_report_without_replacing_stock_snapshot(
+    tmp_path, fixture_settings
+):
+    from test_etf_tracker import make_snapshot
+
+    from stock_daily_report.etf_tracker import save_snapshot
+
+    kwargs = {
+        "output_root": tmp_path,
+        "watchlist": Watchlist(stocks=[{"code": "600519", "name": "贵州茅台"}]),
+        "provider": RecordingProvider({"600519": make_bars("600519")}),
+        "report_date": date(2026, 9, 4),
+        "now": lambda: datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
+    }
+    initial = run_daily_report(fixture_settings, **kwargs)
+    assert initial.report.etf_tracker.status == "unavailable"
+    original = initial.snapshot_path.read_bytes()
+    save_snapshot(tmp_path, make_snapshot())
+    refreshed = run_daily_report(
+        fixture_settings, **kwargs, reuse_existing_snapshot=True,
+    )
+    assert refreshed.snapshot_path.read_bytes() == original
+    assert refreshed.report.etf_tracker.current.ratio == pytest.approx(1.6 / 300)
+    payload = json.loads(refreshed.json_path.read_text(encoding="utf-8"))
+    assert payload["etf_tracker"]["status"] == "available"
+    for path in (refreshed.markdown_path, refreshed.html_path):
+        text = path.read_text(encoding="utf-8")
+        assert "沪深300 ETF市值占比" in text
+        assert "非国家队实际持仓" in text
+        assert "0.5333%" in text
+        assert "首次有效观测" in text
+        assert all(code in text for code in ("510300", "510310", "510330", "159919"))
+
+
 def test_market_scan_is_published_in_json_markdown_and_html(
     tmp_path, fixture_settings
 ):

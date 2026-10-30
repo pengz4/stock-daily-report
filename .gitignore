@@ -4,6 +4,7 @@
 /.report-history/
 /reports/
 /snapshots/
+/etf-tracker/
 site/.publication.lock
 **/__pycache__/
 .pytest_cache/

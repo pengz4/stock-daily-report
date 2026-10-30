@@ -140,3 +140,65 @@ def test_daily_workflow_compares_exact_deep_selection_metadata():
     assert "deep_metadata == expected_deep" in command
     assert 'stock.priority == "extended"' in command
     assert "pool_ok" in command
+
+
+def test_etf_collection_is_nonblocking_persistent_and_invalidates_report_reuse():
+    steps = _workflow()["jobs"]["generate"]["steps"]
+    by_name = {step["name"]: step for step in steps}
+    capture = by_name["Capture CSI300 ETF tracker"]
+    assert capture["continue-on-error"] is True
+    assert "etf-tracker" in capture["run"]
+    assert steps.index(capture) < steps.index(by_name["Generate report artifacts"])
+    assert ".report-history/etf-tracker" in by_name["Merge previous report history"]["run"]
+    persist = by_name["Persist ETF tracker history"]
+    assert persist["if"] == "steps.etf-tracker.outcome == 'success'"
+    assert steps.index(capture) < steps.index(persist)
+    assert steps.index(persist) < steps.index(by_name["Generate report artifacts"])
+    assert 'cp "$source" "$target"' in persist["run"]
+    assert 'add -- "etf-tracker/${report_date}/input.json"' in persist["run"]
+    generate = by_name["Generate report artifacts"]["run"]
+    assert generate.count(
+        "report.etf_tracker == build_tracker_report(Path.cwd(), expected_report_date)"
+    ) == 2
+
+
+def test_etf_history_step_persists_only_validated_input_and_is_idempotent(tmp_path):
+    import os
+    import subprocess
+
+    from test_etf_tracker import DAY, make_snapshot
+
+    from stock_daily_report.etf_tracker import save_snapshot
+
+    snapshot = save_snapshot(tmp_path, make_snapshot())
+    env = {
+        **os.environ,
+        "GIT_CONFIG_GLOBAL": "/dev/null",
+        "GIT_CONFIG_NOSYSTEM": "1",
+        "GITHUB_TOKEN": "fixture-token",
+        "ETF_REPORT_DATE": DAY.isoformat(),
+    }
+
+    def run(*args, cwd=tmp_path):
+        return subprocess.run(
+            args, cwd=cwd, env=env, check=True, capture_output=True, text=True,
+        ).stdout.strip()
+
+    run("git", "init", "--quiet", "--bare", str(tmp_path / "remote.git"))
+    history = tmp_path / ".report-history"
+    run("git", "init", "--quiet", str(history))
+    run("git", "remote", "add", "origin", str(tmp_path / "remote.git"), cwd=history)
+    persist = next(
+        step["run"] for step in _workflow()["jobs"]["generate"]["steps"]
+        if step["name"] == "Persist ETF tracker history"
+    )
+    run("bash", "-e", "-c", persist)
+    first_commit = run("git", "rev-parse", "HEAD", cwd=history)
+    assert run("git", "ls-files", cwd=history) == "etf-tracker/2026-09-04/input.json"
+    archived = run(
+        "git", "--git-dir", str(tmp_path / "remote.git"), "show",
+        "reports-history:etf-tracker/2026-09-04/input.json",
+    )
+    assert archived == snapshot.read_text(encoding="utf-8").strip()
+    run("bash", "-e", "-c", persist)
+    assert run("git", "rev-parse", "HEAD", cwd=history) == first_commit

@@ -5,6 +5,7 @@ from __future__ import annotations
 import html
 from collections.abc import Sequence
 
+from stock_daily_report.etf_tracker import DISCLAIMER, EtfTrackerReport
 from stock_daily_report.market_scan.models import MarketIndexState, MarketState
 from stock_daily_report.report.labels import (
     component_label,
@@ -67,6 +68,7 @@ def render_markdown(report: ReportDocument) -> str:
         "",
     ]
     lines.extend(_render_market_state_markdown(report.market_state))
+    lines.extend(_render_etf_tracker_markdown(report.etf_tracker))
     lines.extend(
         [
             "## 市场摘要",
@@ -95,6 +97,7 @@ def render_html(report: ReportDocument) -> str:
     title = _html(f"A股每日研报 — {metadata.report_date.isoformat()}")
     header = _render_report_header(report, report.market_rankings)
     market_state = _render_market_state_html(report.market_state)
+    market_state += _render_etf_tracker_html(report.etf_tracker)
     market_summary = _render_market_summary_html(report)
     consensus_panel = _render_consensus_panel_html(report.market_rankings)
     trend_panel = _render_profile_panel_html(
@@ -138,6 +141,122 @@ def render_html(report: ReportDocument) -> str:
 </body>
 </html>
 """
+
+
+def _etf_summary(tracker: EtfTrackerReport) -> list[str]:
+    lines = [DISCLAIMER]
+    current = tracker.current
+    if current is None:
+        reason = {
+            "snapshot_missing": "缺少同日完整收盘快照；不以旧数据或零值替代",
+            "snapshot_invalid": "快照日期、完整性或哈希校验失败",
+            "not_provided": "尚未采集",
+        }.get(tracker.reason, "数据不可用")
+        return [*lines, f"ETF追踪不可用：{reason}。"]
+    lines.extend([
+        (
+            f"观测日期：{current.report_date}；沪深300成分名单生效日："
+            f"{tracker.membership_date}；覆盖：4/4只ETF、300/300只成分股。"
+        ),
+        (
+            f"市值占比：{current.ratio:.4%}；"
+            f"ETF市值合计：{current.etf_market_cap / 1e8:,.2f}亿元；"
+            f"成分股流通市值：{current.circulating_market_cap / 1e8:,.2f}亿元。"
+        ),
+        (
+            f"相对上次有效观测 {tracker.comparison_date}："
+            f"{tracker.ratio_change_pp:+.4f} 百分点；份额变化也按此基准比较，"
+            "不一定是单日变化。"
+            if tracker.comparison_date is not None
+            else "首次有效观测：暂无份额或占比变化基准，不将缺数视为零。"
+        ),
+        "来源：中证指数同日成分股文件、东方财富收盘行情；金额单位为人民币。",
+    ])
+    if tracker.membership_changed:
+        lines.append("注意：成分股名单较上次观测发生变化，占比变化包含成分调整影响。")
+    if tracker.skipped_history_count:
+        lines.append(f"已跳过 {tracker.skipped_history_count} 个无效历史快照。")
+    return lines
+
+
+_ETF_HEADERS = ("代码", "名称", "市值（亿元）", "最新份额（亿份）", "份额变化（万份）", "份额变化率")
+
+
+def _etf_fund_rows(tracker: EtfTrackerReport) -> list[tuple[str, ...]]:
+    return [
+        (
+            fund.code,
+            fund.name,
+            f"{fund.market_cap / 1e8:,.2f}",
+            f"{fund.shares / 1e8:,.4f}",
+            f"{fund.shares_change / 1e4:+,.2f}" if fund.shares_change is not None else "—",
+            f"{fund.shares_change_pct:+.4f}%" if fund.shares_change_pct is not None else "—",
+        )
+        for fund in tracker.funds
+    ]
+
+
+def _render_etf_tracker_markdown(tracker: EtfTrackerReport) -> list[str]:
+    lines = ["## 沪深300 ETF市值占比", ""]
+    lines.extend(f"- {_md(line)}" for line in _etf_summary(tracker))
+    if tracker.current is not None:
+        lines.extend([
+            "",
+            "| " + " | ".join(_ETF_HEADERS) + " |",
+            "| " + " | ".join("---" for _ in _ETF_HEADERS) + " |",
+        ])
+        lines.extend(
+            "| " + " | ".join(_md(value) for value in row) + " |"
+            for row in _etf_fund_rows(tracker)
+        )
+        lines.extend([
+            "",
+            "### 历史观测（最近20次；完整逐日快照持续保留）",
+            "",
+            "| 日期 | 市值占比 |",
+            "| --- | --- |",
+        ])
+        lines.extend(
+            f"| {point.report_date} | {point.ratio:.4%} |"
+            for point in tracker.history[-20:]
+        )
+        lines.extend(["", f"输入快照哈希：`{tracker.current.input_hash}`"])
+    return [*lines, ""]
+
+
+def _render_etf_tracker_html(tracker: EtfTrackerReport) -> str:
+    summary = "".join(f"<p>{_html(line)}</p>" for line in _etf_summary(tracker))
+    body = ""
+    if tracker.current is not None:
+        headers = "".join(f"<th>{_html(value)}</th>" for value in _ETF_HEADERS)
+        rows = "".join(
+            "<tr>" + "".join(f"<td>{_html(value)}</td>" for value in row) + "</tr>"
+            for row in _etf_fund_rows(tracker)
+        )
+        history = "".join(
+            f"<tr><td>{point.report_date}</td><td>{point.ratio:.4%}</td>"
+            f"<td>{point.etf_market_cap / 1e8:,.2f}</td>"
+            f"<td>{point.circulating_market_cap / 1e8:,.2f}</td></tr>"
+            for point in tracker.history
+        )
+        body = f"""<div class="market-index-table-wrap">
+          <table class="market-index-table">
+            <thead><tr>{headers}</tr></thead><tbody>{rows}</tbody>
+          </table>
+        </div>
+        <details>
+          <summary>历史观测（最近{len(tracker.history)}次，最多252次；缺数不补零）</summary>
+          <div class="market-index-table-wrap">
+            <table class="market-index-table">
+              <thead><tr><th>日期</th><th>市值占比</th><th>ETF市值（亿元）</th><th>成分股流通市值（亿元）</th></tr></thead>
+              <tbody>{history}</tbody>
+            </table>
+          </div>
+          <p>输入快照哈希：<code>{tracker.current.input_hash}</code></p>
+        </details>"""
+    return f"""<section class="market-state etf-tracker">
+      <h2>沪深300 ETF市值占比</h2>{summary}{body}
+    </section>"""
 
 
 def _render_market_state_markdown(state: MarketState | None) -> list[str]:

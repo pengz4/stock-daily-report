@@ -8,10 +8,11 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from stock_daily_report.decision import DecisionLabel
+from stock_daily_report.etf_tracker import EtfTrackerReport
 from stock_daily_report.market_scan.models import MarketState
 
 REPORT_SCHEMA_VERSION = 2
-REPORT_RENDER_VERSION = "cn-v3"
+REPORT_RENDER_VERSION = "cn-v4-etf-proxy"
 
 
 class AnalyzerMetadata(BaseModel):
@@ -373,11 +374,17 @@ class ReportDocument(BaseModel):
         pattern=r"^[0-9a-f]{64}$",
     )
     market_rankings: MarketRankings
+    etf_tracker: EtfTrackerReport = Field(default_factory=EtfTrackerReport)
     stocks: tuple[StockReport, ...]
     pool_overview: PoolOverview | None = None
 
     @model_validator(mode="after")
     def validate_market_state_identity(self) -> ReportDocument:
+        if (
+            self.etf_tracker.current is not None
+            and self.etf_tracker.current.report_date != self.metadata.report_date
+        ):
+            raise ValueError("ETF tracker date must match report date")
         if self.market_state_identity is not None and self.market_state is None:
             raise ValueError(
                 "market_state_identity requires a market_state payload"
