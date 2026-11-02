@@ -1,4 +1,8 @@
+import logging
 from datetime import UTC, date, datetime
+from http.client import IncompleteRead
+from io import BytesIO
+from urllib.error import HTTPError
 
 import pytest
 
@@ -109,7 +113,6 @@ def test_provider_rejects_membership_effective_after_report_date():
 
 def test_quote_transport_requests_explicit_codes_fields_and_timeout(monkeypatch):
     import json
-    from io import BytesIO
     from urllib.parse import parse_qs, urlparse
 
     import stock_daily_report.providers.etf as module
@@ -121,7 +124,9 @@ def test_quote_transport_requests_explicit_codes_fields_and_timeout(monkeypatch)
         return BytesIO(json.dumps({"data": {"diff": quotes(["510300"])}}).encode())
 
     monkeypatch.setattr(module, "urlopen", open_url)
-    assert module._quotes(["510300"])[0]["f38"] == 100_000_000
+    assert module._quotes(
+        ["510300"], source="Eastmoney closing quotes batch 1/4"
+    )[0]["f38"] == 100_000_000
     assert captured[0][0]["secids"] == ["1.510300"]
     assert "f21" in captured[0][0]["fields"][0]
     assert "f124" in captured[0][0]["fields"][0]
@@ -147,25 +152,136 @@ def test_membership_reader_uses_official_dated_excel_layout(monkeypatch, source_
     monkeypatch.setitem(
         sys.modules, "pandas", SimpleNamespace(read_excel=lambda data: frame)
     )
-    monkeypatch.setattr(module, "_request", lambda url: b"excel-fixture")
+    requested = []
+
+    def request(url, *, source):
+        requested.append((url, source))
+        return b"excel-fixture"
+
+    monkeypatch.setattr(module, "_request", request)
     assert module._membership() == [
         {"date": date(2026, 9, 1), "index_code": "000300", "code": "000001"}
     ]
+    assert requested[0][1] == "CSI 300 membership workbook"
 
 
-def test_transport_retries_only_twice_and_reports_truncated_responses(monkeypatch):
-    from http.client import IncompleteRead
+def test_quote_transport_includes_source_and_batch_in_request_label(monkeypatch):
+    import json
 
+    import stock_daily_report.providers.etf as module
+
+    requests = []
+
+    def request(url, *, source):
+        requests.append((url, source))
+        return json.dumps({"data": {"diff": quotes(["510300"])}}).encode()
+
+    monkeypatch.setattr(module, "_request", request)
+    assert module._quotes(["510300"], source="Eastmoney closing quotes batch 1/4")
+    assert requests[0][1] == "Eastmoney closing quotes batch 1/4"
+
+
+def test_transient_gateway_errors_retry_with_bounded_backoff_and_source_diagnostics(
+    monkeypatch, caplog
+):
+    import stock_daily_report.providers.etf as module
+
+    attempts = []
+    delays = []
+
+    def flaky(request, *, timeout):
+        attempts.append(request.full_url)
+        if len(attempts) < 3:
+            raise HTTPError(request.full_url, 502, "Bad Gateway", {}, None)
+        return BytesIO(b"ok")
+
+    monkeypatch.setattr(module, "urlopen", flaky)
+    monkeypatch.setattr(module, "sleep", delays.append)
+    caplog.set_level(logging.WARNING, logger=module.__name__)
+
+    assert module._request(
+        "https://example.test/endpoint?secret=private",
+        source="Eastmoney closing quotes batch 2/4",
+    ) == b"ok"
+    assert len(attempts) == 3
+    assert delays == [1, 2]
+    assert "Eastmoney closing quotes batch 2/4" in caplog.text
+    assert "example.test" in caplog.text
+    assert "502" in caplog.text
+    assert "secret=private" not in caplog.text
+
+
+def test_permanent_client_error_is_not_retried_and_identifies_provider(
+    monkeypatch,
+):
+    import stock_daily_report.providers.etf as module
+
+    attempts = []
+    delays = []
+
+    def missing(request, *, timeout):
+        attempts.append(request.full_url)
+        raise HTTPError(request.full_url, 404, "Not Found", {}, None)
+
+    monkeypatch.setattr(module, "urlopen", missing)
+    monkeypatch.setattr(module, "sleep", delays.append)
+    with pytest.raises(OSError, match="CSI 300 membership workbook") as raised:
+        module._request(
+            "https://oss-ch.csindex.com.cn/path?token=private",
+            source="CSI 300 membership workbook",
+        )
+    assert "404" in str(raised.value)
+    assert "oss-ch.csindex.com.cn" in str(raised.value)
+    assert "token=private" not in str(raised.value)
+    assert len(attempts) == 1
+    assert delays == []
+
+
+def test_persistent_gateway_error_reports_final_attempts_without_remote_reason(
+    monkeypatch, caplog
+):
     import stock_daily_report.providers.etf as module
 
     attempts = []
 
-    def broken(*args, **kwargs):
-        attempts.append(kwargs)
+    def unavailable(request, *, timeout):
+        attempts.append(request.full_url)
+        raise HTTPError(
+            request.full_url,
+            502,
+            "Bad Gateway: https://push2.eastmoney.com/?codes=private",
+            {},
+            None,
+        )
+
+    monkeypatch.setattr(module, "urlopen", unavailable)
+    monkeypatch.setattr(module, "sleep", lambda _seconds: None)
+    caplog.set_level(logging.WARNING, logger=module.__name__)
+    with pytest.raises(OSError, match="Eastmoney closing quotes batch 4/4") as raised:
+        module._request(
+            "https://push2.eastmoney.com/api/qt/ulist.np/get?codes=private",
+            source="Eastmoney closing quotes batch 4/4",
+        )
+    assert "HTTP 502" in str(raised.value)
+    assert "push2.eastmoney.com" in str(raised.value)
+    assert "private" not in str(raised.value)
+    assert "private" not in caplog.text
+    assert len(attempts) == 3
+
+
+def test_transient_transport_errors_retry_three_total_attempts(monkeypatch):
+    import stock_daily_report.providers.etf as module
+
+    attempts = []
+    delays = []
+
+    def broken(request, *, timeout):
+        attempts.append(request.full_url)
         raise IncompleteRead(b"truncated")
 
     monkeypatch.setattr(module, "urlopen", broken)
-    monkeypatch.setattr(module, "sleep", lambda seconds: None)
-    with pytest.raises(OSError):
-        module._request("https://example.test/quotes")
-    assert len(attempts) == 2
+    monkeypatch.setattr(module, "sleep", delays.append)
+    with pytest.raises(OSError, match="after 3 attempts"):
+        module._request("https://example.test/quotes", source="Eastmoney quotes")
+    assert len(attempts) == 3
+    assert delays == [1, 2]

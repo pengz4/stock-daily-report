@@ -147,8 +147,11 @@ Sources and gates:
   capture time. Missing/suspended/stale quotes or a late constituent file
   suppress the entire ratio rather than produce a partial denominator.
   A later manual rerun can collect data once all sources are ready.
-- Requests have 15-second timeouts and at most two attempts. Live source
-  availability and update times are not guaranteed.
+- Requests have 15-second timeouts and at most three attempts with 1- and
+  2-second backoff. Connection/response-read failures and HTTP 408, 500, 502,
+  503, and 504 are retried; permanent client errors fail immediately.
+  Failures identify the source and host without logging query parameters.
+  Live source availability and update times are not guaranteed.
 
 Validated inputs are stored immutably with a SHA-256 digest under
 `etf-tracker/YYYY-MM-DD/input.json`. Existing valid captures can be reused
