@@ -476,6 +476,33 @@ def test_fallback_data_error_preserves_primary_failure_and_both_sources():
     assert "missing fields" in raised.value.detail
 
 
+def test_incomplete_fallback_after_network_error_retries_primary():
+    primary_calls = 0
+
+    def primary():
+        nonlocal primary_calls
+        primary_calls += 1
+        if primary_calls == 1:
+            raise OSError("eastmoney disconnected")
+        return [
+            _row("600519", "贵州茅台"),
+            _row("689009", "九号公司"),
+        ]
+
+    provider = AkShareUniverseProvider(
+        fetcher=primary,
+        fallback_fetcher=lambda: [_row("600519", "贵州茅台")],
+        expected_codes_fetcher=lambda: _expected_codes("600519", "689009"),
+        retries=1,
+        retry_delay_seconds=0,
+    )
+
+    quotes = provider.get_quotes()
+
+    assert primary_calls == 2
+    assert [quote.code for quote in quotes] == ["600519", "689009"]
+
+
 def test_universe_request_data_error_does_not_use_fallback():
     calls = []
     primary_error = ProviderDataError(

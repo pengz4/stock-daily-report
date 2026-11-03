@@ -270,7 +270,18 @@ class AkShareUniverseProvider:
         except ProviderDataError as error:
             if primary_error is None:
                 raise
-            raise _fallback_data_error(primary_error, error) from error
+            combined_error = _fallback_data_error(primary_error, error)
+            if (
+                primary_error.code == "network_error"
+                and error.code == "provider_snapshot_incomplete"
+                and self._retries > 0
+            ):
+                raise ProviderAvailabilityError(
+                    self.name,
+                    "network_error",
+                    combined_error.detail,
+                ) from error
+            raise combined_error from error
 
     def _quotes_from_response(
         self, response: object, endpoint: str
