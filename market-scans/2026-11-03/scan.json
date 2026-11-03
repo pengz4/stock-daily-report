@@ -252,21 +252,20 @@
       "trend_score": 89.74767986860839
     }
   ],
-  "coverage": 0.9870459740919482,
-  "eligible_count": 3937,
+  "coverage": 0.9870426829268293,
+  "eligible_count": 3936,
   "exclusion_counts": {
-    "data_quality_rejected": 49,
+    "data_quality_rejected": 51,
     "delisting_risk_warning_name": 155,
-    "insufficient_history": 49,
+    "insufficient_history": 51,
     "insufficient_latest_amount": 1594,
     "invalid_latest_quote": 351,
-    "special_treatment_name": 310
+    "special_treatment_name": 310,
+    "unsupported_security": 1
   },
-  "failure_counts": {
-    "fetch_timeout": 2
-  },
-  "generated_at": "2026-11-03T10:29:49.137117Z",
-  "input_hash": "88195722733acf882d2e80b78d0a24efbc3fe5ee03222aaf56f60f790fef5115",
+  "failure_counts": {},
+  "generated_at": "2026-11-03T15:14:56.702884Z",
+  "input_hash": "8f205104776aafe5d9c4f7bd30b568ae83604b465caae218e650c5793e7d9e64",
   "market_state": {
     "breadth": {
       "advance_decline_ratio": 0.6370504684194621,
@@ -29196,12 +29195,13 @@
     {
       "code": "301660",
       "name": "粤芯半导-U",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [
-        "fetch_timeout"
+        "insufficient_history",
+        "data_quality_rejected"
       ],
-      "status": "history_failed"
+      "status": "history_excluded"
     },
     {
       "code": "301662",
@@ -29399,12 +29399,13 @@
     {
       "code": "301717",
       "name": "超纯应材",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [
-        "fetch_timeout"
+        "insufficient_history",
+        "data_quality_rejected"
       ],
-      "status": "history_failed"
+      "status": "history_excluded"
     },
     {
       "code": "301718",
@@ -50854,10 +50855,12 @@
     {
       "code": "689009",
       "name": "九号公司-WD",
-      "provider_name": "akshare",
+      "provider_name": null,
       "provider_names": [],
-      "reason_codes": [],
-      "status": "valid"
+      "reason_codes": [
+        "unsupported_security"
+      ],
+      "status": "universe_excluded"
     },
     {
       "code": "920000",
@@ -54358,5 +54361,5 @@
     }
   ],
   "universe_count": 5921,
-  "valid_count": 3886
+  "valid_count": 3885
 }

@@ -191352,66 +191352,6 @@
       }
     },
     {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_metrics": [],
-      "provider_name": "MarketDataService",
-      "provider_names": [
-        "MarketDataService"
-      ],
-      "quote": {
-        "amount": 1701921221.38,
-        "change_pct": 2.9,
-        "code": "301660",
-        "latest_price": 26.6,
-        "market": "SZ",
-        "name": "粤芯半导-U",
-        "quote_date": "2026-11-03",
-        "volume": 652056.0
-      },
-      "scores": null,
-      "status": {
-        "code": "301660",
-        "name": "粤芯半导-U",
-        "provider_name": "MarketDataService",
-        "provider_names": [],
-        "reason_codes": [
-          "fetch_timeout"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_metrics": [],
-      "provider_name": "MarketDataService",
-      "provider_names": [
-        "MarketDataService"
-      ],
-      "quote": {
-        "amount": 377797131.91,
-        "change_pct": -4.42,
-        "code": "301717",
-        "latest_price": 255.39,
-        "market": "SZ",
-        "name": "超纯应材",
-        "quote_date": "2026-11-03",
-        "volume": 14625.0
-      },
-      "scores": null,
-      "status": {
-        "code": "301717",
-        "name": "超纯应材",
-        "provider_name": "MarketDataService",
-        "provider_names": [],
-        "reason_codes": [
-          "fetch_timeout"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
       "history_hash": "88b4b253b83511e38fb7f8441052dfe88c8e5259b8792f723f464638d68db0dc",
       "latest_trade_date": "2026-11-03",
       "provider_metrics": [
@@ -338540,91 +338480,6 @@
       }
     },
     {
-      "history_hash": "8867332ecb7038b19ac6025c55f82e640806ecde8dcff0c4a5bda6d75939e82e",
-      "latest_trade_date": "2026-11-03",
-      "provider_metrics": [
-        {
-          "cache_hit": false,
-          "duration_ms": 5986,
-          "error_code": null,
-          "outcome": "success",
-          "provider_name": "akshare",
-          "retry": false
-        }
-      ],
-      "provider_name": "akshare",
-      "provider_names": [
-        "akshare"
-      ],
-      "quote": {
-        "amount": 366940905.0,
-        "change_pct": 3.72,
-        "code": "689009",
-        "latest_price": 34.83,
-        "market": "SH",
-        "name": "九号公司-WD",
-        "quote_date": "2026-11-03",
-        "volume": 107280.0
-      },
-      "scores": {
-        "balanced": {
-          "as_of": "2026-11-03",
-          "code": "689009",
-          "components": {
-            "momentum": 3.6958934517202993,
-            "risk": 53.558380498918105,
-            "structure": 85.0,
-            "trend": 9.75,
-            "volume": 54.96197488258018
-          },
-          "evidence_codes": [
-            "ma60_above_ma120",
-            "trailing_volume_observed",
-            "confirmed_fractal_structure",
-            "confirmed_stroke_structure",
-            "confirmed_central_structure"
-          ],
-          "profile": "balanced",
-          "risk_codes": [
-            "high_realized_volatility",
-            "deep_trailing_drawdown"
-          ],
-          "rule_version": "market-scan-v1",
-          "total": 36.942231997568804
-        },
-        "trend": {
-          "as_of": "2026-11-03",
-          "code": "689009",
-          "components": {
-            "momentum": 3.6958934517202993,
-            "risk": 53.558380498918105,
-            "structure": 85.0,
-            "trend": 9.75,
-            "volume": 54.96197488258018
-          },
-          "evidence_codes": [
-            "ma60_above_ma120",
-            "trailing_volume_observed"
-          ],
-          "profile": "trend",
-          "risk_codes": [
-            "high_realized_volatility",
-            "deep_trailing_drawdown"
-          ],
-          "rule_version": "market-scan-v1",
-          "total": 19.09640231779493
-        }
-      },
-      "status": {
-        "code": "689009",
-        "name": "九号公司-WD",
-        "provider_name": "akshare",
-        "provider_names": [],
-        "reason_codes": [],
-        "status": "valid"
-      }
-    },
-    {
       "history_hash": "48aff71ec9a527f0e3df9ca856cd9d90c93952336a1e5ef6fdabdbb449c49e01",
       "latest_trade_date": "2026-11-03",
       "provider_metrics": [
@@ -343410,10 +343265,106 @@
         "reason_codes": [],
         "status": "valid"
       }
+    },
+    {
+      "history_hash": null,
+      "latest_trade_date": null,
+      "provider_metrics": [
+        {
+          "cache_hit": false,
+          "duration_ms": 1504,
+          "error_code": "network_error",
+          "outcome": "failure",
+          "provider_name": "akshare",
+          "retry": false
+        },
+        {
+          "cache_hit": false,
+          "duration_ms": 2232,
+          "error_code": "data_quality_rejected",
+          "outcome": "data_rejected",
+          "provider_name": "sina",
+          "retry": true
+        }
+      ],
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 377797131.91,
+        "change_pct": -4.42,
+        "code": "301717",
+        "latest_price": 255.39,
+        "market": "SZ",
+        "name": "超纯应材",
+        "quote_date": "2026-11-03",
+        "volume": 14625.0
+      },
+      "scores": null,
+      "status": {
+        "code": "301717",
+        "name": "超纯应材",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [
+          "insufficient_history",
+          "data_quality_rejected"
+        ],
+        "status": "history_excluded"
+      }
+    },
+    {
+      "history_hash": null,
+      "latest_trade_date": null,
+      "provider_metrics": [
+        {
+          "cache_hit": false,
+          "duration_ms": 2015,
+          "error_code": "network_error",
+          "outcome": "failure",
+          "provider_name": "akshare",
+          "retry": false
+        },
+        {
+          "cache_hit": false,
+          "duration_ms": 2547,
+          "error_code": "data_quality_rejected",
+          "outcome": "data_rejected",
+          "provider_name": "sina",
+          "retry": true
+        }
+      ],
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 1701921221.38,
+        "change_pct": 2.9,
+        "code": "301660",
+        "latest_price": 26.6,
+        "market": "SZ",
+        "name": "粤芯半导-U",
+        "quote_date": "2026-11-03",
+        "volume": 652056.0
+      },
+      "scores": null,
+      "status": {
+        "code": "301660",
+        "name": "粤芯半导-U",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [
+          "insufficient_history",
+          "data_quality_rejected"
+        ],
+        "status": "history_excluded"
+      }
     }
   ],
   "execution_date": "2026-11-03",
-  "last_batch": 40,
+  "last_batch": 41,
   "manifest_hash": "08306d3998795bec978ae7a42bab6aad2c1b131420f0c2ae9e5ca304320c9368",
   "market_state": {
     "breadth": {
@@ -402728,5 +402679,5 @@
       "volume": 9688.0
     }
   ],
-  "updated_at": "2026-11-03T10:29:49.376939Z"
+  "updated_at": "2026-11-03T15:14:57.183709Z"
 }
