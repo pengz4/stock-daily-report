@@ -309,9 +309,13 @@ class AkShareUniverseProvider:
         quotes: list[UniverseQuote] = []
         seen_codes: set[str] = set()
         retired_bse_alias_count = 0
+        non_a_share_numeric_code_count = 0
         for index, record in enumerate(records):
             if _is_retired_bse_alias(record.get("代码")):
                 retired_bse_alias_count += 1
+                continue
+            if _is_non_a_share_numeric_code(record.get("代码")):
+                non_a_share_numeric_code_count += 1
                 continue
             quote = self._map_record(record, index, quote_date, endpoint)
             if quote.code in seen_codes:
@@ -329,6 +333,13 @@ class AkShareUniverseProvider:
                 "excluding them from the current universe",
                 endpoint,
                 retired_bse_alias_count,
+            )
+        if non_a_share_numeric_code_count:
+            _LOGGER.warning(
+                "AkShare %s returned %d non-A-share numeric codes; "
+                "excluding them from the current universe",
+                endpoint,
+                non_a_share_numeric_code_count,
             )
 
         if not self._use_minimum_size_fallback:
@@ -742,6 +753,15 @@ def _is_retired_bse_alias(value: object) -> bool:
         and len(value) == 6
         and value.isdigit()
         and value.startswith(_RETIRED_BSE_CODE_PREFIXES)
+    )
+
+
+def _is_non_a_share_numeric_code(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 6
+        and value.isdigit()
+        and not A_SHARE_CODE_PATTERN.fullmatch(value)
     )
 
 

@@ -262,12 +262,14 @@ def test_akshare_universe_provider_normalizes_supported_a_share_classes():
     assert quotes[0].exchange == "SH"
 
 
-def test_universe_provider_excludes_retired_bse_codes_from_market_feed(caplog):
+def test_universe_provider_excludes_non_a_share_codes_from_market_feed(caplog):
     provider = AkShareUniverseProvider(
         fetcher=lambda: [
             _row("600519", "贵州茅台"),
             _row("430047", "诺思兰德"),
             _row("833994", "翰博高新"),
+            _row("810014", "莱特定转"),
+            _row("510300", "沪深300ETF"),
         ],
         clock=lambda: date(2026, 9, 11),
         expected_codes_fetcher=lambda: _expected_codes("600519"),
@@ -277,6 +279,7 @@ def test_universe_provider_excludes_retired_bse_codes_from_market_feed(caplog):
 
     assert [quote.code for quote in quotes] == ["600519"]
     assert "2 retired BSE code aliases" in caplog.text
+    assert "2 non-A-share numeric codes" in caplog.text
 
 
 def test_universe_quotes_are_immutable():
@@ -949,7 +952,7 @@ def test_duplicate_universe_codes_are_rejected():
 
 
 @pytest.mark.parametrize(
-    "code", ["303132", "510300", "AAPL", "600519.SH"]
+    "code", ["AAPL", "600519.SH"]
 )
 def test_unsupported_instruments_and_codes_are_rejected(code):
     provider = AkShareUniverseProvider(
