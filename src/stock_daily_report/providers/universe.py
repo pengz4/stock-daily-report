@@ -33,6 +33,7 @@ _PRIMARY_ENDPOINT = "stock_zh_a_spot_em"
 _FALLBACK_ENDPOINT = "stock_zh_a_spot"
 _EXPECTED_CODES_PRIMARY_ENDPOINT = "stock_info_a_code_name"
 _EXPECTED_CODES_FALLBACK_ENDPOINT = "stock_zh_a_spot_tx"
+_RETIRED_BSE_CODE_PREFIXES = ("43", "83", "87")
 _LOGGER = logging.getLogger(__name__)
 _SNAPSHOT_CACHE_PROVIDER = "akshare-universe-v1"
 
@@ -296,7 +297,11 @@ class AkShareUniverseProvider:
 
         quotes: list[UniverseQuote] = []
         seen_codes: set[str] = set()
+        retired_bse_alias_count = 0
         for index, record in enumerate(records):
+            if _is_retired_bse_alias(record.get("代码")):
+                retired_bse_alias_count += 1
+                continue
             quote = self._map_record(record, index, quote_date, endpoint)
             if quote.code in seen_codes:
                 raise ProviderDataError(
@@ -306,6 +311,14 @@ class AkShareUniverseProvider:
                 )
             seen_codes.add(quote.code)
             quotes.append(quote)
+
+        if retired_bse_alias_count:
+            _LOGGER.warning(
+                "AkShare %s returned %d retired BSE code aliases; "
+                "excluding them from the current universe",
+                endpoint,
+                retired_bse_alias_count,
+            )
 
         if not self._use_minimum_size_fallback:
             expected_codes = self._get_expected_codes()
@@ -710,6 +723,15 @@ def _normalize_code(
             "akshare", "unsupported_symbol", f"Unsupported code: {value}"
         )
     return code
+
+
+def _is_retired_bse_alias(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 6
+        and value.isdigit()
+        and value.startswith(_RETIRED_BSE_CODE_PREFIXES)
+    )
 
 
 def _normalize_name(value: object) -> str:
