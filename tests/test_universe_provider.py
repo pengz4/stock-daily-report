@@ -227,6 +227,7 @@ def test_akshare_universe_provider_normalizes_supported_a_share_classes():
                 _row("300750", "宁德时代"),
                 _row("302132", "中航成飞"),
                 _row("688981", "中芯国际"),
+                _row("689009", "九号公司"),
                 _row("920002", "万达轴承"),
             ]
         )
@@ -235,7 +236,7 @@ def test_akshare_universe_provider_normalizes_supported_a_share_classes():
         fetcher=fetcher,
         clock=lambda: date(2026, 9, 11),
         expected_codes_fetcher=lambda: _expected_codes(
-            "600519", "000001", "300750", "302132", "688981", "920002"
+            "600519", "000001", "300750", "302132", "688981", "689009", "920002"
         ),
     ).get_quotes()
 
@@ -246,6 +247,7 @@ def test_akshare_universe_provider_normalizes_supported_a_share_classes():
         ("300750", "SZ"),
         ("302132", "SZ"),
         ("688981", "SH"),
+        ("689009", "SH"),
         ("920002", "BJ"),
     ]
     assert quotes[0] == UniverseQuote(
