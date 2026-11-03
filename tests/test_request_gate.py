@@ -11,7 +11,7 @@ def _request_start(directory):
     from stock_daily_report.providers.requests import ProviderRequestGate
 
     gate = ProviderRequestGate(
-        directory, interval_seconds=0.04, cooldown_seconds=0
+        directory, interval_seconds=0.2, cooldown_seconds=0
     )
     gate.acquire("akshare")
     return time.monotonic()
@@ -22,7 +22,7 @@ def test_request_spacing_is_shared_across_processes(tmp_path):
     with context.Pool(3) as pool:
         starts = sorted(pool.map(_request_start, [tmp_path] * 3))
 
-    assert all(b - a >= 0.03 for a, b in pairwise(starts))
+    assert all(b - a >= 0.15 for a, b in pairwise(starts))
 
 
 def test_concurrent_threads_share_spacing(tmp_path):
