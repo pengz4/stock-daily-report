@@ -21,6 +21,7 @@ from stock_daily_report.chan.common import RULE_VERSION
 from stock_daily_report.chan.simplified import SimplifiedChanAnalyzer
 from stock_daily_report.config import load_settings, load_watchlist
 from stock_daily_report.decision import decide
+from stock_daily_report.etf_tracker import EtfTrackerReport, build_tracker_report
 from stock_daily_report.indicators.technical import (
     TechnicalMetrics,
     calculate_technical_metrics,
@@ -1552,6 +1553,7 @@ def _publish_report_transaction(
             market_state=market_state,
             market_state_identity=market_state_identity,
             market_rankings=market_rankings,
+            etf_tracker=build_tracker_report(root, report_date),
             light_quotes=light_quotes,
             light_quote_error=light_quote_error,
             scan_ranking=scan_ranking,
@@ -2276,6 +2278,7 @@ def _build_report(
     light_quote_error: str | None,
     scan_ranking: Sequence[tuple[str, float]] | None = None,
     watchlist_scan_info: WatchlistScanInfo | None = None,
+    etf_tracker: EtfTrackerReport | None = None,
 ) -> ReportDocument:
     rule_hash = configuration_hash(resolve_risk_rules(settings))
     stocks: list[StockReport] = []
@@ -2387,6 +2390,7 @@ def _build_report(
         market_state=market_state,
         market_state_identity=market_state_identity,
         market_rankings=market_rankings,
+        etf_tracker=etf_tracker or EtfTrackerReport(),
         stocks=tuple(stocks),
         pool_overview=_build_pool_overview(
             watchlist,

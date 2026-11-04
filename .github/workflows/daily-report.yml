@@ -18,6 +18,8 @@ on:
       - ".github/workflows/daily-report.yml"
       - "src/stock_daily_report/report/**"
       - "src/stock_daily_report/pipeline.py"
+      - "src/stock_daily_report/etf_tracker.py"
+      - "src/stock_daily_report/providers/etf.py"
 
 permissions:
   contents: write
@@ -93,6 +95,44 @@ jobs:
           if [ -d .report-history/watchlist-scans ]; then
             cp -a .report-history/watchlist-scans ./watchlist-scans
           fi
+          if [ -d .report-history/etf-tracker ]; then
+            cp -a .report-history/etf-tracker ./etf-tracker
+          fi
+      - name: Capture CSI300 ETF tracker
+        id: etf-tracker
+        continue-on-error: true
+        timeout-minutes: 5
+        run: |
+          python -m stock_daily_report.cli etf-tracker \
+            --date "${{ steps.report-date.outputs.report_date }}" \
+            --output-root .
+      - name: Persist ETF tracker history
+        if: steps.etf-tracker.outcome == 'success'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ETF_REPORT_DATE: ${{ steps.report-date.outputs.report_date }}
+        run: |
+          report_date="$ETF_REPORT_DATE"
+          source="etf-tracker/${report_date}/input.json"
+          target=".report-history/etf-tracker/${report_date}/input.json"
+          auth_header="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
+          if [ ! -e .report-history/.git ]; then
+            mkdir -p .report-history
+            git -C .report-history init
+            git -C .report-history remote add origin \
+              "https://github.com/${GITHUB_REPOSITORY}.git"
+          fi
+          mkdir -p ".report-history/etf-tracker/${report_date}"
+          cp "$source" "$target"
+          git -C .report-history config user.name "github-actions[bot]"
+          git -C .report-history config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C .report-history add -- "etf-tracker/${report_date}/input.json"
+          if ! git -C .report-history diff --cached --quiet; then
+            git -C .report-history commit -m "chore: retain CSI300 ETF observation"
+            git -C .report-history -c \
+              http.extraheader="AUTHORIZATION: basic ${auth_header}" \
+              push origin HEAD:refs/heads/reports-history
+          fi
       - name: Reuse same-date market data responses
         uses: actions/cache@v4
         with:
@@ -122,6 +162,7 @@ jobs:
           from pathlib import Path
 
           from stock_daily_report.config import load_market_scan_settings
+          from stock_daily_report.etf_tracker import build_tracker_report
           from stock_daily_report.market_scan.identity import (
               build_market_state_identity,
               canonical_market_state_payload,
@@ -162,6 +203,7 @@ jobs:
               0
               if (
                   report.metadata.render_version == REPORT_RENDER_VERSION
+                  and report.etf_tracker == build_tracker_report(Path.cwd(), expected_report_date)
                   and report.metadata.report_date == expected_report_date
                   and report.metadata.report_date == scan.report_date
                   and report.market_state is not None
@@ -205,6 +247,7 @@ jobs:
           from datetime import date
 
           from stock_daily_report.config import load_market_scan_settings
+          from stock_daily_report.etf_tracker import build_tracker_report
           from stock_daily_report.market_scan.identity import (
               build_market_state_identity,
               resolve_market_state_identity,
@@ -233,6 +276,7 @@ jobs:
           raise SystemExit(
               0
               if report.metadata.render_version == REPORT_RENDER_VERSION
+              and report.etf_tracker == build_tracker_report(Path.cwd(), expected_report_date)
               and report.metadata.report_date == expected_report_date
               and report.market_state is not None
               and report_identity is not None

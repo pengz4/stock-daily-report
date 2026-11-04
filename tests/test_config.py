@@ -45,6 +45,7 @@ def test_load_watchlist_returns_valid_a_share_codes(tmp_path):
         ("300750", "ChiNext"),
         ("302132", "ChiNext"),
         ("688981", "STAR Market"),
+        ("689009", "STAR Market"),
         ("920001", "Beijing Stock Exchange"),
     ],
 )

@@ -19,6 +19,7 @@ from stock_daily_report.config import (
     load_settings,
     load_watchlist,
 )
+from stock_daily_report.etf_tracker import collect_tracker
 from stock_daily_report.market_scan.report import (
     MarketScanArtifactError,
     load_scan_artifact,
@@ -152,8 +153,21 @@ def main(argv: list[str] | None = None) -> int:
         default=_project_root() / "config/watchlist.yaml",
         help="watchlist used when --scope watchlist is selected",
     )
+    tracker = subparsers.add_parser(
+        "etf-tracker", help="capture the closing CSI300 ETF market-value proxy"
+    )
+    tracker.add_argument("--date", required=True, type=date.fromisoformat)
+    tracker.add_argument("--output-root", type=Path, default=Path.cwd())
     args = parser.parse_args(argv)
 
+    if args.command == "etf-tracker":
+        try:
+            path = collect_tracker(args.output_root, args.date)
+        except (OSError, ValueError) as error:
+            print(f"ETF tracker unavailable: {error}", file=sys.stderr)
+            return 1
+        print(path)
+        return 0
     if args.command == "daily":
         try:
             settings = load_settings(args.settings)

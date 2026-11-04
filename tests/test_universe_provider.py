@@ -227,6 +227,7 @@ def test_akshare_universe_provider_normalizes_supported_a_share_classes():
                 _row("300750", "宁德时代"),
                 _row("302132", "中航成飞"),
                 _row("688981", "中芯国际"),
+                _row("689009", "九号公司"),
                 _row("920002", "万达轴承"),
             ]
         )
@@ -235,7 +236,7 @@ def test_akshare_universe_provider_normalizes_supported_a_share_classes():
         fetcher=fetcher,
         clock=lambda: date(2026, 9, 11),
         expected_codes_fetcher=lambda: _expected_codes(
-            "600519", "000001", "300750", "302132", "688981", "920002"
+            "600519", "000001", "300750", "302132", "688981", "689009", "920002"
         ),
     ).get_quotes()
 
@@ -246,6 +247,7 @@ def test_akshare_universe_provider_normalizes_supported_a_share_classes():
         ("300750", "SZ"),
         ("302132", "SZ"),
         ("688981", "SH"),
+        ("689009", "SH"),
         ("920002", "BJ"),
     ]
     assert quotes[0] == UniverseQuote(
@@ -258,6 +260,26 @@ def test_akshare_universe_provider_normalizes_supported_a_share_classes():
         quote_date=date(2026, 9, 11),
     )
     assert quotes[0].exchange == "SH"
+
+
+def test_universe_provider_excludes_non_a_share_codes_from_market_feed(caplog):
+    provider = AkShareUniverseProvider(
+        fetcher=lambda: [
+            _row("600519", "贵州茅台"),
+            _row("430047", "诺思兰德"),
+            _row("833994", "翰博高新"),
+            _row("810014", "莱特定转"),
+            _row("510300", "沪深300ETF"),
+        ],
+        clock=lambda: date(2026, 9, 11),
+        expected_codes_fetcher=lambda: _expected_codes("600519"),
+    )
+
+    quotes = provider.get_quotes()
+
+    assert [quote.code for quote in quotes] == ["600519"]
+    assert "2 retired BSE code aliases" in caplog.text
+    assert "2 non-A-share numeric codes" in caplog.text
 
 
 def test_universe_quotes_are_immutable():
@@ -455,6 +477,33 @@ def test_fallback_data_error_preserves_primary_failure_and_both_sources():
     assert "eastmoney disconnected" in raised.value.detail
     assert "stock_zh_a_spot" in raised.value.detail
     assert "missing fields" in raised.value.detail
+
+
+def test_incomplete_fallback_after_network_error_retries_primary():
+    primary_calls = 0
+
+    def primary():
+        nonlocal primary_calls
+        primary_calls += 1
+        if primary_calls == 1:
+            raise OSError("eastmoney disconnected")
+        return [
+            _row("600519", "贵州茅台"),
+            _row("689009", "九号公司"),
+        ]
+
+    provider = AkShareUniverseProvider(
+        fetcher=primary,
+        fallback_fetcher=lambda: [_row("600519", "贵州茅台")],
+        expected_codes_fetcher=lambda: _expected_codes("600519", "689009"),
+        retries=1,
+        retry_delay_seconds=0,
+    )
+
+    quotes = provider.get_quotes()
+
+    assert primary_calls == 2
+    assert [quote.code for quote in quotes] == ["600519", "689009"]
 
 
 def test_universe_request_data_error_does_not_use_fallback():
@@ -903,7 +952,7 @@ def test_duplicate_universe_codes_are_rejected():
 
 
 @pytest.mark.parametrize(
-    "code", ["303132", "510300", "430047", "AAPL", "600519.SH"]
+    "code", ["AAPL", "600519.SH"]
 )
 def test_unsupported_instruments_and_codes_are_rejected(code):
     provider = AkShareUniverseProvider(
