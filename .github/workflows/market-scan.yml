@@ -1,144 +1,30 @@
-name: Full-market A-share scan
+name: Isolated after-close scan
 
 on:
-  schedule:
-    - cron: "15 7 * * 1-5"
   workflow_dispatch:
     inputs:
       report_date:
-        description: "Current Shanghai date; older dates require a valid artifact"
-        required: false
+        description: "Current Shanghai trading date"
+        required: true
         type: string
-      refresh_market_state:
-        description: "Repair incomplete index state and archive the previous scan"
-        required: false
-        type: boolean
-        default: false
-  push:
-    branches:
-      - feature/report-wide-cn
-    paths:
-      - "config/market_scan.yaml"
-      - "config/watchlist.yaml"
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   TZ: Asia/Shanghai
 
 jobs:
-  watchlist-scan:
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    concurrency:
-      group: stock-daily-report-history
-      cancel-in-progress: false
-      queue: max
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: pip
-      - name: Install project
-        run: |
-          python -m pip install setuptools==80.9.0 wheel==0.45.1
-          python -m pip install --no-build-isolation -r requirements.lock
-          python -m pip install --no-build-isolation --no-deps .
-      - name: Select report date
-        id: report-date
-        env:
-          REQUESTED_DATE: ${{ inputs.report_date }}
-        run: |
-          report_date="$(python -m stock_daily_report.report_date \
-            --requested "$REQUESTED_DATE")"
-          echo "report_date=$report_date" >> "$GITHUB_OUTPUT"
-      - name: Reuse same-date market data responses
-        uses: actions/cache@v4
-        with:
-          path: .cache/stock-daily-report/*.json
-          key: market-data-v1-${{ runner.os }}-${{ steps.report-date.outputs.report_date }}-${{ hashFiles('config/settings.yaml', 'requirements.lock', 'src/stock_daily_report/providers/**', 'src/stock_daily_report/models.py') }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
-          restore-keys: |
-            market-data-v1-${{ runner.os }}-${{ steps.report-date.outputs.report_date }}-${{ hashFiles('config/settings.yaml', 'requirements.lock', 'src/stock_daily_report/providers/**', 'src/stock_daily_report/models.py') }}-
-      - name: Generate watchlist scan
-        run: |
-          report_date="${{ steps.report-date.outputs.report_date }}"
-          python -m stock_daily_report.cli market-scan \
-            --date "$report_date" \
-            --settings config/market_scan.yaml \
-            --data-settings config/settings.yaml \
-            --output-root . \
-            --scope watchlist \
-            --watchlist config/watchlist.yaml \
-            --resumable
-      - name: Persist watchlist scan history
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          mkdir -p .report-history
-          auth_header="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
-          if [ ! -e .report-history/.git ]; then
-            git -C .report-history init
-            git -C .report-history remote add origin \
-              "https://github.com/${GITHUB_REPOSITORY}.git"
-          fi
-          git -C .report-history config user.name "github-actions[bot]"
-          git -C .report-history config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git -C .report-history -c \
-            http.extraheader="AUTHORIZATION: basic ${auth_header}" \
-            pull --rebase --autostash origin reports-history \
-            || git -C .report-history -c \
-              http.extraheader="AUTHORIZATION: basic ${auth_header}" \
-              fetch origin reports-history
-          git -C .report-history reset --hard origin/reports-history 2>/dev/null || true
-          mkdir -p .report-history/watchlist-scans
-          if [ -d watchlist-scans ]; then
-            cp -a watchlist-scans/. .report-history/watchlist-scans/
-          fi
-          find .report-history/watchlist-scans -name '*.lock' -delete 2>/dev/null || true
-          git -C .report-history add watchlist-scans
-          if ! git -C .report-history diff --cached --quiet; then
-            git -C .report-history commit -m "chore: publish watchlist scan history"
-            push_succeeded=false
-            for attempt in 1 2 3; do
-              if git -C .report-history -c \
-                http.extraheader="AUTHORIZATION: basic ${auth_header}" \
-                push origin HEAD:refs/heads/reports-history; then
-                push_succeeded=true
-                break
-              fi
-              if [ "$attempt" -lt 3 ]; then
-                git -C .report-history -c \
-                  http.extraheader="AUTHORIZATION: basic ${auth_header}" \
-                  pull --rebase --autostash origin reports-history
-              fi
-            done
-            if [ "$push_succeeded" != true ]; then
-              echo "Failed to publish watchlist scan history after 3 attempts" >&2
-              exit 1
-            fi
-          fi
-
-  market-scan:
+  scan:
+    strategy:
+      fail-fast: false
+      matrix:
+        scope: [market, watchlist]
     runs-on: ubuntu-latest
     timeout-minutes: 120
-    concurrency:
-      group: stock-daily-report-history
-      cancel-in-progress: false
-      queue: max
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-      - name: Restore report history
-        uses: actions/checkout@v4
-        continue-on-error: true
-        with:
-          ref: reports-history
-          path: .report-history
-          fetch-depth: 1
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -149,101 +35,39 @@ jobs:
           python -m pip install setuptools==80.9.0 wheel==0.45.1
           python -m pip install --no-build-isolation -r requirements.lock
           python -m pip install --no-build-isolation --no-deps .
-      - name: Select report date
-        id: report-date
+      - name: Verify date and market close
         env:
           REQUESTED_DATE: ${{ inputs.report_date }}
         run: |
-          report_date="$(python -m stock_daily_report.report_date \
-            --requested "$REQUESTED_DATE")"
-          echo "report_date=$report_date" >> "$GITHUB_OUTPUT"
-      - name: Merge previous market scan history
-        run: |
-          if [ -d .report-history/market-scans ]; then
-            cp -a .report-history/market-scans ./market-scans
-          fi
-      - name: Reuse same-date market data responses
-        uses: actions/cache@v4
-        with:
-          path: .cache/stock-daily-report/*.json
-          key: market-data-v1-${{ runner.os }}-${{ steps.report-date.outputs.report_date }}-${{ hashFiles('config/settings.yaml', 'requirements.lock', 'src/stock_daily_report/providers/**', 'src/stock_daily_report/models.py') }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
-          restore-keys: |
-            market-data-v1-${{ runner.os }}-${{ steps.report-date.outputs.report_date }}-${{ hashFiles('config/settings.yaml', 'requirements.lock', 'src/stock_daily_report/providers/**', 'src/stock_daily_report/models.py') }}-
-      - name: Generate market scan
+          python - <<'PY'
+          import os
+          from datetime import datetime, time
+          from zoneinfo import ZoneInfo
+
+          now = datetime.now(ZoneInfo("Asia/Shanghai"))
+          if now.date().isoformat() != os.environ["REQUESTED_DATE"] or now.time() < time(15, 10):
+              raise SystemExit("Requested date must be today and the market must be closed")
+          PY
+      - name: Generate fresh scan
         env:
-          REFRESH_MARKET_STATE: ${{ inputs.refresh_market_state }}
+          REPORT_DATE: ${{ inputs.report_date }}
+          SCAN_SCOPE: ${{ matrix.scope }}
         run: |
-          report_date="${{ steps.report-date.outputs.report_date }}"
-          refresh_args=()
-          if [ "$REFRESH_MARKET_STATE" = "true" ]; then
-            refresh_args+=(--refresh-market-state)
+          args=()
+          if [ "$SCAN_SCOPE" = watchlist ]; then
+            args+=(--scope watchlist --watchlist config/watchlist.yaml)
           fi
           python -m stock_daily_report.cli market-scan \
-            --date "$report_date" \
+            --date "$REPORT_DATE" \
             --settings config/market_scan.yaml \
             --data-settings config/settings.yaml \
             --output-root . \
-            --resumable "${refresh_args[@]}"
-      - name: Summarize index availability
-        run: |
-          python - "${{ steps.report-date.outputs.report_date }}" <<'PY' >> "$GITHUB_STEP_SUMMARY"
-          import json
-          import sys
-          from pathlib import Path
-          path = Path("market-scans") / sys.argv[1] / "scan.json"
-          if not path.exists():
-              print("Scan incomplete; checkpoint will be persisted for resumption.")
-              sys.exit(0)
-          state = json.loads(path.read_text())["market_state"]
-          print("## Market indices")
-          print("| Index | Status | Provider | Latest date | Error |")
-          print("|---|---|---|---|---|")
-          for item in state["indices"]:
-              print(f'| {item["name"]} | {item["status"]} | {item["provider"]} | '
-                    f'{item["latest_trade_date"]} | {item["error_code"] or ""} |')
-          PY
-      - name: Persist market scan history
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          auth_header="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
-          if [ ! -e .report-history/.git ]; then
-            mkdir -p .report-history
-            git -C .report-history init
-            git -C .report-history remote add origin \
-              "https://github.com/${GITHUB_REPOSITORY}.git"
-          fi
-          rm -rf .report-history/market-scans
-          cp -a market-scans .report-history/market-scans
-          find .report-history/market-scans -name '*.lock' -delete
-          git -C .report-history config user.name "github-actions[bot]"
-          git -C .report-history config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git -C .report-history add market-scans
-          if ! git -C .report-history diff --cached --quiet; then
-            git -C .report-history commit -m "chore: publish market scan history"
-            push_succeeded=false
-            for attempt in 1 2 3; do
-              if git -C .report-history -c \
-                http.extraheader="AUTHORIZATION: basic ${auth_header}" \
-                push origin HEAD:refs/heads/reports-history; then
-                push_succeeded=true
-                break
-              fi
-              if [ "$attempt" -lt 3 ]; then
-                git -C .report-history -c \
-                  http.extraheader="AUTHORIZATION: basic ${auth_header}" \
-                  pull --rebase --autostash origin reports-history
-              fi
-            done
-            if [ "$push_succeeded" != true ]; then
-              echo "Failed to publish market scan history after 3 attempts" >&2
-              exit 1
-            fi
-          fi
-      - name: Upload market scan artifact
+            --resumable "${args[@]}"
+      - name: Upload isolated scan
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: market-scan-${{ steps.report-date.outputs.report_date }}
-          path: market-scans/${{ steps.report-date.outputs.report_date }}
-          retention-days: 30
-          overwrite: true
+          name: isolated-${{ matrix.scope }}-scan-${{ inputs.report_date }}
+          path: ${{ matrix.scope == 'watchlist' && 'watchlist-scans' || 'market-scans' }}/${{ inputs.report_date }}
+          if-no-files-found: warn
+          retention-days: 7
