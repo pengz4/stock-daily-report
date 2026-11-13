@@ -274,6 +274,8 @@ def test_market_scan_cli_accepts_date_settings_and_output_root(
         "cache_ttl_seconds": data_settings.market_data.cache_ttl_seconds,
         "retries": 2,
         "retry_delay_seconds": 5,
+        "max_missing_codes": 1,
+        "request_timeout_seconds": 120,
     }
     assert calls == [
         (

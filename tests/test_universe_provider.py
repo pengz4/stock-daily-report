@@ -506,6 +506,98 @@ def test_incomplete_fallback_after_network_error_retries_primary():
     assert [quote.code for quote in quotes] == ["600519", "689009"]
 
 
+def test_fallback_network_outage_accepts_one_missing_expected_code(caplog):
+    def offline_primary():
+        raise OSError("eastmoney disconnected")
+
+    provider = AkShareUniverseProvider(
+        fetcher=offline_primary,
+        fallback_fetcher=lambda: [_row("600519", "贵州茅台")],
+        expected_codes_fetcher=lambda: _expected_codes("600519", "689009"),
+        max_missing_codes=1,
+    )
+
+    quotes = provider.get_quotes()
+
+    assert [quote.code for quote in quotes] == ["600519"]
+    assert "continuing with partial universe" in caplog.text
+    assert "689009" in caplog.text
+
+
+def test_primary_incomplete_snapshot_remains_strict_with_missing_code_limit():
+    provider = AkShareUniverseProvider(
+        fetcher=lambda: [_row("600519", "贵州茅台")],
+        expected_codes_fetcher=lambda: _expected_codes("600519", "689009"),
+        max_missing_codes=1,
+    )
+
+    with pytest.raises(ProviderDataError, match="provider_snapshot_incomplete"):
+        provider.get_quotes()
+
+
+def test_fallback_with_more_missing_codes_than_limit_is_rejected():
+    def offline_primary():
+        raise OSError("eastmoney disconnected")
+
+    provider = AkShareUniverseProvider(
+        fetcher=offline_primary,
+        fallback_fetcher=lambda: [_row("600519", "贵州茅台")],
+        expected_codes_fetcher=lambda: _expected_codes("600519", "000001", "000002"),
+        max_missing_codes=1,
+    )
+
+    with pytest.raises(ProviderDataError, match="provider_snapshot_incomplete"):
+        provider.get_quotes()
+
+
+def test_universe_endpoint_timeout_uses_the_fallback_provider():
+    from threading import Event
+
+    def hanging_primary():
+        Event().wait()
+
+    provider = AkShareUniverseProvider(
+        fetcher=hanging_primary,
+        fallback_fetcher=lambda: [_row("600519", "贵州茅台")],
+        expected_codes_fetcher=lambda: _expected_codes("600519"),
+        request_timeout_seconds=0.1,
+    )
+
+    assert [quote.code for quote in provider.get_quotes()] == ["600519"]
+
+
+def test_universe_network_exception_in_worker_uses_the_fallback_provider():
+    import requests
+
+    def disconnected_primary():
+        raise requests.ConnectionError("connection reset")
+
+    provider = AkShareUniverseProvider(
+        fetcher=disconnected_primary,
+        fallback_fetcher=lambda: [_row("600519", "贵州茅台")],
+        expected_codes_fetcher=lambda: _expected_codes("600519"),
+        request_timeout_seconds=1,
+    )
+
+    assert [quote.code for quote in provider.get_quotes()] == ["600519"]
+
+
+def test_universe_schema_error_in_worker_does_not_use_fallback():
+    import json
+
+    def malformed_primary():
+        raise json.JSONDecodeError("invalid JSON", "", 0)
+
+    provider = AkShareUniverseProvider(
+        fetcher=malformed_primary,
+        fallback_fetcher=lambda: pytest.fail("schema errors must not use fallback"),
+        request_timeout_seconds=1,
+    )
+
+    with pytest.raises(ProviderDataError, match="provider_schema_invalid"):
+        provider.get_quotes()
+
+
 def test_universe_request_data_error_does_not_use_fallback():
     calls = []
     primary_error = ProviderDataError(

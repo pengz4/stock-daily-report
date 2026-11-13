@@ -66,9 +66,15 @@ def test_market_scan_workflow_is_bounded_and_uses_locked_python():
     assert "needs" not in job
     watchlist_job = workflow["jobs"]["watchlist-scan"]
     assert watchlist_job["concurrency"] == job["concurrency"]
+    assert watchlist_job["timeout-minutes"] >= 60
     assert job["timeout-minutes"] > 0
     assert python_step["with"]["python-version"] == "3.11"
     assert "-r requirements.lock" in install_step["run"]
+    for selected_job in (watchlist_job, job):
+        date_step = next(
+            step for step in selected_job["steps"] if step.get("id") == "report-date"
+        )
+        assert "stock_daily_report.report_date" in date_step["run"]
 
 
 def test_market_scan_workflow_reuses_and_persists_independent_artifacts():

@@ -288,6 +288,8 @@ def main(argv: list[str] | None = None) -> int:
                 cache_ttl_seconds=data_settings.market_data.cache_ttl_seconds,
                 retries=2,
                 retry_delay_seconds=5,
+                max_missing_codes=1,
+                request_timeout_seconds=120,
             )
             if args.scope == "watchlist":
                 universe_provider: object = WatchlistUniverseProvider(

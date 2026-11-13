@@ -69,18 +69,9 @@ jobs:
         env:
           REQUESTED_DATE: ${{ inputs.report_date }}
         run: |
-          if [ -n "$REQUESTED_DATE" ]; then
-            report_date="$REQUESTED_DATE"
-          else
-            report_date="$(date +%F)"
-          fi
-          canonical_date="$(python - "$report_date" <<'PY'
-          import sys
-          from datetime import date
-          print(date.fromisoformat(sys.argv[1]).isoformat())
-          PY
-          )"
-          echo "report_date=$canonical_date" >> "$GITHUB_OUTPUT"
+          report_date="$(python -m stock_daily_report.report_date \
+            --requested "$REQUESTED_DATE")"
+          echo "report_date=$report_date" >> "$GITHUB_OUTPUT"
       - name: Merge previous report history
         run: |
           if [ -d .report-history/reports ]; then
@@ -430,9 +421,24 @@ jobs:
           git -C .report-history add reports site snapshots
           if ! git -C .report-history diff --cached --quiet; then
             git -C .report-history commit -m "chore: publish report history"
-            git -C .report-history -c \
-              http.extraheader="AUTHORIZATION: basic ${auth_header}" \
-              push origin HEAD:refs/heads/reports-history
+            push_succeeded=false
+            for attempt in 1 2 3; do
+              if git -C .report-history -c \
+                http.extraheader="AUTHORIZATION: basic ${auth_header}" \
+                push origin HEAD:refs/heads/reports-history; then
+                push_succeeded=true
+                break
+              fi
+              if [ "$attempt" -lt 3 ]; then
+                git -C .report-history -c \
+                  http.extraheader="AUTHORIZATION: basic ${auth_header}" \
+                  pull --rebase --autostash origin reports-history
+              fi
+            done
+            if [ "$push_succeeded" != true ]; then
+              echo "Failed to publish report history after 3 attempts" >&2
+              exit 1
+            fi
           fi
       - name: Stage Pages artifact
         run: python scripts/publish_site.py --root . --output public

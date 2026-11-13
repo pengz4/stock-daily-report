@@ -27,6 +27,26 @@ def test_daily_workflow_serializes_the_full_deployment_lifecycle():
     assert workflow["jobs"]["notify"]["needs"] == ["generate", "deploy"]
 
 
+def test_daily_workflow_uses_market_date_for_delayed_scheduled_runs():
+    steps = _workflow()["jobs"]["generate"]["steps"]
+    date_step = next(step for step in steps if step.get("id") == "report-date")
+
+    assert "stock_daily_report.report_date" in date_step["run"]
+
+
+def test_daily_history_publish_retries_and_fails_after_exhaustion():
+    steps = _workflow()["jobs"]["generate"]["steps"]
+    persist = next(
+        step["run"] for step in steps if step["name"] == "Persist report history"
+    )
+
+    assert "push_succeeded=false" in persist
+    assert "for attempt in 1 2 3" in persist
+    assert "pull --rebase --autostash origin reports-history" in persist
+    assert 'if [ "$push_succeeded" != true ]; then' in persist
+    assert "exit 1" in persist
+
+
 def test_daily_workflow_passes_repository_configuration_paths():
     workflow = _workflow()
     steps = workflow["jobs"]["generate"]["steps"]

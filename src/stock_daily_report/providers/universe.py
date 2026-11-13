@@ -4,6 +4,7 @@ import hashlib
 import json
 import logging
 import math
+import multiprocessing
 import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass
@@ -110,6 +111,120 @@ def _validated_snapshot(payload: object, quote_date: date) -> list[UniverseQuote
         ) from error
 
 
+def _is_request_error(error: Exception) -> bool:
+    try:
+        from requests.exceptions import RequestException
+    except ImportError:
+        return False
+    return isinstance(error, RequestException)
+
+
+def _worker_exception_name(error: Exception) -> str:
+    if _is_request_error(error) or isinstance(error, OSError):
+        return "OSError"
+    if isinstance(error, KeyError):
+        return "KeyError"
+    if isinstance(error, TypeError):
+        return "TypeError"
+    if isinstance(error, ValueError):
+        return "ValueError"
+    if isinstance(error, ZeroDivisionError):
+        return "ZeroDivisionError"
+    return type(error).__name__
+
+
+def _universe_fetch_worker(connection, fetcher: Callable[[], object]) -> None:
+    try:
+        response = fetcher()
+    except ProviderAvailabilityError as error:
+        payload = ("availability", error.provider, error.code, error.detail)
+    except ProviderDataError as error:
+        payload = ("data", error.provider, error.code, error.detail)
+    except ProviderError as error:
+        payload = ("provider", error.provider, error.code, error.detail)
+    except (OSError, KeyError, TypeError, ValueError, ZeroDivisionError) as error:
+        payload = ("exception", _worker_exception_name(error), str(error))
+    except Exception as error:  # noqa: BLE001
+        if _is_request_error(error):
+            payload = ("exception", "OSError", str(error))
+        else:
+            payload = ("unexpected", type(error).__name__, str(error))
+    else:
+        payload = ("ok", response)
+    connection.send(payload)
+    connection.close()
+
+
+def _fetch_with_timeout(
+    fetcher: Callable[[], object],
+    *,
+    timeout_seconds: float,
+    endpoint: str,
+) -> object:
+    try:
+        context = multiprocessing.get_context("fork")
+    except ValueError as error:
+        raise ProviderAvailabilityError(
+            "akshare",
+            "hard_timeout_unavailable",
+            f"{endpoint} requires a POSIX fork-capable runtime for hard timeouts",
+        ) from error
+
+    parent, child = context.Pipe(duplex=False)
+    process = context.Process(
+        target=_universe_fetch_worker,
+        args=(child, fetcher),
+    )
+    process.start()
+    child.close()
+    try:
+        if not parent.poll(timeout_seconds):
+            process.terminate()
+            process.join()
+            raise ProviderAvailabilityError(
+                "akshare",
+                "network_error",
+                f"{endpoint} timed out after {timeout_seconds:.1f}s",
+            )
+        try:
+            payload = parent.recv()
+        except EOFError as error:
+            raise ProviderAvailabilityError(
+                "akshare",
+                "network_error",
+                f"{endpoint} worker exited without a response",
+            ) from error
+    finally:
+        parent.close()
+        if process.is_alive():
+            process.terminate()
+        process.join()
+
+    kind, *details = payload
+    if kind == "ok":
+        return details[0]
+    if kind == "availability":
+        raise ProviderAvailabilityError(*details)
+    if kind == "data":
+        raise ProviderDataError(*details)
+    if kind == "provider":
+        raise ProviderError(*details)
+    if kind == "exception":
+        exception_name, detail = details
+        if exception_name == "OSError":
+            raise OSError(detail)
+        if exception_name == "KeyError":
+            raise KeyError(detail)
+        if exception_name == "TypeError":
+            raise TypeError(detail)
+        if exception_name == "ValueError":
+            raise ValueError(detail)
+        if exception_name == "ZeroDivisionError":
+            raise ZeroDivisionError(detail)
+    exception_name, detail = details
+    raise RuntimeError(f"{endpoint} worker failed with {exception_name}: {detail}")
+
+
 class WatchlistUniverseProvider:
     """Restrict a bulk universe snapshot to one watchlist's codes.
 
@@ -178,11 +293,26 @@ class AkShareUniverseProvider:
         cache_ttl_seconds: int = 21600,
         retries: int = 0,
         retry_delay_seconds: float = 5,
+        max_missing_codes: int = 0,
+        request_timeout_seconds: float | None = None,
     ) -> None:
         if isinstance(retries, bool) or not isinstance(retries, int) or retries < 0:
             raise ValueError("retries must be a non-negative integer")
         if not math.isfinite(retry_delay_seconds) or retry_delay_seconds < 0:
             raise ValueError("retry_delay_seconds must be finite and non-negative")
+        if (
+            isinstance(max_missing_codes, bool)
+            or not isinstance(max_missing_codes, int)
+            or max_missing_codes < 0
+        ):
+            raise ValueError("max_missing_codes must be a non-negative integer")
+        if request_timeout_seconds is not None and (
+            isinstance(request_timeout_seconds, bool)
+            or not isinstance(request_timeout_seconds, (int, float))
+            or not math.isfinite(request_timeout_seconds)
+            or request_timeout_seconds <= 0
+        ):
+            raise ValueError("request_timeout_seconds must be positive and finite")
         if (
             isinstance(minimum_universe_size, bool)
             or not isinstance(minimum_universe_size, int)
@@ -202,6 +332,8 @@ class AkShareUniverseProvider:
         self._minimum_universe_size = minimum_universe_size
         self._retries = retries
         self._retry_delay_seconds = retry_delay_seconds
+        self._max_missing_codes = max_missing_codes
+        self._request_timeout_seconds = request_timeout_seconds
         self._cache = (
             RawResponseCache(cache_directory, ttl_seconds=cache_ttl_seconds)
             if cache_directory is not None
@@ -266,7 +398,13 @@ class AkShareUniverseProvider:
     def _fetch_quotes(self) -> list[UniverseQuote]:
         response, endpoint, primary_error = self._fetch_quote_response()
         try:
-            return self._quotes_from_response(response, endpoint)
+            return self._quotes_from_response(
+                response,
+                endpoint,
+                allow_missing_codes=(
+                    primary_error is not None and primary_error.code == "network_error"
+                ),
+            )
         except ProviderDataError as error:
             if primary_error is None:
                 raise
@@ -284,7 +422,11 @@ class AkShareUniverseProvider:
             raise combined_error from error
 
     def _quotes_from_response(
-        self, response: object, endpoint: str
+        self,
+        response: object,
+        endpoint: str,
+        *,
+        allow_missing_codes: bool = False,
     ) -> list[UniverseQuote]:
         try:
             records = _records_from_response(response)
@@ -346,6 +488,17 @@ class AkShareUniverseProvider:
             expected_codes = self._get_expected_codes()
             missing_codes = sorted(expected_codes.difference(seen_codes))
             if missing_codes:
+                if (
+                    allow_missing_codes
+                    and len(missing_codes) <= self._max_missing_codes
+                ):
+                    _LOGGER.warning(
+                        "AkShare fallback snapshot is missing %d supported code(s); "
+                        "continuing with partial universe (missing: %s)",
+                        len(missing_codes),
+                        ", ".join(missing_codes[:_MISSING_CODE_DETAIL_LIMIT]),
+                    )
+                    return quotes
                 examples = ", ".join(
                     missing_codes[:_MISSING_CODE_DETAIL_LIMIT]
                 )
@@ -364,7 +517,11 @@ class AkShareUniverseProvider:
         self,
     ) -> tuple[object, str, ProviderAvailabilityError | None]:
         try:
-            return self._resolve_fetcher()(), _PRIMARY_ENDPOINT, None
+            return (
+                self._call_fetcher(self._resolve_fetcher(), _PRIMARY_ENDPOINT),
+                _PRIMARY_ENDPOINT,
+                None,
+            )
         except ProviderAvailabilityError as error:
             primary_error = error
         except ProviderError:
@@ -386,7 +543,9 @@ class AkShareUniverseProvider:
 
         try:
             return (
-                self._resolve_fallback_fetcher()(),
+                self._call_fetcher(
+                    self._resolve_fallback_fetcher(), _FALLBACK_ENDPOINT
+                ),
                 _FALLBACK_ENDPOINT,
                 primary_error,
             )
@@ -421,6 +580,15 @@ class AkShareUniverseProvider:
             "all_endpoints_unavailable",
             detail,
         ) from fallback_error
+
+    def _call_fetcher(self, fetcher: Callable[[], object], endpoint: str) -> object:
+        if self._request_timeout_seconds is None:
+            return fetcher()
+        return _fetch_with_timeout(
+            fetcher,
+            timeout_seconds=self._request_timeout_seconds,
+            endpoint=endpoint,
+        )
 
     def _resolve_fetcher(self) -> Callable[[], object]:
         if self._fetcher is not None:
@@ -478,7 +646,10 @@ class AkShareUniverseProvider:
     ) -> tuple[object, str, ProviderAvailabilityError | None]:
         try:
             return (
-                self._resolve_expected_codes_fetcher()(),
+                self._call_fetcher(
+                    self._resolve_expected_codes_fetcher(),
+                    _EXPECTED_CODES_PRIMARY_ENDPOINT,
+                ),
                 _EXPECTED_CODES_PRIMARY_ENDPOINT,
                 None,
             )
@@ -507,7 +678,10 @@ class AkShareUniverseProvider:
 
         try:
             return (
-                self._resolve_expected_codes_fallback_fetcher()(),
+                self._call_fetcher(
+                    self._resolve_expected_codes_fallback_fetcher(),
+                    _EXPECTED_CODES_FALLBACK_ENDPOINT,
+                ),
                 _EXPECTED_CODES_FALLBACK_ENDPOINT,
                 primary_error,
             )

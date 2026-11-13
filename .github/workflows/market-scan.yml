@@ -30,7 +30,7 @@ env:
 jobs:
   watchlist-scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     concurrency:
       group: stock-daily-report-history
       cancel-in-progress: false
@@ -53,18 +53,9 @@ jobs:
         env:
           REQUESTED_DATE: ${{ inputs.report_date }}
         run: |
-          if [ -n "$REQUESTED_DATE" ]; then
-            report_date="$REQUESTED_DATE"
-          else
-            report_date="$(date +%F)"
-          fi
-          canonical_date="$(python - "$report_date" <<'PY'
-          import sys
-          from datetime import date
-          print(date.fromisoformat(sys.argv[1]).isoformat())
-          PY
-          )"
-          echo "report_date=$canonical_date" >> "$GITHUB_OUTPUT"
+          report_date="$(python -m stock_daily_report.report_date \
+            --requested "$REQUESTED_DATE")"
+          echo "report_date=$report_date" >> "$GITHUB_OUTPUT"
       - name: Reuse same-date market data responses
         uses: actions/cache@v4
         with:
@@ -163,18 +154,9 @@ jobs:
         env:
           REQUESTED_DATE: ${{ inputs.report_date }}
         run: |
-          if [ -n "$REQUESTED_DATE" ]; then
-            report_date="$REQUESTED_DATE"
-          else
-            report_date="$(date +%F)"
-          fi
-          canonical_date="$(python - "$report_date" <<'PY'
-          import sys
-          from datetime import date
-          print(date.fromisoformat(sys.argv[1]).isoformat())
-          PY
-          )"
-          echo "report_date=$canonical_date" >> "$GITHUB_OUTPUT"
+          report_date="$(python -m stock_daily_report.report_date \
+            --requested "$REQUESTED_DATE")"
+          echo "report_date=$report_date" >> "$GITHUB_OUTPUT"
       - name: Merge previous market scan history
         run: |
           if [ -d .report-history/market-scans ]; then
