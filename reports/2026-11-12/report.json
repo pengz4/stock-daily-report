@@ -2,10 +2,10 @@
   "schema_version": 2,
   "metadata": {
     "report_date": "2026-11-12",
-    "generated_at": "2026-11-11T16:27:45.710090Z",
-    "latest_source_timestamp": "2026-11-11T16:27:45.710090Z",
+    "generated_at": "2026-11-13T03:42:56.337591Z",
+    "latest_source_timestamp": "2026-11-13T03:42:56.337591Z",
     "snapshot_path": "snapshots/2026-11-12/input.json",
-    "snapshot_hash": "c597f150bda10314298e43055d4c742aeef291cdaadcaa7877674375986be7bc",
+    "snapshot_hash": "4fa930cab4d6121bd27b446d1c2dd8c19a03392abd2ee6a6bc5ed76947354946",
     "provider_names": [
       "akshare"
     ],
@@ -20,7 +20,7 @@
   },
   "market_summary": {
     "status": "validated_watchlist",
-    "text": "Broad-market data unavailable; validated watchlist only: count=1, average_latest_return=-2.55%, up=0, down=1, unchanged=0, latest_source=2026-11-11T16:27:45.710090+00:00."
+    "text": "Broad-market data unavailable; validated watchlist only: count=1, average_latest_return=0.57%, up=1, down=0, unchanged=0, latest_source=2026-11-13T03:42:56.337591+00:00."
   },
   "market_state": null,
   "market_state_identity": null,
@@ -63,22 +63,22 @@
       "scan_rank": null,
       "scan_score": null,
       "provider_name": "akshare",
-      "latest_trade_date": "2026-11-11",
-      "latest_source_timestamp": "2026-11-11T16:27:45.710090Z",
-      "bar_count": 167,
+      "latest_trade_date": "2026-11-12",
+      "latest_source_timestamp": "2026-11-13T03:42:56.337591Z",
+      "bar_count": 168,
       "quality_status": "passed",
       "quality_issues": [],
       "metrics": {
-        "close": 1402.3,
-        "ma20": 1380.0755000000001,
-        "ma60": 1317.356,
-        "return20": 0.09043545878693626,
-        "return60": 0.04144077237281829,
-        "realized_volatility20": 0.2624362643734085,
+        "close": 1410.27,
+        "ma20": 1384.9405000000002,
+        "ma60": 1318.4771666666668,
+        "return20": 0.07410679604255987,
+        "return60": 0.05008935219657484,
+        "realized_volatility20": 0.2555672879672087,
         "drawdown60": -0.08832795932973758,
-        "volume_ratio20": 0.8766038420713967,
+        "volume_ratio20": 0.6997903201400748,
         "recent_high20": 1480.6,
-        "recent_low20": 1282.0
+        "recent_low20": 1296.0
       },
       "structure": {
         "state_label": "neutral_consolidation",
@@ -374,18 +374,20 @@
             "kind": "resistance",
             "price": 1357.0,
             "source": "confirmed_top_fractal"
+          },
+          {
+            "kind": "resistance",
+            "price": 1480.6,
+            "source": "confirmed_top_fractal"
           }
         ],
         "observations": [
           "potential_central_breakout"
         ]
       },
-      "decision_label": "偏强",
+      "decision_label": "观察",
       "evidence": [
-        "price_above_rising_moving_averages",
-        "positive_20_and_60_day_returns",
-        "macd_line_above_signal",
-        "rsi_in_constructive_range"
+        "mixed_or_neutral_trend_signals"
       ],
       "risks": [],
       "key_levels": [
@@ -447,7 +449,8 @@
         "resistance 1288.4800 (confirmed_top_fractal)",
         "resistance 1348.6000 (confirmed_top_fractal)",
         "resistance 1357.0000 (confirmed_top_fractal)",
-        "reference 1380.0755 (technical_ma20)"
+        "resistance 1480.6000 (confirmed_top_fractal)",
+        "reference 1384.9405 (technical_ma20)"
       ],
       "next_conditions": [
         "继续观察价格、技术指标与结构确认状态"
@@ -6101,7 +6104,7 @@
         "scan_score": null
       }
     ],
-    "unavailable_reason": "akshare[unsupported_symbol]: stock_zh_a_spot_em attempt failed: akshare[network_error]: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response')); stock_zh_a_spot fallback data error: Unsupported code: 430017",
+    "unavailable_reason": "historical_pool_snapshot_unavailable",
     "scan_date": null,
     "config_hash": null,
     "input_hash": null

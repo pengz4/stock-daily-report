@@ -1,13 +1,13 @@
 # A股每日研报 — 2026\-11\-12
 
-- 生成时间: 2026\-11\-11T16:27:45\.710090\+00:00
-- 最新数据时间: 2026\-11\-11T16:27:45\.710090\+00:00
+- 生成时间: 2026\-11\-13T03:42:56\.337591\+00:00
+- 最新数据时间: 2026\-11\-13T03:42:56\.337591\+00:00
 - 数据质量: 通过
 - 自选股数量: 513
 - 深度分析数量: 1
 - 数据源: akshare
 - 输入快照: `snapshots/2026\-11\-12/input\.json`
-- 快照哈希: `c597f150bda10314298e43055d4c742aeef291cdaadcaa7877674375986be7bc`
+- 快照哈希: `4fa930cab4d6121bd27b446d1c2dd8c19a03392abd2ee6a6bc5ed76947354946`
 - 配置哈希: `35a5a3eda61ccb84176125bfe14dff9cfd55d59a0951a3f9985b7b69efbd39d1`
 - 分析器版本: simplified\-v1
 
@@ -22,7 +22,7 @@
 
 ## 市场摘要
 
-Broad\-market data unavailable; validated watchlist only: count=1, average\_latest\_return=\-2\.55%, up=0, down=1, unchanged=0, latest\_source=2026\-11\-11T16:27:45\.710090\+00:00\.
+Broad\-market data unavailable; validated watchlist only: count=1, average\_latest\_return=0\.57%, up=1, down=0, unchanged=0, latest\_source=2026\-11\-13T03:42:56\.337591\+00:00\.
 
 ## 全市场排名
 
@@ -37,30 +37,27 @@ Broad\-market data unavailable; validated watchlist only: count=1, average\_late
 - 分组: consumer
 - 计算排名: 未纳入本次排名
 - 数据源: akshare
-- 最新交易日: 2026\-11\-11
-- 最新数据时间: 2026\-11\-11T16:27:45\.710090\+00:00
-- K线数量: 167
+- 最新交易日: 2026\-11\-12
+- 最新数据时间: 2026\-11\-13T03:42:56\.337591\+00:00
+- K线数量: 168
 - 数据质量: 通过
-- 决策: **偏强**
+- 决策: **观察**
 - 结构: 中性盘整 （已确认）
 
 ### 技术指标
-- 最新收盘价: 1402.30
-- 20日均线: 1380.08
-- 60日均线: 1317.36
-- 20日收益率: 9.04%
-- 60日收益率: 4.14%
-- 20日年化波动率: 26.24%
+- 最新收盘价: 1410.27
+- 20日均线: 1384.94
+- 60日均线: 1318.48
+- 20日收益率: 7.41%
+- 60日收益率: 5.01%
+- 20日年化波动率: 25.56%
 - 60日最大回撤: -8.83%
-- 20日成交量比: 0.88 倍
+- 20日成交量比: 0.70 倍
 - 20日最高价: 1480.60
-- 20日最低价: 1282.00
+- 20日最低价: 1296.00
 
 ### 证据与风险
-- 证据: 价格位于上行均线之上
-- 证据: 20日和60日收益率均为正
-- 证据: MACD线上穿信号线
-- 证据: RSI处于建设性区间
+- 证据: 趋势信号混合或中性
 - 风险: 风险（无）
 ### 关键价位
 - 支撑位 1404\.9800（已确认中枢区间）
@@ -121,7 +118,8 @@ Broad\-market data unavailable; validated watchlist only: count=1, average\_late
 - 压力位 1288\.4800（已确认顶分型）
 - 压力位 1348\.6000（已确认顶分型）
 - 压力位 1357\.0000（已确认顶分型）
-- 参考位 1380\.0755（20日均线）
+- 压力位 1480\.6000（已确认顶分型）
+- 参考位 1384\.9405（20日均线）
 ### 后续条件
 - 继续观察价格、技术指标与结构确认状态
 
@@ -129,7 +127,7 @@ Broad\-market data unavailable; validated watchlist only: count=1, average\_late
 ## 全池速览
 
 - 行情快照日期: 2026\-11\-12
-- 行情快照不可用: 原因（akshare\[unsupported\_symbol\]: stock\_zh\_a\_spot\_em attempt failed: akshare\[network\_error\]: \('Connection aborted\.', RemoteDisconnected\('Remote end closed connection without response'\)\); stock\_zh\_a\_spot fallback data error: Unsupported code: 430017）
+- 行情快照不可用: 缺少指定日期的全池行情快照
 
 | 代码 | 名称 | 分组 | 层级 | 最新价 | 涨跌幅% | 成交额(元) |
 | ---: | --- | --- | --- | ---: | ---: | ---: |
