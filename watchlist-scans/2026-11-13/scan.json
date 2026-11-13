@@ -2,305 +2,309 @@
   "config_hash": "d3f1b8473dca1a69907186e064adb539c6a8d98367d532e7971b9494de364140",
   "consensus": [
     {
-      "balanced_rank": 1,
-      "balanced_score": 93.92480674927452,
-      "code": "600963",
-      "latest_trade_date": "2026-11-12",
-      "name": "岳阳林纸",
-      "provider_name": "sina",
-      "trend_rank": 1,
-      "trend_score": 93.71296575934689
-    },
-    {
-      "balanced_rank": 5,
-      "balanced_score": 89.2747053194912,
-      "code": "603466",
-      "latest_trade_date": "2026-11-12",
-      "name": "风语筑",
-      "provider_name": "sina",
-      "trend_rank": 2,
-      "trend_score": 91.7920191837314
-    },
-    {
       "balanced_rank": 2,
-      "balanced_score": 91.27350527369418,
-      "code": "300498",
-      "latest_trade_date": "2026-11-12",
-      "name": "温氏股份",
-      "provider_name": "sina",
-      "trend_rank": 3,
-      "trend_score": 90.46567002046913
-    },
-    {
-      "balanced_rank": 4,
-      "balanced_score": 89.52804845698117,
-      "code": "002779",
-      "latest_trade_date": "2026-11-12",
-      "name": "中坚科技",
-      "provider_name": "sina",
-      "trend_rank": 4,
-      "trend_score": 90.37928198779733
-    },
-    {
-      "balanced_rank": 3,
-      "balanced_score": 90.50361214666484,
-      "code": "002351",
-      "latest_trade_date": "2026-11-12",
-      "name": "漫步者",
-      "provider_name": "sina",
-      "trend_rank": 5,
-      "trend_score": 89.88425035788535
-    },
-    {
-      "balanced_rank": 7,
-      "balanced_score": 87.39834488674649,
-      "code": "688543",
-      "latest_trade_date": "2026-11-12",
-      "name": "国科军工",
-      "provider_name": "sina",
-      "trend_rank": 6,
-      "trend_score": 88.66587256876525
-    },
-    {
-      "balanced_rank": 6,
-      "balanced_score": 88.1753854777149,
+      "balanced_score": 95.58160116221475,
       "code": "600977",
-      "latest_trade_date": "2026-11-12",
+      "latest_trade_date": "2026-11-13",
       "name": "中国电影",
       "provider_name": "sina",
-      "trend_rank": 7,
-      "trend_score": 86.24118370371822
+      "trend_rank": 1,
+      "trend_score": 96.86203730719186
     },
     {
-      "balanced_rank": 12,
-      "balanced_score": 81.72402948752399,
-      "code": "603236",
-      "latest_trade_date": "2026-11-12",
-      "name": "移远通信",
+      "balanced_rank": 1,
+      "balanced_score": 95.66984960308557,
+      "code": "300498",
+      "latest_trade_date": "2026-11-13",
+      "name": "温氏股份",
       "provider_name": "sina",
-      "trend_rank": 8,
-      "trend_score": 85.1809079464521
-    },
-    {
-      "balanced_rank": 9,
-      "balanced_score": 84.19125564835694,
-      "code": "603009",
-      "latest_trade_date": "2026-11-12",
-      "name": "北特科技",
-      "provider_name": "sina",
-      "trend_rank": 9,
-      "trend_score": 84.43972774838385
+      "trend_rank": 2,
+      "trend_score": 94.61062268193776
     },
     {
       "balanced_rank": 8,
-      "balanced_score": 86.48545972002472,
+      "balanced_score": 85.08337777427853,
+      "code": "002045",
+      "latest_trade_date": "2026-11-13",
+      "name": "国光电器",
+      "provider_name": "sina",
+      "trend_rank": 3,
+      "trend_score": 89.29863669414102
+    },
+    {
+      "balanced_rank": 3,
+      "balanced_score": 90.73056900406664,
       "code": "600887",
-      "latest_trade_date": "2026-11-12",
+      "latest_trade_date": "2026-11-13",
       "name": "伊利股份",
       "provider_name": "sina",
-      "trend_rank": 10,
-      "trend_score": 84.23824014559067
+      "trend_rank": 4,
+      "trend_score": 89.21525017015666
     },
     {
-      "balanced_rank": 18,
-      "balanced_score": 79.60982952405551,
-      "code": "603893",
-      "latest_trade_date": "2026-11-12",
-      "name": "瑞芯微",
+      "balanced_rank": 4,
+      "balanced_score": 88.97527962924033,
+      "code": "002351",
+      "latest_trade_date": "2026-11-13",
+      "name": "漫步者",
       "provider_name": "sina",
-      "trend_rank": 11,
-      "trend_score": 79.00747263598028
+      "trend_rank": 5,
+      "trend_score": 88.46366088638896
     },
     {
-      "balanced_rank": 16,
-      "balanced_score": 79.76623822718523,
-      "code": "002241",
-      "latest_trade_date": "2026-11-12",
-      "name": "歌尔股份",
+      "balanced_rank": 5,
+      "balanced_score": 86.0786579542569,
+      "code": "600963",
+      "latest_trade_date": "2026-11-13",
+      "name": "岳阳林纸",
       "provider_name": "sina",
-      "trend_rank": 12,
-      "trend_score": 77.25878819650896
+      "trend_rank": 6,
+      "trend_score": 85.86389202092556
     },
     {
       "balanced_rank": 15,
-      "balanced_score": 80.18518634760404,
-      "code": "002048",
-      "latest_trade_date": "2026-11-12",
-      "name": "宁波华翔",
+      "balanced_score": 80.94138864882746,
+      "code": "603236",
+      "latest_trade_date": "2026-11-13",
+      "name": "移远通信",
       "provider_name": "sina",
-      "trend_rank": 13,
-      "trend_score": 77.25030160187711
+      "trend_rank": 7,
+      "trend_score": 84.13966862971614
     },
     {
-      "balanced_rank": 13,
-      "balanced_score": 80.59995812267569,
-      "code": "300122",
-      "latest_trade_date": "2026-11-12",
-      "name": "智飞生物",
+      "balanced_rank": 9,
+      "balanced_score": 83.30660665238041,
+      "code": "002779",
+      "latest_trade_date": "2026-11-13",
+      "name": "中坚科技",
       "provider_name": "sina",
-      "trend_rank": 14,
-      "trend_score": 76.92351272381883
+      "trend_rank": 8,
+      "trend_score": 83.80787574602513
     },
     {
-      "balanced_rank": 10,
-      "balanced_score": 82.41114297229012,
-      "code": "603215",
-      "latest_trade_date": "2026-11-12",
-      "name": "比依股份",
+      "balanced_rank": 6,
+      "balanced_score": 85.89856869627546,
+      "code": "300251",
+      "latest_trade_date": "2026-11-13",
+      "name": "光线传媒",
       "provider_name": "sina",
-      "trend_rank": 15,
-      "trend_score": 76.5429616250602
-    },
-    {
-      "balanced_rank": 22,
-      "balanced_score": 77.86662528183045,
-      "code": "002472",
-      "latest_trade_date": "2026-11-12",
-      "name": "双环传动",
-      "provider_name": "sina",
-      "trend_rank": 16,
-      "trend_score": 76.05713278008939
-    },
-    {
-      "balanced_rank": 26,
-      "balanced_score": 77.00955157137939,
-      "code": "605333",
-      "latest_trade_date": "2026-11-12",
-      "name": "沪光股份",
-      "provider_name": "sina",
-      "trend_rank": 17,
-      "trend_score": 75.99148335324195
-    },
-    {
-      "balanced_rank": 27,
-      "balanced_score": 76.93297641637301,
-      "code": "002045",
-      "latest_trade_date": "2026-11-12",
-      "name": "国光电器",
-      "provider_name": "sina",
-      "trend_rank": 18,
-      "trend_score": 75.45531761091533
-    },
-    {
-      "balanced_rank": 24,
-      "balanced_score": 77.69389159817823,
-      "code": "002292",
-      "latest_trade_date": "2026-11-12",
-      "name": "奥飞娱乐",
-      "provider_name": "sina",
-      "trend_rank": 19,
-      "trend_score": 75.05891373006496
+      "trend_rank": 9,
+      "trend_score": 82.39807875580856
     },
     {
       "balanced_rank": 11,
-      "balanced_score": 82.21924459820445,
-      "code": "002139",
-      "latest_trade_date": "2026-11-12",
-      "name": "拓邦股份",
+      "balanced_score": 81.52690791154178,
+      "code": "002172",
+      "latest_trade_date": "2026-11-13",
+      "name": "澳洋健康",
       "provider_name": "sina",
-      "trend_rank": 20,
-      "trend_score": 74.81090609062655
+      "trend_rank": 10,
+      "trend_score": 82.22375749075705
     },
     {
-      "balanced_rank": 17,
-      "balanced_score": 79.75863377715994,
-      "code": "600609",
-      "latest_trade_date": "2026-11-12",
-      "name": "金杯汽车",
+      "balanced_rank": 23,
+      "balanced_score": 78.34452802881101,
+      "code": "603009",
+      "latest_trade_date": "2026-11-13",
+      "name": "北特科技",
       "provider_name": "sina",
-      "trend_rank": 21,
-      "trend_score": 74.57679696165191
-    },
-    {
-      "balanced_rank": 14,
-      "balanced_score": 80.59682495412883,
-      "code": "002892",
-      "latest_trade_date": "2026-11-12",
-      "name": "科力尔",
-      "provider_name": "sina",
-      "trend_rank": 22,
-      "trend_score": 74.51201703207464
-    },
-    {
-      "balanced_rank": 19,
-      "balanced_score": 78.937312439545,
-      "code": "600025",
-      "latest_trade_date": "2026-11-12",
-      "name": "华能水电",
-      "provider_name": "sina",
-      "trend_rank": 23,
-      "trend_score": 73.6559686593175
-    },
-    {
-      "balanced_rank": 21,
-      "balanced_score": 78.33828041293594,
-      "code": "002520",
-      "latest_trade_date": "2026-11-12",
-      "name": "日发精机",
-      "provider_name": "sina",
-      "trend_rank": 25,
-      "trend_score": 72.56580287847204
+      "trend_rank": 11,
+      "trend_score": 80.95994196580826
     },
     {
       "balanced_rank": 20,
-      "balanced_score": 78.73457735862188,
-      "code": "300251",
-      "latest_trade_date": "2026-11-12",
-      "name": "光线传媒",
+      "balanced_score": 79.57231381787172,
+      "code": "300793",
+      "latest_trade_date": "2026-11-13",
+      "name": "佳禾智能",
       "provider_name": "sina",
-      "trend_rank": 26,
-      "trend_score": 72.49437998245806
+      "trend_rank": 12,
+      "trend_score": 80.04370358670083
     },
     {
-      "balanced_rank": 25,
-      "balanced_score": 77.36704293403028,
+      "balanced_rank": 13,
+      "balanced_score": 81.25976901234601,
+      "code": "601333",
+      "latest_trade_date": "2026-11-13",
+      "name": "广深铁路",
+      "provider_name": "sina",
+      "trend_rank": 13,
+      "trend_score": 79.59238486469711
+    },
+    {
+      "balanced_rank": 7,
+      "balanced_score": 85.10174943019658,
+      "code": "000001",
+      "latest_trade_date": "2026-11-13",
+      "name": "平安银行",
+      "provider_name": "sina",
+      "trend_rank": 14,
+      "trend_score": 78.5818036964822
+    },
+    {
+      "balanced_rank": 10,
+      "balanced_score": 83.25729072568953,
+      "code": "000333",
+      "latest_trade_date": "2026-11-13",
+      "name": "美的集团",
+      "provider_name": "sina",
+      "trend_rank": 15,
+      "trend_score": 77.44884490381833
+    },
+    {
+      "balanced_rank": 27,
+      "balanced_score": 77.67676786410934,
+      "code": "603893",
+      "latest_trade_date": "2026-11-13",
+      "name": "瑞芯微",
+      "provider_name": "sina",
+      "trend_rank": 16,
+      "trend_score": 77.15983954653153
+    },
+    {
+      "balanced_rank": 17,
+      "balanced_score": 80.33942404501363,
+      "code": "300122",
+      "latest_trade_date": "2026-11-13",
+      "name": "智飞生物",
+      "provider_name": "sina",
+      "trend_rank": 17,
+      "trend_score": 76.60100198900153
+    },
+    {
+      "balanced_rank": 18,
+      "balanced_score": 80.05213965654991,
+      "code": "600809",
+      "latest_trade_date": "2026-11-13",
+      "name": "山西汾酒",
+      "provider_name": "sina",
+      "trend_rank": 18,
+      "trend_score": 76.20159648726082
+    },
+    {
+      "balanced_rank": 14,
+      "balanced_score": 81.03994912533236,
+      "code": "600025",
+      "latest_trade_date": "2026-11-13",
+      "name": "华能水电",
+      "provider_name": "sina",
+      "trend_rank": 19,
+      "trend_score": 76.18085798894742
+    },
+    {
+      "balanced_rank": 21,
+      "balanced_score": 79.49902477501824,
+      "code": "600754",
+      "latest_trade_date": "2026-11-13",
+      "name": "锦江酒店",
+      "provider_name": "sina",
+      "trend_rank": 20,
+      "trend_score": 75.62714940403193
+    },
+    {
+      "balanced_rank": 19,
+      "balanced_score": 79.77883240586623,
       "code": "000400",
-      "latest_trade_date": "2026-11-12",
+      "latest_trade_date": "2026-11-13",
       "name": "许继电气",
       "provider_name": "sina",
-      "trend_rank": 28,
-      "trend_score": 72.24795235193568
+      "trend_rank": 21,
+      "trend_score": 75.09078581794518
     },
     {
-      "balanced_rank": 29,
-      "balanced_score": 76.42220418877469,
-      "code": "002945",
-      "latest_trade_date": "2026-11-12",
-      "name": "华林证券",
+      "balanced_rank": 12,
+      "balanced_score": 81.51365481233475,
+      "code": "600926",
+      "latest_trade_date": "2026-11-13",
+      "name": "杭州银行",
+      "provider_name": "sina",
+      "trend_rank": 22,
+      "trend_score": 74.95460730447522
+    },
+    {
+      "balanced_rank": 16,
+      "balanced_score": 80.92322960803614,
+      "code": "000516",
+      "latest_trade_date": "2026-11-13",
+      "name": "国际医学",
+      "provider_name": "sina",
+      "trend_rank": 23,
+      "trend_score": 74.9427023055336
+    },
+    {
+      "balanced_rank": 24,
+      "balanced_score": 78.33448621360611,
+      "code": "603279",
+      "latest_trade_date": "2026-11-13",
+      "name": "景津装备",
+      "provider_name": "sina",
+      "trend_rank": 25,
+      "trend_score": 74.29449573019077
+    },
+    {
+      "balanced_rank": 26,
+      "balanced_score": 77.72608406776635,
+      "code": "601900",
+      "latest_trade_date": "2026-11-13",
+      "name": "南方传媒",
+      "provider_name": "sina",
+      "trend_rank": 27,
+      "trend_score": 73.11800247893214
+    },
+    {
+      "balanced_rank": 30,
+      "balanced_score": 77.38438755514811,
+      "code": "000513",
+      "latest_trade_date": "2026-11-13",
+      "name": "丽珠集团",
+      "provider_name": "sina",
+      "trend_rank": 28,
+      "trend_score": 72.91394521976397
+    },
+    {
+      "balanced_rank": 22,
+      "balanced_score": 78.5035423115252,
+      "code": "002299",
+      "latest_trade_date": "2026-11-13",
+      "name": "圣农发展",
       "provider_name": "sina",
       "trend_rank": 30,
-      "trend_score": 71.68864980216158
+      "trend_score": 72.34688868102782
     }
   ],
-  "coverage": 1.0,
-  "eligible_count": 303,
+  "coverage": 0.9643652561247216,
+  "eligible_count": 449,
   "exclusion_counts": {
-    "insufficient_latest_amount": 210,
+    "insufficient_latest_amount": 64,
     "invalid_latest_quote": 2,
     "special_treatment_name": 3,
     "suspended_quote": 2
   },
-  "failure_counts": {},
-  "generated_at": "2026-11-13T02:07:19.083621Z",
-  "input_hash": "3b0a5fd126fc30f2c461c96e4424069be9832bf9c4ac8eb7132a5f41a23491e6",
+  "failure_counts": {
+    "all_providers_failed": 11,
+    "fetch_timeout": 5
+  },
+  "generated_at": "2026-11-13T09:25:40.617344Z",
+  "input_hash": "ec4841b3b13c5fa9ec45896deddfad4e70c3d7e56221a6ab9ffcdb8fc36e7dd5",
   "market_state": null,
   "market_state_identity": null,
   "provider_names": [
     "MarketDataService",
     "WatchlistUniverseProvider",
     "akshare",
+    "selection",
     "sina"
   ],
   "rankings": {
     "balanced": [
       {
-        "code": "600963",
+        "code": "300498",
         "components": {
-          "momentum": 88.01022090339599,
-          "risk": 80.2572616053449,
+          "momentum": 89.40773078852195,
+          "risk": 100.0,
           "structure": 100.0,
           "trend": 100.0,
-          "volume": 95.22782218529063
+          "volume": 85.25535630254116
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -315,96 +319,25 @@
           "trailing_volume_observed",
           "volume_above_20_day_average",
           "volume_with_positive_price_change",
-          "confirmed_fractal_structure",
-          "confirmed_stroke_structure",
-          "confirmed_central_structure",
-          "confirmed_central_breakout_observation"
-        ],
-        "latest_trade_date": "2026-11-12",
-        "name": "岳阳林纸",
-        "profile": "balanced",
-        "provider_name": "sina",
-        "rank": 1,
-        "risk_codes": [
-          "high_realized_volatility"
-        ],
-        "score": 93.92480674927452
-      },
-      {
-        "code": "300498",
-        "components": {
-          "momentum": 91.42707163109185,
-          "risk": 99.01084832668478,
-          "structure": 100.0,
-          "trend": 100.0,
-          "volume": 54.243091323153976
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma20_above_ma60",
-          "ma60_above_ma120",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "ma60_slope_positive",
-          "positive_20_day_momentum",
-          "positive_60_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_with_positive_price_change",
           "risk_measures_within_moderate_ranges",
           "confirmed_fractal_structure",
           "confirmed_stroke_structure",
           "confirmed_central_structure",
           "confirmed_central_breakout_observation"
         ],
-        "latest_trade_date": "2026-11-12",
+        "latest_trade_date": "2026-11-13",
         "name": "温氏股份",
         "profile": "balanced",
         "provider_name": "sina",
-        "rank": 2,
+        "rank": 1,
         "risk_codes": [],
-        "score": 91.27350527369418
+        "score": 95.66984960308557
       },
       {
-        "code": "002351",
+        "code": "600977",
         "components": {
-          "momentum": 89.95854063018241,
-          "risk": 92.3043170359546,
-          "structure": 100.0,
-          "trend": 100.0,
-          "volume": 57.77504310156773
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma20_above_ma60",
-          "ma60_above_ma120",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "ma60_slope_positive",
-          "positive_20_day_momentum",
-          "positive_60_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_with_positive_price_change",
-          "risk_measures_within_moderate_ranges",
-          "confirmed_fractal_structure",
-          "confirmed_stroke_structure",
-          "confirmed_central_structure",
-          "confirmed_central_breakout_observation"
-        ],
-        "latest_trade_date": "2026-11-12",
-        "name": "漫步者",
-        "profile": "balanced",
-        "provider_name": "sina",
-        "rank": 3,
-        "risk_codes": [],
-        "score": 90.50361214666484
-      },
-      {
-        "code": "002779",
-        "components": {
-          "momentum": 84.16349809885932,
-          "risk": 51.30232558139535,
+          "momentum": 98.84581919429219,
+          "risk": 72.08291548904207,
           "structure": 100.0,
           "trend": 100.0,
           "volume": 100.0
@@ -427,134 +360,24 @@
           "confirmed_central_structure",
           "confirmed_central_breakout_observation"
         ],
-        "latest_trade_date": "2026-11-12",
-        "name": "中坚科技",
-        "profile": "balanced",
-        "provider_name": "sina",
-        "rank": 4,
-        "risk_codes": [
-          "high_realized_volatility"
-        ],
-        "score": 89.52804845698117
-      },
-      {
-        "code": "603466",
-        "components": {
-          "momentum": 94.98217945290921,
-          "risk": 39.61808162101451,
-          "structure": 100.0,
-          "trend": 100.0,
-          "volume": 95.57038123838122
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma20_above_ma60",
-          "ma60_above_ma120",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "ma60_slope_positive",
-          "positive_20_day_momentum",
-          "positive_60_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_above_20_day_average",
-          "volume_with_positive_price_change",
-          "confirmed_fractal_structure",
-          "confirmed_stroke_structure",
-          "confirmed_central_structure",
-          "confirmed_central_breakout_observation"
-        ],
-        "latest_trade_date": "2026-11-12",
-        "name": "风语筑",
-        "profile": "balanced",
-        "provider_name": "sina",
-        "rank": 5,
-        "risk_codes": [
-          "high_realized_volatility",
-          "deep_trailing_drawdown"
-        ],
-        "score": 89.2747053194912
-      },
-      {
-        "code": "600977",
-        "components": {
-          "momentum": 73.24903792935126,
-          "risk": 85.18211133863615,
-          "structure": 100.0,
-          "trend": 100.0,
-          "volume": 71.65507460699484
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma20_above_ma60",
-          "ma60_above_ma120",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "ma60_slope_positive",
-          "positive_20_day_momentum",
-          "positive_60_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_above_20_day_average",
-          "volume_with_positive_price_change",
-          "risk_measures_within_moderate_ranges",
-          "confirmed_fractal_structure",
-          "confirmed_stroke_structure",
-          "confirmed_central_structure",
-          "confirmed_central_breakout_observation"
-        ],
-        "latest_trade_date": "2026-11-12",
+        "latest_trade_date": "2026-11-13",
         "name": "中国电影",
         "profile": "balanced",
         "provider_name": "sina",
-        "rank": 6,
-        "risk_codes": [],
-        "score": 88.1753854777149
-      },
-      {
-        "code": "688543",
-        "components": {
-          "momentum": 93.53436324024558,
-          "risk": 61.71817284011581,
-          "structure": 100.0,
-          "trend": 100.0,
-          "volume": 62.891642084533345
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma20_above_ma60",
-          "ma60_above_ma120",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "ma60_slope_positive",
-          "positive_20_day_momentum",
-          "positive_60_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_with_positive_price_change",
-          "confirmed_fractal_structure",
-          "confirmed_stroke_structure",
-          "confirmed_central_structure",
-          "confirmed_central_breakout_observation"
-        ],
-        "latest_trade_date": "2026-11-12",
-        "name": "国科军工",
-        "profile": "balanced",
-        "provider_name": "sina",
-        "rank": 7,
+        "rank": 2,
         "risk_codes": [
           "high_realized_volatility"
         ],
-        "score": 87.39834488674649
+        "score": 95.58160116221475
       },
       {
         "code": "600887",
         "components": {
-          "momentum": 77.52780425565943,
+          "momentum": 84.84681166090029,
           "risk": 100.0,
           "structure": 100.0,
           "trend": 100.0,
-          "volume": 39.865992459285565
+          "volume": 58.40804447924389
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -574,22 +397,57 @@
           "confirmed_central_structure",
           "confirmed_central_breakout_observation"
         ],
-        "latest_trade_date": "2026-11-12",
+        "latest_trade_date": "2026-11-13",
         "name": "伊利股份",
         "profile": "balanced",
         "provider_name": "sina",
-        "rank": 8,
+        "rank": 3,
         "risk_codes": [],
-        "score": 86.48545972002472
+        "score": 90.73056900406664
       },
       {
-        "code": "603009",
+        "code": "002351",
         "components": {
-          "momentum": 81.76311811703735,
-          "risk": 58.5567942335366,
+          "momentum": 90.78699022581732,
+          "risk": 91.806355308662,
           "structure": 100.0,
           "trend": 100.0,
-          "volume": 60.36741926612656
+          "volume": 46.97952191851712
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "latest_trade_date": "2026-11-13",
+        "name": "漫步者",
+        "profile": "balanced",
+        "provider_name": "sina",
+        "rank": 4,
+        "risk_codes": [],
+        "score": 88.97527962924033
+      },
+      {
+        "code": "600963",
+        "components": {
+          "momentum": 87.58140315542127,
+          "risk": 79.45812497746932,
+          "structure": 100.0,
+          "trend": 100.0,
+          "volume": 44.29105717701499
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -608,24 +466,203 @@
           "confirmed_central_structure",
           "confirmed_central_breakout_observation"
         ],
-        "latest_trade_date": "2026-11-12",
-        "name": "北特科技",
+        "latest_trade_date": "2026-11-13",
+        "name": "岳阳林纸",
+        "profile": "balanced",
+        "provider_name": "sina",
+        "rank": 5,
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "score": 86.0786579542569
+      },
+      {
+        "code": "300251",
+        "components": {
+          "momentum": 77.46742391382928,
+          "risk": 71.59819430883705,
+          "structure": 100.0,
+          "trend": 82.21784922394681,
+          "volume": 100.0
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "latest_trade_date": "2026-11-13",
+        "name": "光线传媒",
+        "profile": "balanced",
+        "provider_name": "sina",
+        "rank": 6,
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "score": 85.89856869627546
+      },
+      {
+        "code": "000001",
+        "components": {
+          "momentum": 57.668093783867995,
+          "risk": 100.0,
+          "structure": 100.0,
+          "trend": 84.75496591932547,
+          "volume": 87.61093931750224
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "latest_trade_date": "2026-11-13",
+        "name": "平安银行",
+        "profile": "balanced",
+        "provider_name": "sina",
+        "rank": 7,
+        "risk_codes": [],
+        "score": 85.10174943019658
+      },
+      {
+        "code": "002045",
+        "components": {
+          "momentum": 88.31505418461941,
+          "risk": 52.324929971988794,
+          "structure": 85.0,
+          "trend": 100.0,
+          "volume": 83.8108496103755
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure"
+        ],
+        "latest_trade_date": "2026-11-13",
+        "name": "国光电器",
+        "profile": "balanced",
+        "provider_name": "sina",
+        "rank": 8,
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "score": 85.08337777427853
+      },
+      {
+        "code": "002779",
+        "components": {
+          "momentum": 80.66385372714487,
+          "risk": 51.30232558139535,
+          "structure": 100.0,
+          "trend": 100.0,
+          "volume": 63.18991379828091
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "latest_trade_date": "2026-11-13",
+        "name": "中坚科技",
         "profile": "balanced",
         "provider_name": "sina",
         "rank": 9,
         "risk_codes": [
           "high_realized_volatility"
         ],
-        "score": 84.19125564835694
+        "score": 83.30660665238041
       },
       {
-        "code": "603215",
+        "code": "000333",
         "components": {
-          "momentum": 53.642884555556925,
-          "risk": 76.59002266699991,
+          "momentum": 60.72784470676902,
+          "risk": 100.0,
           "structure": 100.0,
-          "trend": 83.98020887042918,
-          "volume": 100.0
+          "trend": 87.45846471634599,
+          "volume": 65.8278824628795
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "latest_trade_date": "2026-11-13",
+        "name": "美的集团",
+        "profile": "balanced",
+        "provider_name": "sina",
+        "rank": 10,
+        "risk_codes": [],
+        "score": 83.25729072568953
+      },
+      {
+        "code": "002172",
+        "components": {
+          "momentum": 74.82885615251303,
+          "risk": 35.72072072072072,
+          "structure": 100.0,
+          "trend": 100.0,
+          "volume": 74.68685715287383
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -645,34 +682,37 @@
           "confirmed_central_structure",
           "confirmed_central_breakout_observation"
         ],
-        "latest_trade_date": "2026-11-12",
-        "name": "比依股份",
+        "latest_trade_date": "2026-11-13",
+        "name": "澳洋健康",
         "profile": "balanced",
         "provider_name": "sina",
-        "rank": 10,
+        "rank": 11,
         "risk_codes": [
-          "high_realized_volatility"
+          "high_realized_volatility",
+          "deep_trailing_drawdown"
         ],
-        "score": 82.41114297229012
+        "score": 81.52690791154178
       },
       {
-        "code": "002139",
+        "code": "600926",
         "components": {
-          "momentum": 61.94672629913594,
-          "risk": 88.14368645344122,
+          "momentum": 56.9931174489998,
+          "risk": 100.0,
           "structure": 100.0,
-          "trend": 72.02782123453697,
-          "volume": 100.0
+          "trend": 84.94427164826982,
+          "volume": 64.21166552035899
         },
         "evidence_codes": [
           "close_above_ma20",
           "ma20_above_ma60",
+          "ma60_above_ma120",
           "macd_line_above_signal",
           "ma20_slope_positive",
+          "ma60_slope_positive",
           "positive_20_day_momentum",
+          "positive_60_day_momentum",
           "positive_macd_histogram",
           "trailing_volume_observed",
-          "volume_above_20_day_average",
           "volume_with_positive_price_change",
           "risk_measures_within_moderate_ranges",
           "confirmed_fractal_structure",
@@ -680,22 +720,91 @@
           "confirmed_central_structure",
           "confirmed_central_breakout_observation"
         ],
-        "latest_trade_date": "2026-11-12",
-        "name": "拓邦股份",
+        "latest_trade_date": "2026-11-13",
+        "name": "杭州银行",
         "profile": "balanced",
         "provider_name": "sina",
-        "rank": 11,
+        "rank": 12,
         "risk_codes": [],
-        "score": 82.21924459820445
+        "score": 81.51365481233475
+      },
+      {
+        "code": "601333",
+        "components": {
+          "momentum": 64.14080707335121,
+          "risk": 100.0,
+          "structure": 85.0,
+          "trend": 92.79023430010645,
+          "volume": 57.29691538429227
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure"
+        ],
+        "latest_trade_date": "2026-11-13",
+        "name": "广深铁路",
+        "profile": "balanced",
+        "provider_name": "sina",
+        "rank": 13,
+        "risk_codes": [],
+        "score": 81.25976901234601
+      },
+      {
+        "code": "600025",
+        "components": {
+          "momentum": 63.09299162262131,
+          "risk": 100.0,
+          "structure": 100.0,
+          "trend": 92.21073134235297,
+          "volume": 38.38754265401466
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "latest_trade_date": "2026-11-13",
+        "name": "华能水电",
+        "profile": "balanced",
+        "provider_name": "sina",
+        "rank": 14,
+        "risk_codes": [],
+        "score": 81.03994912533236
       },
       {
         "code": "603236",
         "components": {
           "momentum": 100.0,
-          "risk": 30.862430821437894,
+          "risk": 36.034400382226465,
           "structure": 100.0,
           "trend": 100.0,
-          "volume": 47.29776576205539
+          "volume": 36.90819060995661
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -714,113 +823,8 @@
           "confirmed_central_structure",
           "confirmed_central_breakout_observation"
         ],
-        "latest_trade_date": "2026-11-12",
+        "latest_trade_date": "2026-11-13",
         "name": "移远通信",
-        "profile": "balanced",
-        "provider_name": "sina",
-        "rank": 12,
-        "risk_codes": [
-          "high_realized_volatility",
-          "deep_trailing_drawdown"
-        ],
-        "score": 81.72402948752399
-      },
-      {
-        "code": "300122",
-        "components": {
-          "momentum": 63.673167848699734,
-          "risk": 80.13483945296029,
-          "structure": 100.0,
-          "trend": 93.08653192614123,
-          "volume": 52.79426038099554
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma20_above_ma60",
-          "ma60_above_ma120",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "ma60_slope_positive",
-          "positive_20_day_momentum",
-          "positive_60_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_with_positive_price_change",
-          "risk_measures_within_moderate_ranges",
-          "confirmed_fractal_structure",
-          "confirmed_stroke_structure",
-          "confirmed_central_structure",
-          "confirmed_central_breakout_observation"
-        ],
-        "latest_trade_date": "2026-11-12",
-        "name": "智飞生物",
-        "profile": "balanced",
-        "provider_name": "sina",
-        "rank": 13,
-        "risk_codes": [],
-        "score": 80.59995812267569
-      },
-      {
-        "code": "002892",
-        "components": {
-          "momentum": 68.60824742268042,
-          "risk": 79.6201189218613,
-          "structure": 100.0,
-          "trend": 73.56915521180551,
-          "volume": 85.7427404518127
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma20_above_ma60",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "positive_20_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_above_20_day_average",
-          "volume_with_positive_price_change",
-          "risk_measures_within_moderate_ranges",
-          "confirmed_fractal_structure",
-          "confirmed_stroke_structure",
-          "confirmed_central_structure",
-          "confirmed_central_breakout_observation"
-        ],
-        "latest_trade_date": "2026-11-12",
-        "name": "科力尔",
-        "profile": "balanced",
-        "provider_name": "sina",
-        "rank": 14,
-        "risk_codes": [],
-        "score": 80.59682495412883
-      },
-      {
-        "code": "002048",
-        "components": {
-          "momentum": 73.52677817198851,
-          "risk": 44.21982335623159,
-          "structure": 100.0,
-          "trend": 79.489524032572,
-          "volume": 100.0
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma20_above_ma60",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "ma60_slope_positive",
-          "positive_20_day_momentum",
-          "positive_60_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_above_20_day_average",
-          "volume_with_positive_price_change",
-          "confirmed_fractal_structure",
-          "confirmed_stroke_structure",
-          "confirmed_central_structure",
-          "confirmed_central_breakout_observation"
-        ],
-        "latest_trade_date": "2026-11-12",
-        "name": "宁波华翔",
         "profile": "balanced",
         "provider_name": "sina",
         "rank": 15,
@@ -828,125 +832,16 @@
           "high_realized_volatility",
           "deep_trailing_drawdown"
         ],
-        "score": 80.18518634760404
+        "score": 80.94138864882746
       },
       {
-        "code": "002241",
+        "code": "000516",
         "components": {
-          "momentum": 80.58679161088799,
-          "risk": 63.628552451341974,
+          "momentum": 55.79976345942834,
+          "risk": 98.49300267823482,
           "structure": 100.0,
-          "trend": 84.1019895386802,
-          "volume": 59.16000117134851
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma20_above_ma60",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "ma60_slope_positive",
-          "positive_20_day_momentum",
-          "positive_60_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_with_positive_price_change",
-          "confirmed_fractal_structure",
-          "confirmed_stroke_structure",
-          "confirmed_central_structure",
-          "confirmed_central_breakout_observation"
-        ],
-        "latest_trade_date": "2026-11-12",
-        "name": "歌尔股份",
-        "profile": "balanced",
-        "provider_name": "sina",
-        "rank": 16,
-        "risk_codes": [
-          "high_realized_volatility"
-        ],
-        "score": 79.76623822718523
-      },
-      {
-        "code": "600609",
-        "components": {
-          "momentum": 77.36456766147383,
-          "risk": 60.48922963270412,
-          "structure": 100.0,
-          "trend": 67.37445266653187,
-          "volume": 100.0
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma60_above_ma120",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "ma60_slope_positive",
-          "positive_20_day_momentum",
-          "positive_60_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_above_20_day_average",
-          "volume_with_positive_price_change",
-          "confirmed_fractal_structure",
-          "confirmed_stroke_structure",
-          "confirmed_central_structure",
-          "confirmed_central_breakout_observation"
-        ],
-        "latest_trade_date": "2026-11-12",
-        "name": "金杯汽车",
-        "profile": "balanced",
-        "provider_name": "sina",
-        "rank": 17,
-        "risk_codes": [
-          "high_realized_volatility"
-        ],
-        "score": 79.75863377715994
-      },
-      {
-        "code": "603893",
-        "components": {
-          "momentum": 75.87393937490512,
-          "risk": 42.19826984436309,
-          "structure": 100.0,
-          "trend": 92.80108444434939,
-          "volume": 68.43317226076803
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma20_above_ma60",
-          "ma60_above_ma120",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "ma60_slope_positive",
-          "positive_20_day_momentum",
-          "positive_60_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_above_20_day_average",
-          "volume_with_positive_price_change",
-          "confirmed_fractal_structure",
-          "confirmed_stroke_structure",
-          "confirmed_central_structure",
-          "confirmed_central_breakout_observation"
-        ],
-        "latest_trade_date": "2026-11-12",
-        "name": "瑞芯微",
-        "profile": "balanced",
-        "provider_name": "sina",
-        "rank": 18,
-        "risk_codes": [
-          "high_realized_volatility",
-          "deep_trailing_drawdown"
-        ],
-        "score": 79.60982952405551
-      },
-      {
-        "code": "600025",
-        "components": {
-          "momentum": 57.93243983527897,
-          "risk": 100.0,
-          "structure": 100.0,
-          "trend": 92.836081574964,
-          "volume": 30.0
+          "trend": 89.09430990310915,
+          "volume": 55.07355695654998
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -966,22 +861,93 @@
           "confirmed_central_structure",
           "confirmed_central_breakout_observation"
         ],
-        "latest_trade_date": "2026-11-12",
-        "name": "华能水电",
+        "latest_trade_date": "2026-11-13",
+        "name": "国际医学",
         "profile": "balanced",
         "provider_name": "sina",
-        "rank": 19,
+        "rank": 16,
         "risk_codes": [],
-        "score": 78.937312439545
+        "score": 80.92322960803614
       },
       {
-        "code": "300251",
+        "code": "300122",
         "components": {
-          "momentum": 52.62881850790832,
-          "risk": 73.08553934465178,
+          "momentum": 65.64597758352517,
+          "risk": 80.39365639274025,
           "structure": 100.0,
-          "trend": 81.00798493518624,
-          "volume": 86.29058183191053
+          "trend": 91.44442003514938,
+          "volume": 51.45236039235164
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "latest_trade_date": "2026-11-13",
+        "name": "智飞生物",
+        "profile": "balanced",
+        "provider_name": "sina",
+        "rank": 17,
+        "risk_codes": [],
+        "score": 80.33942404501363
+      },
+      {
+        "code": "600809",
+        "components": {
+          "momentum": 64.88385902836814,
+          "risk": 76.85697531112946,
+          "structure": 100.0,
+          "trend": 90.02613128953712,
+          "volume": 56.92654778230482
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "latest_trade_date": "2026-11-13",
+        "name": "山西汾酒",
+        "profile": "balanced",
+        "provider_name": "sina",
+        "rank": 18,
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "score": 80.05213965654991
+      },
+      {
+        "code": "000400",
+        "components": {
+          "momentum": 70.73218345486839,
+          "risk": 86.91109370215224,
+          "structure": 100.0,
+          "trend": 83.8952650113314,
+          "volume": 49.51434770780195
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -993,34 +959,205 @@
           "positive_60_day_momentum",
           "positive_macd_histogram",
           "trailing_volume_observed",
-          "volume_above_20_day_average",
           "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
           "confirmed_fractal_structure",
           "confirmed_stroke_structure",
           "confirmed_central_structure",
           "confirmed_central_breakout_observation"
         ],
-        "latest_trade_date": "2026-11-12",
-        "name": "光线传媒",
+        "latest_trade_date": "2026-11-13",
+        "name": "许继电气",
+        "profile": "balanced",
+        "provider_name": "sina",
+        "rank": 19,
+        "risk_codes": [],
+        "score": 79.77883240586623
+      },
+      {
+        "code": "300793",
+        "components": {
+          "momentum": 82.69071371193681,
+          "risk": 80.86097360194815,
+          "structure": 85.0,
+          "trend": 88.30244718488558,
+          "volume": 49.42860586484311
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure"
+        ],
+        "latest_trade_date": "2026-11-13",
+        "name": "佳禾智能",
         "profile": "balanced",
         "provider_name": "sina",
         "rank": 20,
         "risk_codes": [
           "high_realized_volatility"
         ],
-        "score": 78.73457735862188
+        "score": 79.57231381787172
       },
       {
-        "code": "002520",
+        "code": "600754",
         "components": {
-          "momentum": 77.61675939976395,
-          "risk": 59.532941927455006,
+          "momentum": 79.33003986826141,
+          "risk": 83.10711434269611,
           "structure": 100.0,
-          "trend": 62.94995747954967,
+          "trend": 82.33650906214903,
+          "volume": 43.10664620877888
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "latest_trade_date": "2026-11-13",
+        "name": "锦江酒店",
+        "profile": "balanced",
+        "provider_name": "sina",
+        "rank": 21,
+        "risk_codes": [],
+        "score": 79.49902477501824
+      },
+      {
+        "code": "002299",
+        "components": {
+          "momentum": 55.376066911725495,
+          "risk": 91.96428593950917,
+          "structure": 100.0,
+          "trend": 86.02635983537026,
+          "volume": 52.17185391761761
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "latest_trade_date": "2026-11-13",
+        "name": "圣农发展",
+        "profile": "balanced",
+        "provider_name": "sina",
+        "rank": 22,
+        "risk_codes": [],
+        "score": 78.5035423115252
+      },
+      {
+        "code": "603009",
+        "components": {
+          "momentum": 75.98510882016038,
+          "risk": 57.7656196623278,
+          "structure": 85.0,
+          "trend": 99.36789358731728,
+          "volume": 51.14863492823061
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure"
+        ],
+        "latest_trade_date": "2026-11-13",
+        "name": "北特科技",
+        "profile": "balanced",
+        "provider_name": "sina",
+        "rank": 23,
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "score": 78.34452802881101
+      },
+      {
+        "code": "603279",
+        "components": {
+          "momentum": 77.0342730790492,
+          "risk": 79.47819333416768,
+          "structure": 100.0,
+          "trend": 81.5366125025875,
+          "volume": 43.63279231263249
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
+          "confirmed_fractal_structure",
+          "confirmed_stroke_structure",
+          "confirmed_central_structure",
+          "confirmed_central_breakout_observation"
+        ],
+        "latest_trade_date": "2026-11-13",
+        "name": "景津装备",
+        "profile": "balanced",
+        "provider_name": "sina",
+        "rank": 24,
+        "risk_codes": [],
+        "score": 78.33448621360611
+      },
+      {
+        "code": "600609",
+        "components": {
+          "momentum": 59.20988581628413,
+          "risk": 61.49688795454992,
+          "structure": 100.0,
+          "trend": 73.86453695458596,
           "volume": 100.0
         },
         "evidence_codes": [
           "close_above_ma20",
+          "ma60_above_ma120",
           "macd_line_above_signal",
           "ma20_slope_positive",
           "ma60_slope_positive",
@@ -1035,175 +1172,33 @@
           "confirmed_central_structure",
           "confirmed_central_breakout_observation"
         ],
-        "latest_trade_date": "2026-11-12",
-        "name": "日发精机",
-        "profile": "balanced",
-        "provider_name": "sina",
-        "rank": 21,
-        "risk_codes": [
-          "high_realized_volatility",
-          "deep_trailing_drawdown"
-        ],
-        "score": 78.33828041293594
-      },
-      {
-        "code": "002472",
-        "components": {
-          "momentum": 79.7276180609514,
-          "risk": 53.09597623233119,
-          "structure": 100.0,
-          "trend": 85.81696335853579,
-          "volume": 54.74410818153167
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma20_above_ma60",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "ma60_slope_positive",
-          "positive_20_day_momentum",
-          "positive_60_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_with_positive_price_change",
-          "confirmed_fractal_structure",
-          "confirmed_stroke_structure",
-          "confirmed_central_structure",
-          "confirmed_central_breakout_observation"
-        ],
-        "latest_trade_date": "2026-11-12",
-        "name": "双环传动",
-        "profile": "balanced",
-        "provider_name": "sina",
-        "rank": 22,
-        "risk_codes": [
-          "high_realized_volatility"
-        ],
-        "score": 77.86662528183045
-      },
-      {
-        "code": "000333",
-        "components": {
-          "momentum": 51.105859596431614,
-          "risk": 100.0,
-          "structure": 100.0,
-          "trend": 87.54579471043509,
-          "volume": 42.48211298831418
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma20_above_ma60",
-          "ma60_above_ma120",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "ma60_slope_positive",
-          "positive_20_day_momentum",
-          "positive_60_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_with_positive_price_change",
-          "risk_measures_within_moderate_ranges",
-          "confirmed_fractal_structure",
-          "confirmed_stroke_structure",
-          "confirmed_central_structure",
-          "confirmed_central_breakout_observation"
-        ],
-        "latest_trade_date": "2026-11-12",
-        "name": "美的集团",
-        "profile": "balanced",
-        "provider_name": "sina",
-        "rank": 23,
-        "risk_codes": [],
-        "score": 77.85722728066398
-      },
-      {
-        "code": "002292",
-        "components": {
-          "momentum": 60.470956495465714,
-          "risk": 51.983032873807,
-          "structure": 100.0,
-          "trend": 92.7805208402034,
-          "volume": 66.45392743968678
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma20_above_ma60",
-          "ma60_above_ma120",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "ma60_slope_positive",
-          "positive_20_day_momentum",
-          "positive_60_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_with_positive_price_change",
-          "confirmed_fractal_structure",
-          "confirmed_stroke_structure",
-          "confirmed_central_structure",
-          "confirmed_central_breakout_observation"
-        ],
-        "latest_trade_date": "2026-11-12",
-        "name": "奥飞娱乐",
-        "profile": "balanced",
-        "provider_name": "sina",
-        "rank": 24,
-        "risk_codes": [
-          "high_realized_volatility"
-        ],
-        "score": 77.69389159817823
-      },
-      {
-        "code": "000400",
-        "components": {
-          "momentum": 66.33594549831325,
-          "risk": 87.06054073382911,
-          "structure": 100.0,
-          "trend": 84.00227936510358,
-          "volume": 38.93392609841456
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma20_above_ma60",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "ma60_slope_positive",
-          "positive_20_day_momentum",
-          "positive_60_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_with_positive_price_change",
-          "risk_measures_within_moderate_ranges",
-          "confirmed_fractal_structure",
-          "confirmed_stroke_structure",
-          "confirmed_central_structure",
-          "confirmed_central_breakout_observation"
-        ],
-        "latest_trade_date": "2026-11-12",
-        "name": "许继电气",
+        "latest_trade_date": "2026-11-13",
+        "name": "金杯汽车",
         "profile": "balanced",
         "provider_name": "sina",
         "rank": 25,
-        "risk_codes": [],
-        "score": 77.36704293403028
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "score": 78.2258714428151
       },
       {
-        "code": "605333",
+        "code": "601900",
         "components": {
-          "momentum": 81.71775223499363,
-          "risk": 48.395855662736686,
+          "momentum": 59.35179123929498,
+          "risk": 81.61521425527417,
           "structure": 100.0,
-          "trend": 88.19966227666684,
-          "volume": 46.31149394646741
+          "trend": 90.25,
+          "volume": 43.58962454410822
         },
         "evidence_codes": [
           "close_above_ma20",
           "ma20_above_ma60",
-          "macd_line_above_signal",
+          "ma60_above_ma120",
           "ma20_slope_positive",
           "ma60_slope_positive",
           "positive_20_day_momentum",
           "positive_60_day_momentum",
-          "positive_macd_histogram",
           "trailing_volume_observed",
           "volume_with_positive_price_change",
           "confirmed_fractal_structure",
@@ -1211,24 +1206,24 @@
           "confirmed_central_structure",
           "confirmed_central_breakout_observation"
         ],
-        "latest_trade_date": "2026-11-12",
-        "name": "沪光股份",
+        "latest_trade_date": "2026-11-13",
+        "name": "南方传媒",
         "profile": "balanced",
         "provider_name": "sina",
         "rank": 26,
         "risk_codes": [
           "high_realized_volatility"
         ],
-        "score": 77.00955157137939
+        "score": 77.72608406776635
       },
       {
-        "code": "002045",
+        "code": "603893",
         "components": {
-          "momentum": 45.0,
-          "risk": 19.553176109153362,
+          "momentum": 76.78043835087382,
+          "risk": 42.24354662720654,
           "structure": 100.0,
-          "trend": 100.0,
-          "volume": 100.0
+          "trend": 92.7813678579675,
+          "volume": 54.33158561642233
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -1240,76 +1235,69 @@
           "positive_20_day_momentum",
           "positive_60_day_momentum",
           "positive_macd_histogram",
-          "momentum_capped_for_overheating",
           "trailing_volume_observed",
-          "volume_above_20_day_average",
           "volume_with_positive_price_change",
           "confirmed_fractal_structure",
           "confirmed_stroke_structure",
           "confirmed_central_structure",
           "confirmed_central_breakout_observation"
         ],
-        "latest_trade_date": "2026-11-12",
-        "name": "国光电器",
+        "latest_trade_date": "2026-11-13",
+        "name": "瑞芯微",
         "profile": "balanced",
         "provider_name": "sina",
         "rank": 27,
         "risk_codes": [
-          "overheated_short_term_momentum",
           "high_realized_volatility",
-          "price_extended_above_ma20"
+          "deep_trailing_drawdown"
         ],
-        "score": 76.93297641637301
+        "score": 77.67676786410934
       },
       {
-        "code": "300459",
+        "code": "002139",
         "components": {
-          "momentum": 50.65310998304719,
-          "risk": 67.16948712276783,
+          "momentum": 58.87342276123972,
+          "risk": 87.5795669629204,
           "structure": 100.0,
-          "trend": 74.91616495696474,
-          "volume": 93.57202140754829
+          "trend": 75.10428895144327,
+          "volume": 67.43057367759707
         },
         "evidence_codes": [
           "close_above_ma20",
           "ma20_above_ma60",
           "macd_line_above_signal",
           "ma20_slope_positive",
-          "ma60_slope_positive",
           "positive_20_day_momentum",
-          "positive_60_day_momentum",
           "positive_macd_histogram",
           "trailing_volume_observed",
           "volume_above_20_day_average",
           "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
           "confirmed_fractal_structure",
           "confirmed_stroke_structure",
           "confirmed_central_structure",
           "confirmed_central_breakout_observation"
         ],
-        "latest_trade_date": "2026-11-12",
-        "name": "汤姆猫",
+        "latest_trade_date": "2026-11-13",
+        "name": "拓邦股份",
         "profile": "balanced",
         "provider_name": "sina",
         "rank": 28,
-        "risk_codes": [
-          "high_realized_volatility"
-        ],
-        "score": 76.71669776324627
+        "risk_codes": [],
+        "score": 77.55749233375855
       },
       {
-        "code": "002945",
+        "code": "600011",
         "components": {
-          "momentum": 51.3542911547716,
-          "risk": 71.25524939614073,
+          "momentum": 57.1950127297622,
+          "risk": 95.99232734553345,
           "structure": 100.0,
-          "trend": 91.29185978477848,
-          "volume": 53.836670753104684
+          "trend": 76.4800587275762,
+          "volume": 58.48925406469886
         },
         "evidence_codes": [
           "close_above_ma20",
           "ma20_above_ma60",
-          "ma60_above_ma120",
           "macd_line_above_signal",
           "ma20_slope_positive",
           "ma60_slope_positive",
@@ -1318,29 +1306,28 @@
           "positive_macd_histogram",
           "trailing_volume_observed",
           "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges",
           "confirmed_fractal_structure",
           "confirmed_stroke_structure",
           "confirmed_central_structure",
           "confirmed_central_breakout_observation"
         ],
-        "latest_trade_date": "2026-11-12",
-        "name": "华林证券",
+        "latest_trade_date": "2026-11-13",
+        "name": "华能国际",
         "profile": "balanced",
         "provider_name": "sina",
         "rank": 29,
-        "risk_codes": [
-          "high_realized_volatility"
-        ],
-        "score": 76.42220418877469
+        "risk_codes": [],
+        "score": 77.55525737576015
       },
       {
         "code": "000513",
         "components": {
-          "momentum": 73.08507667309841,
-          "risk": 82.41893657178517,
+          "momentum": 74.07729579968932,
+          "risk": 82.85527466675475,
           "structure": 100.0,
-          "trend": 81.60473828619664,
-          "volume": 30.0
+          "trend": 81.76394545323112,
+          "volume": 37.409690394851275
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -1362,21 +1349,21 @@
         "latest_trade_date": "2026-11-13",
         "name": "丽珠集团",
         "profile": "balanced",
-        "provider_name": "akshare",
+        "provider_name": "sina",
         "rank": 30,
         "risk_codes": [],
-        "score": 75.96127730624644
+        "score": 77.38438755514811
       }
     ],
     "trend": [
       {
-        "code": "600963",
+        "code": "600977",
         "components": {
-          "momentum": 88.01022090339599,
-          "risk": 80.2572616053449,
+          "momentum": 98.84581919429219,
+          "risk": 72.08291548904207,
           "structure": 100.0,
           "trend": 100.0,
-          "volume": 95.22782218529063
+          "volume": 100.0
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -1392,58 +1379,24 @@
           "volume_above_20_day_average",
           "volume_with_positive_price_change"
         ],
-        "latest_trade_date": "2026-11-12",
-        "name": "岳阳林纸",
+        "latest_trade_date": "2026-11-13",
+        "name": "中国电影",
         "profile": "trend",
         "provider_name": "sina",
         "rank": 1,
         "risk_codes": [
           "high_realized_volatility"
         ],
-        "score": 93.71296575934689
-      },
-      {
-        "code": "603466",
-        "components": {
-          "momentum": 94.98217945290921,
-          "risk": 39.61808162101451,
-          "structure": 100.0,
-          "trend": 100.0,
-          "volume": 95.57038123838122
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma20_above_ma60",
-          "ma60_above_ma120",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "ma60_slope_positive",
-          "positive_20_day_momentum",
-          "positive_60_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_above_20_day_average",
-          "volume_with_positive_price_change"
-        ],
-        "latest_trade_date": "2026-11-12",
-        "name": "风语筑",
-        "profile": "trend",
-        "provider_name": "sina",
-        "rank": 2,
-        "risk_codes": [
-          "high_realized_volatility",
-          "deep_trailing_drawdown"
-        ],
-        "score": 91.7920191837314
+        "score": 96.86203730719186
       },
       {
         "code": "300498",
         "components": {
-          "momentum": 91.42707163109185,
-          "risk": 99.01084832668478,
+          "momentum": 89.40773078852195,
+          "risk": 100.0,
           "structure": 100.0,
           "trend": 100.0,
-          "volume": 54.243091323153976
+          "volume": 85.25535630254116
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -1456,25 +1409,26 @@
           "positive_60_day_momentum",
           "positive_macd_histogram",
           "trailing_volume_observed",
+          "volume_above_20_day_average",
           "volume_with_positive_price_change",
           "risk_measures_within_moderate_ranges"
         ],
-        "latest_trade_date": "2026-11-12",
+        "latest_trade_date": "2026-11-13",
         "name": "温氏股份",
         "profile": "trend",
         "provider_name": "sina",
-        "rank": 3,
+        "rank": 2,
         "risk_codes": [],
-        "score": 90.46567002046913
+        "score": 94.61062268193776
       },
       {
-        "code": "002779",
+        "code": "002045",
         "components": {
-          "momentum": 84.16349809885932,
-          "risk": 51.30232558139535,
-          "structure": 100.0,
+          "momentum": 88.31505418461941,
+          "risk": 52.324929971988794,
+          "structure": 85.0,
           "trend": 100.0,
-          "volume": 100.0
+          "volume": 83.8108496103755
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -1490,24 +1444,24 @@
           "volume_above_20_day_average",
           "volume_with_positive_price_change"
         ],
-        "latest_trade_date": "2026-11-12",
-        "name": "中坚科技",
+        "latest_trade_date": "2026-11-13",
+        "name": "国光电器",
         "profile": "trend",
         "provider_name": "sina",
-        "rank": 4,
+        "rank": 3,
         "risk_codes": [
           "high_realized_volatility"
         ],
-        "score": 90.37928198779733
+        "score": 89.29863669414102
       },
       {
-        "code": "002351",
+        "code": "600887",
         "components": {
-          "momentum": 89.95854063018241,
-          "risk": 92.3043170359546,
+          "momentum": 84.84681166090029,
+          "risk": 100.0,
           "structure": 100.0,
           "trend": 100.0,
-          "volume": 57.77504310156773
+          "volume": 58.40804447924389
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -1523,22 +1477,53 @@
           "volume_with_positive_price_change",
           "risk_measures_within_moderate_ranges"
         ],
-        "latest_trade_date": "2026-11-12",
+        "latest_trade_date": "2026-11-13",
+        "name": "伊利股份",
+        "profile": "trend",
+        "provider_name": "sina",
+        "rank": 4,
+        "risk_codes": [],
+        "score": 89.21525017015666
+      },
+      {
+        "code": "002351",
+        "components": {
+          "momentum": 90.78699022581732,
+          "risk": 91.806355308662,
+          "structure": 100.0,
+          "trend": 100.0,
+          "volume": 46.97952191851712
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges"
+        ],
+        "latest_trade_date": "2026-11-13",
         "name": "漫步者",
         "profile": "trend",
         "provider_name": "sina",
         "rank": 5,
         "risk_codes": [],
-        "score": 89.88425035788535
+        "score": 88.46366088638896
       },
       {
-        "code": "688543",
+        "code": "600963",
         "components": {
-          "momentum": 93.53436324024558,
-          "risk": 61.71817284011581,
+          "momentum": 87.58140315542127,
+          "risk": 79.45812497746932,
           "structure": 100.0,
           "trend": 100.0,
-          "volume": 62.891642084533345
+          "volume": 44.29105717701499
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -1553,29 +1538,93 @@
           "trailing_volume_observed",
           "volume_with_positive_price_change"
         ],
-        "latest_trade_date": "2026-11-12",
-        "name": "国科军工",
+        "latest_trade_date": "2026-11-13",
+        "name": "岳阳林纸",
         "profile": "trend",
         "provider_name": "sina",
         "rank": 6,
         "risk_codes": [
           "high_realized_volatility"
         ],
-        "score": 88.66587256876525
+        "score": 85.86389202092556
       },
       {
-        "code": "600977",
+        "code": "603236",
         "components": {
-          "momentum": 73.24903792935126,
-          "risk": 85.18211133863615,
+          "momentum": 100.0,
+          "risk": 36.034400382226465,
           "structure": 100.0,
           "trend": 100.0,
-          "volume": 71.65507460699484
+          "volume": 36.90819060995661
         },
         "evidence_codes": [
           "close_above_ma20",
           "ma20_above_ma60",
           "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change"
+        ],
+        "latest_trade_date": "2026-11-13",
+        "name": "移远通信",
+        "profile": "trend",
+        "provider_name": "sina",
+        "rank": 7,
+        "risk_codes": [
+          "high_realized_volatility",
+          "deep_trailing_drawdown"
+        ],
+        "score": 84.13966862971614
+      },
+      {
+        "code": "002779",
+        "components": {
+          "momentum": 80.66385372714487,
+          "risk": 51.30232558139535,
+          "structure": 100.0,
+          "trend": 100.0,
+          "volume": 63.18991379828091
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change"
+        ],
+        "latest_trade_date": "2026-11-13",
+        "name": "中坚科技",
+        "profile": "trend",
+        "provider_name": "sina",
+        "rank": 8,
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "score": 83.80787574602513
+      },
+      {
+        "code": "300251",
+        "components": {
+          "momentum": 77.46742391382928,
+          "risk": 71.59819430883705,
+          "structure": 100.0,
+          "trend": 82.21784922394681,
+          "volume": 100.0
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
           "macd_line_above_signal",
           "ma20_slope_positive",
           "ma60_slope_positive",
@@ -1584,121 +1633,26 @@
           "positive_macd_histogram",
           "trailing_volume_observed",
           "volume_above_20_day_average",
-          "volume_with_positive_price_change",
-          "risk_measures_within_moderate_ranges"
-        ],
-        "latest_trade_date": "2026-11-12",
-        "name": "中国电影",
-        "profile": "trend",
-        "provider_name": "sina",
-        "rank": 7,
-        "risk_codes": [],
-        "score": 86.24118370371822
-      },
-      {
-        "code": "603236",
-        "components": {
-          "momentum": 100.0,
-          "risk": 30.862430821437894,
-          "structure": 100.0,
-          "trend": 100.0,
-          "volume": 47.29776576205539
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma20_above_ma60",
-          "ma60_above_ma120",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "ma60_slope_positive",
-          "positive_20_day_momentum",
-          "positive_60_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
           "volume_with_positive_price_change"
         ],
-        "latest_trade_date": "2026-11-12",
-        "name": "移远通信",
-        "profile": "trend",
-        "provider_name": "sina",
-        "rank": 8,
-        "risk_codes": [
-          "high_realized_volatility",
-          "deep_trailing_drawdown"
-        ],
-        "score": 85.1809079464521
-      },
-      {
-        "code": "603009",
-        "components": {
-          "momentum": 81.76311811703735,
-          "risk": 58.5567942335366,
-          "structure": 100.0,
-          "trend": 100.0,
-          "volume": 60.36741926612656
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma20_above_ma60",
-          "ma60_above_ma120",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "ma60_slope_positive",
-          "positive_20_day_momentum",
-          "positive_60_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_with_positive_price_change"
-        ],
-        "latest_trade_date": "2026-11-12",
-        "name": "北特科技",
+        "latest_trade_date": "2026-11-13",
+        "name": "光线传媒",
         "profile": "trend",
         "provider_name": "sina",
         "rank": 9,
         "risk_codes": [
           "high_realized_volatility"
         ],
-        "score": 84.43972774838385
+        "score": 82.39807875580856
       },
       {
-        "code": "600887",
+        "code": "002172",
         "components": {
-          "momentum": 77.52780425565943,
-          "risk": 100.0,
+          "momentum": 74.82885615251303,
+          "risk": 35.72072072072072,
           "structure": 100.0,
           "trend": 100.0,
-          "volume": 39.865992459285565
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma20_above_ma60",
-          "ma60_above_ma120",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "ma60_slope_positive",
-          "positive_20_day_momentum",
-          "positive_60_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_with_positive_price_change",
-          "risk_measures_within_moderate_ranges"
-        ],
-        "latest_trade_date": "2026-11-12",
-        "name": "伊利股份",
-        "profile": "trend",
-        "provider_name": "sina",
-        "rank": 10,
-        "risk_codes": [],
-        "score": 84.23824014559067
-      },
-      {
-        "code": "603893",
-        "components": {
-          "momentum": 75.87393937490512,
-          "risk": 42.19826984436309,
-          "structure": 100.0,
-          "trend": 92.80108444434939,
-          "volume": 68.43317226076803
+          "volume": 74.68685715287383
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -1714,25 +1668,57 @@
           "volume_above_20_day_average",
           "volume_with_positive_price_change"
         ],
-        "latest_trade_date": "2026-11-12",
-        "name": "瑞芯微",
+        "latest_trade_date": "2026-11-13",
+        "name": "澳洋健康",
         "profile": "trend",
         "provider_name": "sina",
-        "rank": 11,
+        "rank": 10,
         "risk_codes": [
           "high_realized_volatility",
           "deep_trailing_drawdown"
         ],
-        "score": 79.00747263598028
+        "score": 82.22375749075705
       },
       {
-        "code": "002241",
+        "code": "603009",
         "components": {
-          "momentum": 80.58679161088799,
-          "risk": 63.628552451341974,
-          "structure": 100.0,
-          "trend": 84.1019895386802,
-          "volume": 59.16000117134851
+          "momentum": 75.98510882016038,
+          "risk": 57.7656196623278,
+          "structure": 85.0,
+          "trend": 99.36789358731728,
+          "volume": 51.14863492823061
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change"
+        ],
+        "latest_trade_date": "2026-11-13",
+        "name": "北特科技",
+        "profile": "trend",
+        "provider_name": "sina",
+        "rank": 11,
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "score": 80.95994196580826
+      },
+      {
+        "code": "300793",
+        "components": {
+          "momentum": 82.69071371193681,
+          "risk": 80.86097360194815,
+          "structure": 85.0,
+          "trend": 88.30244718488558,
+          "volume": 49.42860586484311
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -1746,57 +1732,24 @@
           "trailing_volume_observed",
           "volume_with_positive_price_change"
         ],
-        "latest_trade_date": "2026-11-12",
-        "name": "歌尔股份",
+        "latest_trade_date": "2026-11-13",
+        "name": "佳禾智能",
         "profile": "trend",
         "provider_name": "sina",
         "rank": 12,
         "risk_codes": [
           "high_realized_volatility"
         ],
-        "score": 77.25878819650896
+        "score": 80.04370358670083
       },
       {
-        "code": "002048",
+        "code": "601333",
         "components": {
-          "momentum": 73.52677817198851,
-          "risk": 44.21982335623159,
-          "structure": 100.0,
-          "trend": 79.489524032572,
-          "volume": 100.0
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma20_above_ma60",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "ma60_slope_positive",
-          "positive_20_day_momentum",
-          "positive_60_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_above_20_day_average",
-          "volume_with_positive_price_change"
-        ],
-        "latest_trade_date": "2026-11-12",
-        "name": "宁波华翔",
-        "profile": "trend",
-        "provider_name": "sina",
-        "rank": 13,
-        "risk_codes": [
-          "high_realized_volatility",
-          "deep_trailing_drawdown"
-        ],
-        "score": 77.25030160187711
-      },
-      {
-        "code": "300122",
-        "components": {
-          "momentum": 63.673167848699734,
-          "risk": 80.13483945296029,
-          "structure": 100.0,
-          "trend": 93.08653192614123,
-          "volume": 52.79426038099554
+          "momentum": 64.14080707335121,
+          "risk": 100.0,
+          "structure": 85.0,
+          "trend": 92.79023430010645,
+          "volume": 57.29691538429227
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -1812,22 +1765,54 @@
           "volume_with_positive_price_change",
           "risk_measures_within_moderate_ranges"
         ],
-        "latest_trade_date": "2026-11-12",
-        "name": "智飞生物",
+        "latest_trade_date": "2026-11-13",
+        "name": "广深铁路",
+        "profile": "trend",
+        "provider_name": "sina",
+        "rank": 13,
+        "risk_codes": [],
+        "score": 79.59238486469711
+      },
+      {
+        "code": "000001",
+        "components": {
+          "momentum": 57.668093783867995,
+          "risk": 100.0,
+          "structure": 100.0,
+          "trend": 84.75496591932547,
+          "volume": 87.61093931750224
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges"
+        ],
+        "latest_trade_date": "2026-11-13",
+        "name": "平安银行",
         "profile": "trend",
         "provider_name": "sina",
         "rank": 14,
         "risk_codes": [],
-        "score": 76.92351272381883
+        "score": 78.5818036964822
       },
       {
-        "code": "603215",
+        "code": "000333",
         "components": {
-          "momentum": 53.642884555556925,
-          "risk": 76.59002266699991,
+          "momentum": 60.72784470676902,
+          "risk": 100.0,
           "structure": 100.0,
-          "trend": 83.98020887042918,
-          "volume": 100.0
+          "trend": 87.45846471634599,
+          "volume": 65.8278824628795
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -1840,31 +1825,30 @@
           "positive_60_day_momentum",
           "positive_macd_histogram",
           "trailing_volume_observed",
-          "volume_above_20_day_average",
-          "volume_with_positive_price_change"
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges"
         ],
-        "latest_trade_date": "2026-11-12",
-        "name": "比依股份",
+        "latest_trade_date": "2026-11-13",
+        "name": "美的集团",
         "profile": "trend",
         "provider_name": "sina",
         "rank": 15,
-        "risk_codes": [
-          "high_realized_volatility"
-        ],
-        "score": 76.5429616250602
+        "risk_codes": [],
+        "score": 77.44884490381833
       },
       {
-        "code": "002472",
+        "code": "603893",
         "components": {
-          "momentum": 79.7276180609514,
-          "risk": 53.09597623233119,
+          "momentum": 76.78043835087382,
+          "risk": 42.24354662720654,
           "structure": 100.0,
-          "trend": 85.81696335853579,
-          "volume": 54.74410818153167
+          "trend": 92.7813678579675,
+          "volume": 54.33158561642233
         },
         "evidence_codes": [
           "close_above_ma20",
           "ma20_above_ma60",
+          "ma60_above_ma120",
           "macd_line_above_signal",
           "ma20_slope_positive",
           "ma60_slope_positive",
@@ -1874,55 +1858,25 @@
           "trailing_volume_observed",
           "volume_with_positive_price_change"
         ],
-        "latest_trade_date": "2026-11-12",
-        "name": "双环传动",
+        "latest_trade_date": "2026-11-13",
+        "name": "瑞芯微",
         "profile": "trend",
         "provider_name": "sina",
         "rank": 16,
         "risk_codes": [
-          "high_realized_volatility"
+          "high_realized_volatility",
+          "deep_trailing_drawdown"
         ],
-        "score": 76.05713278008939
+        "score": 77.15983954653153
       },
       {
-        "code": "605333",
+        "code": "300122",
         "components": {
-          "momentum": 81.71775223499363,
-          "risk": 48.395855662736686,
+          "momentum": 65.64597758352517,
+          "risk": 80.39365639274025,
           "structure": 100.0,
-          "trend": 88.19966227666684,
-          "volume": 46.31149394646741
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma20_above_ma60",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "ma60_slope_positive",
-          "positive_20_day_momentum",
-          "positive_60_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_with_positive_price_change"
-        ],
-        "latest_trade_date": "2026-11-12",
-        "name": "沪光股份",
-        "profile": "trend",
-        "provider_name": "sina",
-        "rank": 17,
-        "risk_codes": [
-          "high_realized_volatility"
-        ],
-        "score": 75.99148335324195
-      },
-      {
-        "code": "002045",
-        "components": {
-          "momentum": 45.0,
-          "risk": 19.553176109153362,
-          "structure": 100.0,
-          "trend": 100.0,
-          "volume": 100.0
+          "trend": 91.44442003514938,
+          "volume": 51.45236039235164
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -1934,153 +1888,58 @@
           "positive_20_day_momentum",
           "positive_60_day_momentum",
           "positive_macd_histogram",
-          "momentum_capped_for_overheating",
           "trailing_volume_observed",
-          "volume_above_20_day_average",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges"
+        ],
+        "latest_trade_date": "2026-11-13",
+        "name": "智飞生物",
+        "profile": "trend",
+        "provider_name": "sina",
+        "rank": 17,
+        "risk_codes": [],
+        "score": 76.60100198900153
+      },
+      {
+        "code": "600809",
+        "components": {
+          "momentum": 64.88385902836814,
+          "risk": 76.85697531112946,
+          "structure": 100.0,
+          "trend": 90.02613128953712,
+          "volume": 56.92654778230482
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
           "volume_with_positive_price_change"
         ],
-        "latest_trade_date": "2026-11-12",
-        "name": "国光电器",
+        "latest_trade_date": "2026-11-13",
+        "name": "山西汾酒",
         "profile": "trend",
         "provider_name": "sina",
         "rank": 18,
         "risk_codes": [
-          "overheated_short_term_momentum",
-          "high_realized_volatility",
-          "price_extended_above_ma20"
-        ],
-        "score": 75.45531761091533
-      },
-      {
-        "code": "002292",
-        "components": {
-          "momentum": 60.470956495465714,
-          "risk": 51.983032873807,
-          "structure": 100.0,
-          "trend": 92.7805208402034,
-          "volume": 66.45392743968678
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma20_above_ma60",
-          "ma60_above_ma120",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "ma60_slope_positive",
-          "positive_20_day_momentum",
-          "positive_60_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_with_positive_price_change"
-        ],
-        "latest_trade_date": "2026-11-12",
-        "name": "奥飞娱乐",
-        "profile": "trend",
-        "provider_name": "sina",
-        "rank": 19,
-        "risk_codes": [
           "high_realized_volatility"
         ],
-        "score": 75.05891373006496
-      },
-      {
-        "code": "002139",
-        "components": {
-          "momentum": 61.94672629913594,
-          "risk": 88.14368645344122,
-          "structure": 100.0,
-          "trend": 72.02782123453697,
-          "volume": 100.0
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma20_above_ma60",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "positive_20_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_above_20_day_average",
-          "volume_with_positive_price_change",
-          "risk_measures_within_moderate_ranges"
-        ],
-        "latest_trade_date": "2026-11-12",
-        "name": "拓邦股份",
-        "profile": "trend",
-        "provider_name": "sina",
-        "rank": 20,
-        "risk_codes": [],
-        "score": 74.81090609062655
-      },
-      {
-        "code": "600609",
-        "components": {
-          "momentum": 77.36456766147383,
-          "risk": 60.48922963270412,
-          "structure": 100.0,
-          "trend": 67.37445266653187,
-          "volume": 100.0
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma60_above_ma120",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "ma60_slope_positive",
-          "positive_20_day_momentum",
-          "positive_60_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_above_20_day_average",
-          "volume_with_positive_price_change"
-        ],
-        "latest_trade_date": "2026-11-12",
-        "name": "金杯汽车",
-        "profile": "trend",
-        "provider_name": "sina",
-        "rank": 21,
-        "risk_codes": [
-          "high_realized_volatility"
-        ],
-        "score": 74.57679696165191
-      },
-      {
-        "code": "002892",
-        "components": {
-          "momentum": 68.60824742268042,
-          "risk": 79.6201189218613,
-          "structure": 100.0,
-          "trend": 73.56915521180551,
-          "volume": 85.7427404518127
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma20_above_ma60",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "positive_20_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_above_20_day_average",
-          "volume_with_positive_price_change",
-          "risk_measures_within_moderate_ranges"
-        ],
-        "latest_trade_date": "2026-11-12",
-        "name": "科力尔",
-        "profile": "trend",
-        "provider_name": "sina",
-        "rank": 22,
-        "risk_codes": [],
-        "score": 74.51201703207464
+        "score": 76.20159648726082
       },
       {
         "code": "600025",
         "components": {
-          "momentum": 57.93243983527897,
+          "momentum": 63.09299162262131,
           "risk": 100.0,
           "structure": 100.0,
-          "trend": 92.836081574964,
-          "volume": 30.0
+          "trend": 92.21073134235297,
+          "volume": 38.38754265401466
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -2096,13 +1955,196 @@
           "volume_with_positive_price_change",
           "risk_measures_within_moderate_ranges"
         ],
-        "latest_trade_date": "2026-11-12",
+        "latest_trade_date": "2026-11-13",
         "name": "华能水电",
+        "profile": "trend",
+        "provider_name": "sina",
+        "rank": 19,
+        "risk_codes": [],
+        "score": 76.18085798894742
+      },
+      {
+        "code": "600754",
+        "components": {
+          "momentum": 79.33003986826141,
+          "risk": 83.10711434269611,
+          "structure": 100.0,
+          "trend": 82.33650906214903,
+          "volume": 43.10664620877888
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges"
+        ],
+        "latest_trade_date": "2026-11-13",
+        "name": "锦江酒店",
+        "profile": "trend",
+        "provider_name": "sina",
+        "rank": 20,
+        "risk_codes": [],
+        "score": 75.62714940403193
+      },
+      {
+        "code": "000400",
+        "components": {
+          "momentum": 70.73218345486839,
+          "risk": 86.91109370215224,
+          "structure": 100.0,
+          "trend": 83.8952650113314,
+          "volume": 49.51434770780195
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges"
+        ],
+        "latest_trade_date": "2026-11-13",
+        "name": "许继电气",
+        "profile": "trend",
+        "provider_name": "sina",
+        "rank": 21,
+        "risk_codes": [],
+        "score": 75.09078581794518
+      },
+      {
+        "code": "600926",
+        "components": {
+          "momentum": 56.9931174489998,
+          "risk": 100.0,
+          "structure": 100.0,
+          "trend": 84.94427164826982,
+          "volume": 64.21166552035899
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges"
+        ],
+        "latest_trade_date": "2026-11-13",
+        "name": "杭州银行",
+        "profile": "trend",
+        "provider_name": "sina",
+        "rank": 22,
+        "risk_codes": [],
+        "score": 74.95460730447522
+      },
+      {
+        "code": "000516",
+        "components": {
+          "momentum": 55.79976345942834,
+          "risk": 98.49300267823482,
+          "structure": 100.0,
+          "trend": 89.09430990310915,
+          "volume": 55.07355695654998
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "ma60_above_ma120",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges"
+        ],
+        "latest_trade_date": "2026-11-13",
+        "name": "国际医学",
         "profile": "trend",
         "provider_name": "sina",
         "rank": 23,
         "risk_codes": [],
-        "score": 73.6559686593175
+        "score": 74.9427023055336
+      },
+      {
+        "code": "002241",
+        "components": {
+          "momentum": 80.67238153036969,
+          "risk": 63.44155663600651,
+          "structure": 100.0,
+          "trend": 84.68411568701423,
+          "volume": 39.483287083415206
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change"
+        ],
+        "latest_trade_date": "2026-11-13",
+        "name": "歌尔股份",
+        "profile": "trend",
+        "provider_name": "sina",
+        "rank": 24,
+        "risk_codes": [
+          "high_realized_volatility"
+        ],
+        "score": 74.57621524438024
+      },
+      {
+        "code": "603279",
+        "components": {
+          "momentum": 77.0342730790492,
+          "risk": 79.47819333416768,
+          "structure": 100.0,
+          "trend": 81.5366125025875,
+          "volume": 43.63279231263249
+        },
+        "evidence_codes": [
+          "close_above_ma20",
+          "ma20_above_ma60",
+          "macd_line_above_signal",
+          "ma20_slope_positive",
+          "ma60_slope_positive",
+          "positive_20_day_momentum",
+          "positive_60_day_momentum",
+          "positive_macd_histogram",
+          "trailing_volume_observed",
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges"
+        ],
+        "latest_trade_date": "2026-11-13",
+        "name": "景津装备",
+        "profile": "trend",
+        "provider_name": "sina",
+        "rank": 25,
+        "risk_codes": [],
+        "score": 74.29449573019077
       },
       {
         "code": "603366",
@@ -2128,11 +2170,11 @@
           "volume_above_20_day_average",
           "volume_with_positive_price_change"
         ],
-        "latest_trade_date": "2026-11-12",
+        "latest_trade_date": "2026-11-13",
         "name": "日出东方",
         "profile": "trend",
         "provider_name": "sina",
-        "rank": 24,
+        "rank": 26,
         "risk_codes": [
           "overheated_short_term_momentum",
           "high_realized_volatility",
@@ -2141,110 +2183,43 @@
         "score": 73.5
       },
       {
-        "code": "002520",
+        "code": "601900",
         "components": {
-          "momentum": 77.61675939976395,
-          "risk": 59.532941927455006,
+          "momentum": 59.35179123929498,
+          "risk": 81.61521425527417,
           "structure": 100.0,
-          "trend": 62.94995747954967,
-          "volume": 100.0
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "ma60_slope_positive",
-          "positive_20_day_momentum",
-          "positive_60_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_above_20_day_average",
-          "volume_with_positive_price_change"
-        ],
-        "latest_trade_date": "2026-11-12",
-        "name": "日发精机",
-        "profile": "trend",
-        "provider_name": "sina",
-        "rank": 25,
-        "risk_codes": [
-          "high_realized_volatility",
-          "deep_trailing_drawdown"
-        ],
-        "score": 72.56580287847204
-      },
-      {
-        "code": "300251",
-        "components": {
-          "momentum": 52.62881850790832,
-          "risk": 73.08553934465178,
-          "structure": 100.0,
-          "trend": 81.00798493518624,
-          "volume": 86.29058183191053
-        },
-        "evidence_codes": [
-          "close_above_ma20",
-          "ma20_above_ma60",
-          "macd_line_above_signal",
-          "ma20_slope_positive",
-          "ma60_slope_positive",
-          "positive_20_day_momentum",
-          "positive_60_day_momentum",
-          "positive_macd_histogram",
-          "trailing_volume_observed",
-          "volume_above_20_day_average",
-          "volume_with_positive_price_change"
-        ],
-        "latest_trade_date": "2026-11-12",
-        "name": "光线传媒",
-        "profile": "trend",
-        "provider_name": "sina",
-        "rank": 26,
-        "risk_codes": [
-          "high_realized_volatility"
-        ],
-        "score": 72.49437998245806
-      },
-      {
-        "code": "300411",
-        "components": {
-          "momentum": 70.8573415312546,
-          "risk": 31.438979963570123,
-          "structure": 100.0,
-          "trend": 93.22961494340234,
-          "volume": 40.69058919794404
+          "trend": 90.25,
+          "volume": 43.58962454410822
         },
         "evidence_codes": [
           "close_above_ma20",
           "ma20_above_ma60",
           "ma60_above_ma120",
-          "macd_line_above_signal",
           "ma20_slope_positive",
           "ma60_slope_positive",
           "positive_20_day_momentum",
           "positive_60_day_momentum",
-          "positive_macd_histogram",
           "trailing_volume_observed",
           "volume_with_positive_price_change"
         ],
-        "latest_trade_date": "2026-11-12",
-        "name": "金盾股份",
+        "latest_trade_date": "2026-11-13",
+        "name": "南方传媒",
         "profile": "trend",
         "provider_name": "sina",
         "rank": 27,
         "risk_codes": [
-          "high_realized_volatility",
-          "deep_trailing_drawdown"
+          "high_realized_volatility"
         ],
-        "score": 72.45801555995605
+        "score": 73.11800247893214
       },
       {
-        "code": "000400",
+        "code": "000513",
         "components": {
-          "momentum": 66.33594549831325,
-          "risk": 87.06054073382911,
+          "momentum": 74.07729579968932,
+          "risk": 82.85527466675475,
           "structure": 100.0,
-          "trend": 84.00227936510358,
-          "volume": 38.93392609841456
+          "trend": 81.76394545323112,
+          "volume": 37.409690394851275
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -2259,22 +2234,22 @@
           "volume_with_positive_price_change",
           "risk_measures_within_moderate_ranges"
         ],
-        "latest_trade_date": "2026-11-12",
-        "name": "许继电气",
+        "latest_trade_date": "2026-11-13",
+        "name": "丽珠集团",
         "profile": "trend",
         "provider_name": "sina",
         "rank": 28,
         "risk_codes": [],
-        "score": 72.24795235193568
+        "score": 72.91394521976397
       },
       {
-        "code": "600732",
+        "code": "002048",
         "components": {
-          "momentum": 71.97911181323504,
-          "risk": 59.885867164780194,
-          "structure": 100.0,
-          "trend": 80.82869023549426,
-          "volume": 52.12825609296877
+          "momentum": 71.33960797379089,
+          "risk": 44.21982335623159,
+          "structure": 85.0,
+          "trend": 79.3796466894307,
+          "volume": 72.09076996788716
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -2285,26 +2260,28 @@
           "positive_20_day_momentum",
           "positive_macd_histogram",
           "trailing_volume_observed",
+          "volume_above_20_day_average",
           "volume_with_positive_price_change"
         ],
-        "latest_trade_date": "2026-11-12",
-        "name": "爱旭股份",
+        "latest_trade_date": "2026-11-13",
+        "name": "宁波华翔",
         "profile": "trend",
         "provider_name": "sina",
         "rank": 29,
         "risk_codes": [
-          "high_realized_volatility"
+          "high_realized_volatility",
+          "deep_trailing_drawdown"
         ],
-        "score": 71.77446928036626
+        "score": 72.35832123318731
       },
       {
-        "code": "002945",
+        "code": "002299",
         "components": {
-          "momentum": 51.3542911547716,
-          "risk": 71.25524939614073,
+          "momentum": 55.376066911725495,
+          "risk": 91.96428593950917,
           "structure": 100.0,
-          "trend": 91.29185978477848,
-          "volume": 53.836670753104684
+          "trend": 86.02635983537026,
+          "volume": 52.17185391761761
         },
         "evidence_codes": [
           "close_above_ma20",
@@ -2317,17 +2294,16 @@
           "positive_60_day_momentum",
           "positive_macd_histogram",
           "trailing_volume_observed",
-          "volume_with_positive_price_change"
+          "volume_with_positive_price_change",
+          "risk_measures_within_moderate_ranges"
         ],
-        "latest_trade_date": "2026-11-12",
-        "name": "华林证券",
+        "latest_trade_date": "2026-11-13",
+        "name": "圣农发展",
         "profile": "trend",
         "provider_name": "sina",
         "rank": 30,
-        "risk_codes": [
-          "high_realized_volatility"
-        ],
-        "score": 71.68864980216158
+        "risk_codes": [],
+        "score": 72.34688868102782
       }
     ]
   },
@@ -2338,7 +2314,7 @@
     {
       "code": "000001",
       "name": "平安银行",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2346,7 +2322,7 @@
     {
       "code": "000002",
       "name": "万 科Ａ",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2354,17 +2330,15 @@
     {
       "code": "000027",
       "name": "深圳能源",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000032",
       "name": "深桑达Ａ",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2372,7 +2346,7 @@
     {
       "code": "000063",
       "name": "中兴通讯",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2388,17 +2362,15 @@
     {
       "code": "000155",
       "name": "川能动力",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000157",
       "name": "中联重科",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2440,17 +2412,15 @@
     {
       "code": "000422",
       "name": "湖北宜化",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000423",
       "name": "东阿阿胶",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2458,7 +2428,7 @@
     {
       "code": "000513",
       "name": "丽珠集团",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2466,12 +2436,10 @@
     {
       "code": "000516",
       "name": "国际医学",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000519",
@@ -2484,22 +2452,18 @@
     {
       "code": "000528",
       "name": "柳 工",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000552",
       "name": "甘肃能化",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000560",
@@ -2528,17 +2492,15 @@
     {
       "code": "000600",
       "name": "建投能源",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000617",
       "name": "中油资本",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2546,12 +2508,10 @@
     {
       "code": "000629",
       "name": "钒钛股份",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000630",
@@ -2580,42 +2540,34 @@
     {
       "code": "000723",
       "name": "美锦能源",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000735",
       "name": "罗 牛 山",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000791",
       "name": "甘肃能源",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000799",
       "name": "酒鬼酒",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000803",
@@ -2630,12 +2582,10 @@
     {
       "code": "000813",
       "name": "德展健康",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000823",
@@ -2648,12 +2598,10 @@
     {
       "code": "000825",
       "name": "太钢不锈",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000831",
@@ -2670,12 +2618,10 @@
     {
       "code": "000837",
       "name": "秦川机床",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000852",
@@ -2698,17 +2644,15 @@
     {
       "code": "000875",
       "name": "电投绿能",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000876",
       "name": "新 希 望",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2716,7 +2660,7 @@
     {
       "code": "000878",
       "name": "云南铜业",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -2724,12 +2668,10 @@
     {
       "code": "000937",
       "name": "冀中能源",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000938",
@@ -2750,22 +2692,18 @@
     {
       "code": "000958",
       "name": "电投产融",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000966",
       "name": "长源电力",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000977",
@@ -2822,12 +2760,10 @@
     {
       "code": "001269",
       "name": "欧晶科技",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "001314",
@@ -2856,22 +2792,18 @@
     {
       "code": "002006",
       "name": "精工科技",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002026",
       "name": "山东威达",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002027",
@@ -2900,12 +2832,10 @@
     {
       "code": "002041",
       "name": "登海种业",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002045",
@@ -2966,12 +2896,10 @@
     {
       "code": "002130",
       "name": "沃尔核材",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002139",
@@ -3000,12 +2928,10 @@
     {
       "code": "002163",
       "name": "海南发展",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002167",
@@ -3018,12 +2944,10 @@
     {
       "code": "002170",
       "name": "芭田股份",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002172",
@@ -3044,12 +2968,10 @@
     {
       "code": "002180",
       "name": "奔图科技",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002195",
@@ -3070,12 +2992,10 @@
     {
       "code": "002219",
       "name": "新里程",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002230",
@@ -3096,32 +3016,26 @@
     {
       "code": "002243",
       "name": "力合科创",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002248",
       "name": "华东数控",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002254",
       "name": "泰和新材",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002261",
@@ -3134,12 +3048,10 @@
     {
       "code": "002263",
       "name": "大东南",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002281",
@@ -3160,22 +3072,18 @@
     {
       "code": "002299",
       "name": "圣农发展",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002312",
       "name": "川发龙蟒",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002338",
@@ -3228,32 +3136,28 @@
     {
       "code": "002372",
       "name": "伟星新材",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002383",
       "name": "合众思壮",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002385",
       "name": "大北农",
-      "provider_name": null,
+      "provider_name": "MarketDataService",
       "provider_names": [],
       "reason_codes": [
-        "insufficient_latest_amount"
+        "fetch_timeout"
       ],
-      "status": "universe_excluded"
+      "status": "history_failed"
     },
     {
       "code": "002395",
@@ -3284,12 +3188,10 @@
     {
       "code": "002418",
       "name": "康盛股份",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002429",
@@ -3302,10 +3204,12 @@
     {
       "code": "002439",
       "name": "启明星辰",
-      "provider_name": "sina",
+      "provider_name": "MarketDataService",
       "provider_names": [],
-      "reason_codes": [],
-      "status": "valid"
+      "reason_codes": [
+        "fetch_timeout"
+      ],
+      "status": "history_failed"
     },
     {
       "code": "002444",
@@ -3326,12 +3230,10 @@
     {
       "code": "002457",
       "name": "青龙管业",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002460",
@@ -3368,10 +3270,12 @@
     {
       "code": "002475",
       "name": "立讯精密",
-      "provider_name": "sina",
+      "provider_name": "MarketDataService",
       "provider_names": [],
-      "reason_codes": [],
-      "status": "valid"
+      "reason_codes": [
+        "fetch_timeout"
+      ],
+      "status": "history_failed"
     },
     {
       "code": "002497",
@@ -3400,12 +3304,10 @@
     {
       "code": "002543",
       "name": "万和电气",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002549",
@@ -3496,12 +3398,10 @@
     {
       "code": "002668",
       "name": "TCL智家",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002671",
@@ -3516,12 +3416,12 @@
     {
       "code": "002734",
       "name": "利民股份",
-      "provider_name": null,
+      "provider_name": "MarketDataService",
       "provider_names": [],
       "reason_codes": [
-        "insufficient_latest_amount"
+        "fetch_timeout"
       ],
-      "status": "universe_excluded"
+      "status": "history_failed"
     },
     {
       "code": "002779",
@@ -3584,22 +3484,18 @@
     {
       "code": "002862",
       "name": "实丰文化",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002866",
       "name": "传艺科技",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002886",
@@ -3612,38 +3508,41 @@
     {
       "code": "002892",
       "name": "科力尔",
-      "provider_name": "sina",
+      "provider_name": "MarketDataService",
       "provider_names": [],
-      "reason_codes": [],
-      "status": "valid"
+      "reason_codes": [
+        "fetch_timeout"
+      ],
+      "status": "history_failed"
     },
     {
       "code": "002915",
       "name": "中欣氟材",
-      "provider_name": null,
-      "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
-    },
-    {
-      "code": "002925",
-      "name": "盈趣科技",
-      "provider_name": null,
-      "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
-    },
-    {
-      "code": "002938",
-      "name": "鹏鼎控股",
       "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
+    },
+    {
+      "code": "002925",
+      "name": "盈趣科技",
+      "provider_name": "sina",
+      "provider_names": [],
+      "reason_codes": [],
+      "status": "valid"
+    },
+    {
+      "code": "002938",
+      "name": "鹏鼎控股",
+      "provider_name": "selection",
+      "provider_names": [
+        "akshare",
+        "sina"
+      ],
+      "reason_codes": [
+        "all_providers_failed"
+      ],
+      "status": "history_failed"
     },
     {
       "code": "002945",
@@ -3656,42 +3555,39 @@
     {
       "code": "002956",
       "name": "西麦食品",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002959",
       "name": "小熊电器",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002962",
       "name": "五方光电",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "002987",
       "name": "京北方",
-      "provider_name": null,
-      "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
+      "provider_name": "selection",
+      "provider_names": [
+        "akshare",
+        "sina"
       ],
-      "status": "universe_excluded"
+      "reason_codes": [
+        "all_providers_failed"
+      ],
+      "status": "history_failed"
     },
     {
       "code": "003002",
@@ -3716,22 +3612,18 @@
     {
       "code": "003035",
       "name": "南网能源",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "300003",
       "name": "乐普医疗",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "300007",
@@ -3840,32 +3732,26 @@
     {
       "code": "300144",
       "name": "宋城演艺",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "300161",
       "name": "华中数控",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "300203",
       "name": "聚光科技",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "300207",
@@ -3896,12 +3782,10 @@
     {
       "code": "300246",
       "name": "宝莱特",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "300251",
@@ -3930,76 +3814,101 @@
     {
       "code": "300298",
       "name": "三诺生物",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "300308",
       "name": "中际旭创",
-      "provider_name": "sina",
-      "provider_names": [],
-      "reason_codes": [],
-      "status": "valid"
+      "provider_name": "selection",
+      "provider_names": [
+        "akshare",
+        "sina"
+      ],
+      "reason_codes": [
+        "all_providers_failed"
+      ],
+      "status": "history_failed"
     },
     {
       "code": "300314",
       "name": "戴维医疗",
-      "provider_name": null,
-      "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
+      "provider_name": "selection",
+      "provider_names": [
+        "akshare",
+        "sina"
       ],
-      "status": "universe_excluded"
+      "reason_codes": [
+        "all_providers_failed"
+      ],
+      "status": "history_failed"
     },
     {
       "code": "300316",
       "name": "晶盛机电",
-      "provider_name": "sina",
-      "provider_names": [],
-      "reason_codes": [],
-      "status": "valid"
+      "provider_name": "selection",
+      "provider_names": [
+        "akshare",
+        "sina"
+      ],
+      "reason_codes": [
+        "all_providers_failed"
+      ],
+      "status": "history_failed"
     },
     {
       "code": "300321",
       "name": "同大股份",
-      "provider_name": null,
-      "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
+      "provider_name": "selection",
+      "provider_names": [
+        "akshare",
+        "sina"
       ],
-      "status": "universe_excluded"
+      "reason_codes": [
+        "all_providers_failed"
+      ],
+      "status": "history_failed"
     },
     {
       "code": "300339",
       "name": "润和软件",
-      "provider_name": "sina",
-      "provider_names": [],
-      "reason_codes": [],
-      "status": "valid"
+      "provider_name": "selection",
+      "provider_names": [
+        "akshare",
+        "sina"
+      ],
+      "reason_codes": [
+        "all_providers_failed"
+      ],
+      "status": "history_failed"
     },
     {
       "code": "300341",
       "name": "麦克奥迪",
-      "provider_name": null,
-      "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
+      "provider_name": "selection",
+      "provider_names": [
+        "akshare",
+        "sina"
       ],
-      "status": "universe_excluded"
+      "reason_codes": [
+        "all_providers_failed"
+      ],
+      "status": "history_failed"
     },
     {
       "code": "300348",
       "name": "长亮科技",
-      "provider_name": null,
-      "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
+      "provider_name": "selection",
+      "provider_names": [
+        "akshare",
+        "sina"
       ],
-      "status": "universe_excluded"
+      "reason_codes": [
+        "all_providers_failed"
+      ],
+      "status": "history_failed"
     },
     {
       "code": "300352",
@@ -4015,10 +3924,15 @@
     {
       "code": "300377",
       "name": "赢时胜",
-      "provider_name": "sina",
-      "provider_names": [],
-      "reason_codes": [],
-      "status": "valid"
+      "provider_name": "selection",
+      "provider_names": [
+        "akshare",
+        "sina"
+      ],
+      "reason_codes": [
+        "all_providers_failed"
+      ],
+      "status": "history_failed"
     },
     {
       "code": "300380",
@@ -4043,10 +3957,15 @@
     {
       "code": "300394",
       "name": "天孚通信",
-      "provider_name": "sina",
-      "provider_names": [],
-      "reason_codes": [],
-      "status": "valid"
+      "provider_name": "selection",
+      "provider_names": [
+        "akshare",
+        "sina"
+      ],
+      "reason_codes": [
+        "all_providers_failed"
+      ],
+      "status": "history_failed"
     },
     {
       "code": "300411",
@@ -4086,12 +4005,10 @@
     {
       "code": "300435",
       "name": "中泰股份",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "300442",
@@ -4152,12 +4069,10 @@
     {
       "code": "300482",
       "name": "万孚生物",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "300496",
@@ -4212,12 +4127,10 @@
     {
       "code": "300537",
       "name": "广信材料",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "300542",
@@ -4232,12 +4145,10 @@
     {
       "code": "300552",
       "name": "万集科技",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "300566",
@@ -4258,32 +4169,26 @@
     {
       "code": "300590",
       "name": "移为通信",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "300592",
       "name": "华凯易佰",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "300595",
       "name": "欧普康视",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "300601",
@@ -4348,12 +4253,10 @@
     {
       "code": "300663",
       "name": "科蓝软件",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "300676",
@@ -4366,22 +4269,18 @@
     {
       "code": "300678",
       "name": "中科信息",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "300681",
       "name": "英搏尔",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "300684",
@@ -4394,12 +4293,10 @@
     {
       "code": "300699",
       "name": "光威复材",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "300711",
@@ -4490,12 +4387,10 @@
     {
       "code": "300793",
       "name": "佳禾智能",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "300803",
@@ -4508,32 +4403,26 @@
     {
       "code": "300809",
       "name": "华辰装备",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "300810",
       "name": "中科海讯",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "300815",
       "name": "玉禾田",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "300856",
@@ -4556,22 +4445,18 @@
     {
       "code": "300859",
       "name": "西域旅游",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "300872",
       "name": "天阳科技",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "300880",
@@ -4586,12 +4471,10 @@
     {
       "code": "300884",
       "name": "狄耐克",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "300922",
@@ -4632,22 +4515,18 @@
     {
       "code": "301050",
       "name": "雷电微力",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "301076",
       "name": "新瀚新材",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "301095",
@@ -4724,22 +4603,18 @@
     {
       "code": "301159",
       "name": "三维天地",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "301168",
       "name": "通灵股份",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "301169",
@@ -4788,12 +4663,10 @@
     {
       "code": "301330",
       "name": "熵基科技",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "301363",
@@ -4824,12 +4697,10 @@
     {
       "code": "301548",
       "name": "崇德科技",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "600009",
@@ -4842,7 +4713,7 @@
     {
       "code": "600011",
       "name": "华能国际",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -4890,22 +4761,18 @@
     {
       "code": "600072",
       "name": "中船科技",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "600100",
       "name": "同方股份",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "600101",
@@ -4938,12 +4805,10 @@
     {
       "code": "600113",
       "name": "浙江东日",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "600115",
@@ -4964,32 +4829,26 @@
     {
       "code": "600129",
       "name": "太极集团",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "600130",
       "name": "波导股份",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "600132",
       "name": "重庆啤酒",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "600150",
@@ -5002,22 +4861,18 @@
     {
       "code": "600151",
       "name": "航天机电",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "600171",
       "name": "上海贝岭",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "600206",
@@ -5064,12 +4919,10 @@
     {
       "code": "600288",
       "name": "大恒科技",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "600309",
@@ -5082,22 +4935,18 @@
     {
       "code": "600328",
       "name": "中盐化工",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "600329",
       "name": "达仁堂",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "600330",
@@ -5118,12 +4967,10 @@
     {
       "code": "600359",
       "name": "新农开发",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "600367",
@@ -5176,12 +5023,10 @@
     {
       "code": "600425",
       "name": "青松建化",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "600435",
@@ -5212,12 +5057,10 @@
     {
       "code": "600515",
       "name": "海南机场",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "600519",
@@ -5230,22 +5073,18 @@
     {
       "code": "600529",
       "name": "山东药玻",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "600531",
       "name": "豫光金铅",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "600533",
@@ -5260,12 +5099,10 @@
     {
       "code": "600535",
       "name": "天士力",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "600536",
@@ -5294,12 +5131,10 @@
     {
       "code": "600587",
       "name": "新华医疗",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "600588",
@@ -5312,12 +5147,10 @@
     {
       "code": "600596",
       "name": "新安股份",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "600609",
@@ -5372,12 +5205,10 @@
     {
       "code": "600729",
       "name": "重百集团",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "600732",
@@ -5408,12 +5239,10 @@
     {
       "code": "600754",
       "name": "锦江酒店",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "600760",
@@ -5426,12 +5255,10 @@
     {
       "code": "600775",
       "name": "南京熊猫",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "600809",
@@ -5460,22 +5287,18 @@
     {
       "code": "600859",
       "name": "王府井",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "600864",
       "name": "哈投股份",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "600879",
@@ -5520,7 +5343,7 @@
     {
       "code": "600926",
       "name": "杭州银行",
-      "provider_name": "akshare",
+      "provider_name": "sina",
       "provider_names": [],
       "reason_codes": [],
       "status": "valid"
@@ -5594,12 +5417,10 @@
     {
       "code": "600998",
       "name": "九州通",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "601008",
@@ -5622,12 +5443,10 @@
     {
       "code": "601015",
       "name": "陕西黑猫",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "601077",
@@ -5640,12 +5459,10 @@
     {
       "code": "601101",
       "name": "昊华能源",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "601127",
@@ -5658,12 +5475,10 @@
     {
       "code": "601136",
       "name": "首创证券",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "601138",
@@ -5726,12 +5541,10 @@
     {
       "code": "601333",
       "name": "广深铁路",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "601336",
@@ -5768,32 +5581,26 @@
     {
       "code": "601636",
       "name": "旗滨集团",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "601669",
       "name": "中国电建",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "601696",
       "name": "中银证券",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "601698",
@@ -5830,12 +5637,10 @@
     {
       "code": "601788",
       "name": "光大证券",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "601857",
@@ -5848,12 +5653,10 @@
     {
       "code": "601865",
       "name": "福莱特",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "601868",
@@ -5882,12 +5685,10 @@
     {
       "code": "601963",
       "name": "重庆银行",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "601985",
@@ -5919,22 +5720,18 @@
     {
       "code": "603013",
       "name": "亚普股份",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "603015",
       "name": "弘讯科技",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "603019",
@@ -5989,12 +5786,10 @@
     {
       "code": "603162",
       "name": "海通发展",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "603180",
@@ -6025,12 +5820,10 @@
     {
       "code": "603216",
       "name": "梦天家居",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "603221",
@@ -6051,12 +5844,10 @@
     {
       "code": "603279",
       "name": "景津装备",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "603288",
@@ -6085,12 +5876,10 @@
     {
       "code": "603300",
       "name": "海南华铁",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "603306",
@@ -6103,22 +5892,18 @@
     {
       "code": "603322",
       "name": "超讯科技",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "603336",
       "name": "宏辉果蔬",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "603345",
@@ -6139,12 +5924,10 @@
     {
       "code": "603416",
       "name": "信捷电气",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "603466",
@@ -6193,12 +5976,10 @@
     {
       "code": "603661",
       "name": "恒林股份",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "603667",
@@ -6227,22 +6008,18 @@
     {
       "code": "603698",
       "name": "航天工程",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "603713",
       "name": "密尔克卫",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "603716",
@@ -6299,22 +6076,18 @@
     {
       "code": "603912",
       "name": "佳力图",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "603919",
       "name": "金徽酒",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "603977",
@@ -6329,12 +6102,10 @@
     {
       "code": "603985",
       "name": "恒润股份",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "603986",
@@ -6355,22 +6126,18 @@
     {
       "code": "603995",
       "name": "甬金股份",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "605090",
       "name": "九丰能源",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "605196",
@@ -6383,12 +6150,10 @@
     {
       "code": "605296",
       "name": "神农集团",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "605299",
@@ -6461,12 +6226,10 @@
     {
       "code": "688029",
       "name": "南微医学",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "688035",
@@ -6611,12 +6374,10 @@
     {
       "code": "688305",
       "name": "科德数控",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "688318",
@@ -6653,12 +6414,10 @@
     {
       "code": "688337",
       "name": "普源精电",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "688361",
@@ -6723,12 +6482,10 @@
     {
       "code": "688522",
       "name": "纳睿雷达",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "688525",
@@ -6741,12 +6498,10 @@
     {
       "code": "688538",
       "name": "和辉光电",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "688543",
@@ -6759,12 +6514,10 @@
     {
       "code": "688575",
       "name": "亚辉龙",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "688580",
@@ -6779,12 +6532,10 @@
     {
       "code": "688626",
       "name": "翔宇医疗",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "688629",
@@ -6805,12 +6556,10 @@
     {
       "code": "688709",
       "name": "成都华微",
-      "provider_name": null,
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "insufficient_latest_amount"
-      ],
-      "status": "universe_excluded"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "688716",
@@ -6868,5 +6617,5 @@
     }
   ],
   "universe_count": 513,
-  "valid_count": 303
+  "valid_count": 433
 }
