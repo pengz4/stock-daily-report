@@ -22,19 +22,17 @@ on:
       - "src/stock_daily_report/providers/etf.py"
 
 permissions:
-  contents: write
-  pages: write
-  id-token: write
+  contents: read
 
 concurrency:
-  group: stock-daily-report-pages
+  group: stock-daily-report-historical-test-pages
   cancel-in-progress: false
   queue: max
 
 jobs:
   generate:
     concurrency:
-      group: stock-daily-report-history
+      group: stock-daily-report-historical-test-history
       cancel-in-progress: false
       queue: max
     runs-on: ubuntu-latest
@@ -98,7 +96,7 @@ jobs:
             --date "${{ steps.report-date.outputs.report_date }}" \
             --output-root .
       - name: Persist ETF tracker history
-        if: steps.etf-tracker.outcome == 'success'
+        if: ${{ false }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ETF_REPORT_DATE: ${{ steps.report-date.outputs.report_date }}
@@ -125,6 +123,7 @@ jobs:
               push origin HEAD:refs/heads/reports-history
           fi
       - name: Reuse same-date market data responses
+        if: ${{ false }}
         uses: actions/cache@v4
         with:
           path: .cache/stock-daily-report/*.json
@@ -402,6 +401,7 @@ jobs:
               "${refresh_args[@]}"
           fi
       - name: Persist report history
+        if: ${{ false }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -454,6 +454,7 @@ jobs:
           retention-days: 1
 
   deploy:
+    if: ${{ false }}
     needs: generate
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -466,6 +467,7 @@ jobs:
         uses: actions/deploy-pages@v4
 
   notify:
+    if: ${{ false }}
     needs: [generate, deploy]
     runs-on: ubuntu-latest
     timeout-minutes: 10
