@@ -584,6 +584,69 @@ def test_universe_network_exception_in_worker_uses_the_fallback_provider():
     assert [quote.code for quote in provider.get_quotes()] == ["600519"]
 
 
+def test_sina_fallback_retries_a_stalled_page_in_the_timeout_worker(monkeypatch):
+    import requests
+
+    calls = []
+
+    def get_page(url, **kwargs):
+        assert url == "http://vip.stock.finance.sina.com.cn/page"
+        calls.append(kwargs)
+        if len(calls) < 3:
+            raise requests.exceptions.Timeout("stalled Sina page")
+        assert all(call["timeout"] == 8 for call in calls)
+        return [_row("600519", "贵州茅台")]
+
+    monkeypatch.setattr(requests, "get", get_page)
+    monkeypatch.setattr("stock_daily_report.providers.universe.time.sleep", lambda _: None)
+
+    def primary():
+        raise OSError("primary disconnected")
+
+    provider = AkShareUniverseProvider(
+        fetcher=primary,
+        fallback_fetcher=lambda: requests.get(
+            "http://vip.stock.finance.sina.com.cn/page"
+        ),
+        expected_codes_fetcher=lambda: _expected_codes("600519"),
+        request_timeout_seconds=1,
+    )
+    assert [quote.code for quote in provider.get_quotes()] == ["600519"]
+
+
+@pytest.mark.parametrize(
+    ("url", "expected_attempts"),
+    [
+        ("http://vip.stock.finance.sina.com.cn/page", 4),
+        ("https://other.example/page", 1),
+    ],
+)
+def test_sina_page_retries_are_bounded_and_host_specific(
+    monkeypatch, url, expected_attempts
+):
+    import requests
+
+    calls = []
+
+    def get_page(_url, **kwargs):
+        calls.append(kwargs)
+        raise requests.exceptions.Timeout(f"attempt {len(calls)}")
+
+    monkeypatch.setattr(requests, "get", get_page)
+    monkeypatch.setattr("stock_daily_report.providers.universe.time.sleep", lambda _: None)
+
+    def primary():
+        raise OSError("primary disconnected")
+
+    provider = AkShareUniverseProvider(
+        fetcher=primary,
+        fallback_fetcher=lambda: requests.get(url),
+        request_timeout_seconds=1,
+    )
+    with pytest.raises(ProviderAvailabilityError, match=f"attempt {expected_attempts}"):
+        provider.get_quotes()
+
+
 def test_universe_schema_error_in_worker_does_not_use_fallback():
     import json
 

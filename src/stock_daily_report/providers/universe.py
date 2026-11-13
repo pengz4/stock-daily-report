@@ -11,6 +11,7 @@ from dataclasses import asdict, dataclass
 from datetime import date, datetime
 from pathlib import Path
 from typing import Literal
+from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
 from pydantic import TypeAdapter
@@ -133,11 +134,40 @@ def _worker_exception_name(error: Exception) -> str:
     return type(error).__name__
 
 
+def _fetch_sina_with_page_retries(fetcher: Callable[[], object]) -> object:
+    import requests
+
+    original_get = requests.get
+
+    def bounded_get(url, *args, **kwargs):
+        if urlparse(url).hostname != "vip.stock.finance.sina.com.cn":
+            return original_get(url, *args, **kwargs)
+        kwargs.setdefault("timeout", 8)
+        for attempt in range(4):
+            try:
+                return original_get(url, *args, **kwargs)
+            except requests.exceptions.RequestException:
+                if attempt == 3:
+                    raise
+                time.sleep(attempt + 1)
+
+    # This patch is confined to the forked fetch worker.
+    requests.get = bounded_get
+    try:
+        return fetcher()
+    finally:
+        requests.get = original_get
+
+
 def _universe_fetch_worker(
     connection, fetcher: Callable[[], object], endpoint: str,
 ) -> None:
     try:
-        response = fetcher()
+        response = (
+            _fetch_sina_with_page_retries(fetcher)
+            if endpoint == _FALLBACK_ENDPOINT
+            else fetcher()
+        )
     except ProviderAvailabilityError as error:
         payload = ("availability", error.provider, error.code, error.detail)
     except ProviderDataError as error:
