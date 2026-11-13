@@ -45,7 +45,7 @@ from stock_daily_report.pipeline import (
 )
 from stock_daily_report.providers.base import ProviderError
 from stock_daily_report.providers.service import CacheRollbackError, MarketDataService
-from stock_daily_report.providers.universe import UniverseQuote
+from stock_daily_report.providers.universe import AkShareUniverseProvider, UniverseQuote
 from stock_daily_report.quality.checks import DataQualitySettings
 from stock_daily_report.snapshots import SnapshotError, load_snapshot
 
@@ -3951,6 +3951,51 @@ def test_light_quote_failure_degrades_to_unavailable_pool_overview(
     assert [stock.code for stock in outputs.report.stocks] == ["600519"]
 
 
+def test_default_pool_uses_partial_fallback_after_primary_network_failure(
+    tmp_path, fixture_settings, monkeypatch
+):
+    watchlist = Watchlist(
+        stocks=[
+            {"code": "600519", "name": "贵州茅台", "priority": "core"},
+            {"code": "000001", "name": "平安银行", "priority": "extended"},
+        ]
+    )
+
+    def offline():
+        raise OSError("primary unavailable")
+
+    def default_provider(**options):
+        return AkShareUniverseProvider(
+            fetcher=offline,
+            fallback_fetcher=lambda: [
+                {"代码": "sh600519", "名称": "贵州茅台", "最新价": 1500.0,
+                 "成交量": 1000, "成交额": 1500000},
+                {"代码": "sz000001", "名称": "平安银行", "最新价": 10.5,
+                 "成交量": 1000, "成交额": 10500},
+            ],
+            expected_codes_fetcher=lambda: [
+                {"code": "600519"}, {"code": "000001"}, {"code": "689009"}
+            ],
+            clock=lambda: date(2026, 9, 4),
+            **options,
+        )
+
+    monkeypatch.setattr(pipeline_module, "AkShareUniverseProvider", default_provider)
+    outputs = run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        report_date=date(2026, 9, 4),
+        now=lambda: datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
+    )
+
+    pool = outputs.report.pool_overview
+    assert pool is not None
+    assert pool.unavailable_reason is None
+    assert all(row.latest_price is not None for row in pool.rows)
+
+
 def test_historical_report_does_not_fetch_default_live_pool_quotes(
     tmp_path, fixture_settings, monkeypatch
 ):
@@ -4281,6 +4326,7 @@ def test_report_metadata_stock_count_includes_lightweight_watchlist_entries(
         output_root=tmp_path,
         watchlist=watchlist,
         provider=RecordingProvider({"600519": make_bars("600519")}),
+        universe_provider=FakeUniverseProvider(),
         report_date=date(2026, 9, 4),
         now=lambda: datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
     )
@@ -4343,6 +4389,7 @@ def test_overwrite_snapshot_replaces_same_date_snapshot_for_new_deep_set(
         output_root=tmp_path,
         watchlist=watchlist,
         provider=provider,
+        universe_provider=FakeUniverseProvider(),
         report_date=date(2026, 9, 4),
         now=lambda: datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
     )

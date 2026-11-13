@@ -435,8 +435,9 @@ def test_universe_request_reports_both_unavailable_attempts():
         pytest.param(IndexError("empty Sina count response"), id="index-error"),
     ],
 )
+@pytest.mark.parametrize("request_timeout_seconds", [None, 1])
 def test_sina_invalid_remote_responses_report_both_unavailable_attempts(
-    fallback_error,
+    fallback_error, request_timeout_seconds,
 ):
     def unavailable_primary():
         raise OSError("eastmoney disconnected")
@@ -447,6 +448,7 @@ def test_sina_invalid_remote_responses_report_both_unavailable_attempts(
     provider = AkShareUniverseProvider(
         fetcher=unavailable_primary,
         fallback_fetcher=unavailable_fallback,
+        request_timeout_seconds=request_timeout_seconds,
     )
 
     with pytest.raises(ProviderAvailabilityError) as raised:

@@ -226,7 +226,10 @@ def _fetch_light_quotes(
         return {}, None
     if universe_provider is None and report_date != current_market_date:
         return {}, "historical_pool_snapshot_unavailable"
-    provider = universe_provider or AkShareUniverseProvider()
+    provider = universe_provider or AkShareUniverseProvider(
+        max_missing_codes=1,
+        request_timeout_seconds=120,
+    )
     try:
         quotes = provider.get_quotes()
     except (ProviderError, ImportError, OSError) as error:

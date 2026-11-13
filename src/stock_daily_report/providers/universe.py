@@ -133,7 +133,9 @@ def _worker_exception_name(error: Exception) -> str:
     return type(error).__name__
 
 
-def _universe_fetch_worker(connection, fetcher: Callable[[], object]) -> None:
+def _universe_fetch_worker(
+    connection, fetcher: Callable[[], object], endpoint: str,
+) -> None:
     try:
         response = fetcher()
     except ProviderAvailabilityError as error:
@@ -147,6 +149,13 @@ def _universe_fetch_worker(connection, fetcher: Callable[[], object]) -> None:
     except Exception as error:  # noqa: BLE001
         if _is_request_error(error):
             payload = ("exception", "OSError", str(error))
+        elif endpoint == _FALLBACK_ENDPOINT and isinstance(
+            error, _sina_invalid_response_errors()
+        ):
+            payload = (
+                "availability", "akshare", "invalid_remote_response",
+                f"{endpoint} returned an invalid remote response: {error}",
+            )
         else:
             payload = ("unexpected", type(error).__name__, str(error))
     else:
@@ -173,7 +182,7 @@ def _fetch_with_timeout(
     parent, child = context.Pipe(duplex=False)
     process = context.Process(
         target=_universe_fetch_worker,
-        args=(child, fetcher),
+        args=(child, fetcher, endpoint),
     )
     process.start()
     child.close()
