@@ -5,6 +5,7 @@ import subprocess
 import sys
 import threading
 import time
+from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
@@ -3948,6 +3949,129 @@ def test_light_quote_failure_degrades_to_unavailable_pool_overview(
     assert pool.unavailable_reason is not None
     assert all(row.latest_price is None for row in pool.rows)
     assert [stock.code for stock in outputs.report.stocks] == ["600519"]
+
+
+def test_historical_report_does_not_fetch_default_live_pool_quotes(
+    tmp_path, fixture_settings, monkeypatch
+):
+    watchlist = Watchlist(
+        stocks=[
+            {"code": "600519", "name": "贵州茅台", "priority": "core"},
+            {"code": "000001", "name": "平安银行", "priority": "extended"},
+        ]
+    )
+    universe = FakeUniverseProvider(
+        quotes=[_light_quote("000001", "平安银行", 10.5, -0.45, 900_000.0)]
+    )
+    monkeypatch.setattr(pipeline_module, "AkShareUniverseProvider", lambda: universe)
+
+    outputs = run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        report_date=date(2026, 9, 4),
+        now=lambda: datetime(2026, 9, 4, 16, 0, tzinfo=UTC),
+    )
+
+    assert universe.calls == 0
+    pool = outputs.report.pool_overview
+    assert pool is not None
+    assert pool.unavailable_reason == "historical_pool_snapshot_unavailable"
+    assert all(row.latest_price is None for row in pool.rows)
+    assert "缺少指定日期的全池行情快照" in outputs.html_path.read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("other_date", [date(2026, 9, 3), date(2026, 9, 5)])
+def test_pool_rejects_mixed_or_wrong_quote_dates(
+    tmp_path, fixture_settings, other_date
+):
+    watchlist = Watchlist(
+        stocks=[
+            {"code": "600519", "name": "贵州茅台", "priority": "core"},
+            {"code": "000001", "name": "平安银行", "priority": "extended"},
+        ]
+    )
+    universe = FakeUniverseProvider(
+        quotes=[
+            _light_quote("600519", "贵州茅台", 1500.0, 1.23, 3_000_000.0),
+            replace(
+                _light_quote("000001", "平安银行", 10.5, -0.45, 900_000.0),
+                quote_date=other_date,
+            ),
+        ]
+    )
+
+    outputs = run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        universe_provider=universe,
+        report_date=date(2026, 9, 4),
+        now=lambda: datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
+    )
+
+    pool = outputs.report.pool_overview
+    assert pool is not None
+    assert pool.unavailable_reason == "pool_quote_date_mismatch"
+    assert all(row.latest_price is None for row in pool.rows)
+    assert "全池行情日期与报告日期不一致" in outputs.html_path.read_text(encoding="utf-8")
+
+
+def test_historical_report_accepts_matching_supplied_pool_quotes(
+    tmp_path, fixture_settings
+):
+    watchlist = Watchlist(
+        stocks=[
+            {"code": "600519", "name": "贵州茅台", "priority": "core"},
+            {"code": "000001", "name": "平安银行", "priority": "extended"},
+        ]
+    )
+    universe = FakeUniverseProvider(
+        quotes=[_light_quote("000001", "平安银行", 10.5, -0.45, 900_000.0)]
+    )
+
+    outputs = run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        universe_provider=universe,
+        report_date=date(2026, 9, 4),
+        now=lambda: datetime(2026, 9, 4, 16, 0, tzinfo=UTC),
+    )
+
+    pool = outputs.report.pool_overview
+    assert pool is not None
+    assert pool.unavailable_reason is None
+    assert next(row for row in pool.rows if row.code == "000001").latest_price == 10.5
+
+
+def test_stored_report_with_wrong_pool_date_is_rejected(tmp_path, fixture_settings):
+    watchlist = Watchlist(
+        stocks=[
+            {"code": "600519", "name": "贵州茅台", "priority": "core"},
+            {"code": "000001", "name": "平安银行", "priority": "extended"},
+        ]
+    )
+    universe = FakeUniverseProvider(
+        quotes=[_light_quote("000001", "平安银行", 10.5, -0.45, 900_000.0)]
+    )
+    outputs = run_daily_report(
+        fixture_settings,
+        output_root=tmp_path,
+        watchlist=watchlist,
+        provider=RecordingProvider({"600519": make_bars("600519")}),
+        universe_provider=universe,
+        report_date=date(2026, 9, 4),
+        now=lambda: datetime(2026, 9, 4, 9, 30, tzinfo=UTC),
+    )
+    document = json.loads(outputs.json_path.read_text(encoding="utf-8"))
+    document["pool_overview"]["quote_date"] = "2026-09-05"
+
+    with pytest.raises(ValueError, match="pool quote date must match report date"):
+        pipeline_module.ReportDocument.model_validate(document)
 
 
 def test_watchlist_with_priorities_requires_at_least_one_core_stock(

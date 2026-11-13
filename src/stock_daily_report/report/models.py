@@ -385,6 +385,11 @@ class ReportDocument(BaseModel):
             and self.etf_tracker.current.report_date != self.metadata.report_date
         ):
             raise ValueError("ETF tracker date must match report date")
+        if (
+            self.pool_overview is not None
+            and self.pool_overview.quote_date != self.metadata.report_date
+        ):
+            raise ValueError("pool quote date must match report date")
         if self.market_state_identity is not None and self.market_state is None:
             raise ValueError(
                 "market_state_identity requires a market_state payload"

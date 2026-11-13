@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from math import fsum
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from pydantic import ValidationError
 
@@ -100,6 +101,7 @@ _MAX_PUBLICATION_MANIFEST_BYTES = 1024 * 1024
 # lightweight pool overview backed by one bulk quote snapshot.
 _DEEP_ANALYSIS_LIMIT = 20
 _WATCHLIST_SCAN_DIRECTORY = "watchlist-scans"
+_SHANGHAI_TIME = ZoneInfo("Asia/Shanghai")
 _PUBLICATION_QUARANTINE_NAME = "quarantine.json"
 _MANIFESTLESS_PAYLOAD_ROOTS = frozenset({"reports", "snapshots", "site"})
 _PUBLICATION_EVIDENCE_NAMES = frozenset(
@@ -210,6 +212,9 @@ def _fetch_light_quotes(
     watchlist: Watchlist,
     extended_stocks: Sequence[WatchlistStock],
     universe_provider: AkShareUniverseProvider | None,
+    *,
+    report_date: date,
+    current_market_date: date,
 ) -> tuple[dict[str, UniverseQuote], str | None]:
     """Fetch one bulk quote snapshot for the pool overview.
 
@@ -219,11 +224,15 @@ def _fetch_light_quotes(
     """
     if not extended_stocks:
         return {}, None
+    if universe_provider is None and report_date != current_market_date:
+        return {}, "historical_pool_snapshot_unavailable"
     provider = universe_provider or AkShareUniverseProvider()
     try:
         quotes = provider.get_quotes()
     except (ProviderError, ImportError, OSError) as error:
         return {}, str(error)
+    if any(quote.quote_date != report_date for quote in quotes):
+        return {}, "pool_quote_date_mismatch"
     wanted = {stock.code for stock in watchlist.stocks}
     return {quote.code: quote for quote in quotes if quote.code in wanted}, None
 
@@ -500,7 +509,11 @@ def run_daily_report(
                     ]
                 )
             light_quotes, light_quote_error = _fetch_light_quotes(
-                active_watchlist, extended_stocks, universe_provider
+                active_watchlist,
+                extended_stocks,
+                universe_provider,
+                report_date=active_report_date,
+                current_market_date=generated_at.astimezone(_SHANGHAI_TIME).date(),
             )
             if failures:
                 raise PipelineError(failures)

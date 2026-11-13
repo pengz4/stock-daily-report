@@ -140,6 +140,8 @@ REASON_LABELS: Mapping[str, str] = {
     "insufficient_latest_amount": "最新成交额不足",
     "stale_quote_date": "行情日期过旧",
     "future_quote_date": "行情日期晚于报告日期",
+    "historical_pool_snapshot_unavailable": "缺少指定日期的全池行情快照",
+    "pool_quote_date_mismatch": "全池行情日期与报告日期不一致",
     "suspended_latest_bar": "最新K线显示停牌",
     "data_quality_rejected": "数据质量未通过",
     "scoring_failed": "评分失败",
