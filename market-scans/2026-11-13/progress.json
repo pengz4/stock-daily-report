@@ -19281,36 +19281,6 @@
       }
     },
     {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_metrics": [],
-      "provider_name": "MarketDataService",
-      "provider_names": [
-        "MarketDataService"
-      ],
-      "quote": {
-        "amount": 939310640.0,
-        "change_pct": 0.23,
-        "code": "000792",
-        "latest_price": 21.77,
-        "market": "SZ",
-        "name": "盐湖股份",
-        "quote_date": "2026-11-13",
-        "volume": 42693015.0
-      },
-      "scores": null,
-      "status": {
-        "code": "000792",
-        "name": "盐湖股份",
-        "provider_name": "MarketDataService",
-        "provider_names": [],
-        "reason_codes": [
-          "fetch_timeout"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
       "history_hash": "661fd9a1a8a5eab26915c4962202e2a2f94708d3b66debad1ad4f15c235ecbb8",
       "latest_trade_date": "2026-11-13",
       "provider_metrics": [
@@ -21334,1266 +21304,6 @@
         "provider_names": [],
         "reason_codes": [],
         "status": "valid"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_metrics": [
-        {
-          "cache_hit": false,
-          "duration_ms": 910,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": false
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 67969,
-          "error_code": "network_error",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 932,
-          "error_code": "network_error",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        }
-      ],
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "selection",
-        "sina"
-      ],
-      "quote": {
-        "amount": 87059743.0,
-        "change_pct": -0.708,
-        "code": "000795",
-        "latest_price": 8.42,
-        "market": "SZ",
-        "name": "英洛华",
-        "quote_date": "2026-11-13",
-        "volume": 10277698.0
-      },
-      "scores": null,
-      "status": {
-        "code": "000795",
-        "name": "英洛华",
-        "provider_name": "selection",
-        "provider_names": [
-          "akshare",
-          "sina"
-        ],
-        "reason_codes": [
-          "all_providers_failed"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_metrics": [
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": false
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        }
-      ],
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "selection",
-        "sina"
-      ],
-      "quote": {
-        "amount": 99554836.0,
-        "change_pct": 1.407,
-        "code": "000848",
-        "latest_price": 7.93,
-        "market": "SZ",
-        "name": "承德露露",
-        "quote_date": "2026-11-13",
-        "volume": 12572435.0
-      },
-      "scores": null,
-      "status": {
-        "code": "000848",
-        "name": "承德露露",
-        "provider_name": "selection",
-        "provider_names": [
-          "akshare",
-          "sina"
-        ],
-        "reason_codes": [
-          "all_providers_failed"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_metrics": [
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": false
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 66480,
-          "error_code": "network_error",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        }
-      ],
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "selection",
-        "sina"
-      ],
-      "quote": {
-        "amount": 345598419.0,
-        "change_pct": -1.487,
-        "code": "000815",
-        "latest_price": 13.25,
-        "market": "SZ",
-        "name": "美利云",
-        "quote_date": "2026-11-13",
-        "volume": 25722579.0
-      },
-      "scores": null,
-      "status": {
-        "code": "000815",
-        "name": "美利云",
-        "provider_name": "selection",
-        "provider_names": [
-          "akshare",
-          "sina"
-        ],
-        "reason_codes": [
-          "all_providers_failed"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_metrics": [
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": false
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 530,
-          "error_code": "network_error",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        }
-      ],
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "selection",
-        "sina"
-      ],
-      "quote": {
-        "amount": 1787998269.0,
-        "change_pct": 1.033,
-        "code": "000858",
-        "latest_price": 73.38,
-        "market": "SZ",
-        "name": "五 粮 液",
-        "quote_date": "2026-11-13",
-        "volume": 24500404.0
-      },
-      "scores": null,
-      "status": {
-        "code": "000858",
-        "name": "五 粮 液",
-        "provider_name": "selection",
-        "provider_names": [
-          "akshare",
-          "sina"
-        ],
-        "reason_codes": [
-          "all_providers_failed"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_metrics": [
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": false
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 508,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        }
-      ],
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "selection",
-        "sina"
-      ],
-      "quote": {
-        "amount": 214203965.0,
-        "change_pct": -2.144,
-        "code": "000859",
-        "latest_price": 7.76,
-        "market": "SZ",
-        "name": "国风新材",
-        "quote_date": "2026-11-13",
-        "volume": 26921100.0
-      },
-      "scores": null,
-      "status": {
-        "code": "000859",
-        "name": "国风新材",
-        "provider_name": "selection",
-        "provider_names": [
-          "akshare",
-          "sina"
-        ],
-        "reason_codes": [
-          "all_providers_failed"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_metrics": [
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": false
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        }
-      ],
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "selection",
-        "sina"
-      ],
-      "quote": {
-        "amount": 320845200.0,
-        "change_pct": 3.279,
-        "code": "000860",
-        "latest_price": 11.97,
-        "market": "SZ",
-        "name": "顺鑫农业",
-        "quote_date": "2026-11-13",
-        "volume": 27136279.0
-      },
-      "scores": null,
-      "status": {
-        "code": "000860",
-        "name": "顺鑫农业",
-        "provider_name": "selection",
-        "provider_names": [
-          "akshare",
-          "sina"
-        ],
-        "reason_codes": [
-          "all_providers_failed"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_metrics": [
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": false
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        }
-      ],
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "selection",
-        "sina"
-      ],
-      "quote": {
-        "amount": 67099943.0,
-        "change_pct": -0.242,
-        "code": "000863",
-        "latest_price": 4.12,
-        "market": "SZ",
-        "name": "三湘印象",
-        "quote_date": "2026-11-13",
-        "volume": 16125893.0
-      },
-      "scores": null,
-      "status": {
-        "code": "000863",
-        "name": "三湘印象",
-        "provider_name": "selection",
-        "provider_names": [
-          "akshare",
-          "sina"
-        ],
-        "reason_codes": [
-          "all_providers_failed"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_metrics": [
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": false
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        }
-      ],
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "selection",
-        "sina"
-      ],
-      "quote": {
-        "amount": 162897849.0,
-        "change_pct": -2.457,
-        "code": "000875",
-        "latest_price": 3.97,
-        "market": "SZ",
-        "name": "电投绿能",
-        "quote_date": "2026-11-13",
-        "volume": 40649611.0
-      },
-      "scores": null,
-      "status": {
-        "code": "000875",
-        "name": "电投绿能",
-        "provider_name": "selection",
-        "provider_names": [
-          "akshare",
-          "sina"
-        ],
-        "reason_codes": [
-          "all_providers_failed"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_metrics": [
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": false
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 74027,
-          "error_code": "network_error",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        }
-      ],
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "selection",
-        "sina"
-      ],
-      "quote": {
-        "amount": 53973455.0,
-        "change_pct": -0.913,
-        "code": "000828",
-        "latest_price": 9.77,
-        "market": "SZ",
-        "name": "东莞控股",
-        "quote_date": "2026-11-13",
-        "volume": 5486590.0
-      },
-      "scores": null,
-      "status": {
-        "code": "000828",
-        "name": "东莞控股",
-        "provider_name": "selection",
-        "provider_names": [
-          "akshare",
-          "sina"
-        ],
-        "reason_codes": [
-          "all_providers_failed"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_metrics": [
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": false
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 65506,
-          "error_code": "network_error",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        }
-      ],
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "selection",
-        "sina"
-      ],
-      "quote": {
-        "amount": 85702362.0,
-        "change_pct": -0.403,
-        "code": "000839",
-        "latest_price": 2.47,
-        "market": "SZ",
-        "name": "国安股份",
-        "quote_date": "2026-11-13",
-        "volume": 34627951.0
-      },
-      "scores": null,
-      "status": {
-        "code": "000839",
-        "name": "国安股份",
-        "provider_name": "selection",
-        "provider_names": [
-          "akshare",
-          "sina"
-        ],
-        "reason_codes": [
-          "all_providers_failed"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_metrics": [
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": false
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        }
-      ],
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "selection",
-        "sina"
-      ],
-      "quote": {
-        "amount": 261656444.0,
-        "change_pct": 2.158,
-        "code": "000876",
-        "latest_price": 7.1,
-        "market": "SZ",
-        "name": "新 希 望",
-        "quote_date": "2026-11-13",
-        "volume": 36905369.0
-      },
-      "scores": null,
-      "status": {
-        "code": "000876",
-        "name": "新 希 望",
-        "provider_name": "selection",
-        "provider_names": [
-          "akshare",
-          "sina"
-        ],
-        "reason_codes": [
-          "all_providers_failed"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_metrics": [
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": false
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        }
-      ],
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "selection",
-        "sina"
-      ],
-      "quote": {
-        "amount": 73957405.0,
-        "change_pct": -4.235,
-        "code": "000877",
-        "latest_price": 2.94,
-        "market": "SZ",
-        "name": "天山股份",
-        "quote_date": "2026-11-13",
-        "volume": 24790029.0
-      },
-      "scores": null,
-      "status": {
-        "code": "000877",
-        "name": "天山股份",
-        "provider_name": "selection",
-        "provider_names": [
-          "akshare",
-          "sina"
-        ],
-        "reason_codes": [
-          "all_providers_failed"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_metrics": [
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": false
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 554,
-          "error_code": "network_error",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        }
-      ],
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "selection",
-        "sina"
-      ],
-      "quote": {
-        "amount": 313977894.0,
-        "change_pct": -2.765,
-        "code": "000878",
-        "latest_price": 13.01,
-        "market": "SZ",
-        "name": "云南铜业",
-        "quote_date": "2026-11-13",
-        "volume": 23807361.0
-      },
-      "scores": null,
-      "status": {
-        "code": "000878",
-        "name": "云南铜业",
-        "provider_name": "selection",
-        "provider_names": [
-          "akshare",
-          "sina"
-        ],
-        "reason_codes": [
-          "all_providers_failed"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_metrics": [
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": false
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        }
-      ],
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "selection",
-        "sina"
-      ],
-      "quote": {
-        "amount": 303079544.0,
-        "change_pct": -5.149,
-        "code": "000880",
-        "latest_price": 19.16,
-        "market": "SZ",
-        "name": "潍柴重机",
-        "quote_date": "2026-11-13",
-        "volume": 15468906.0
-      },
-      "scores": null,
-      "status": {
-        "code": "000880",
-        "name": "潍柴重机",
-        "provider_name": "selection",
-        "provider_names": [
-          "akshare",
-          "sina"
-        ],
-        "reason_codes": [
-          "all_providers_failed"
-        ],
-        "status": "history_failed"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_metrics": [
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": false
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "akshare",
-          "retry": true
-        },
-        {
-          "cache_hit": false,
-          "duration_ms": 0,
-          "error_code": "provider_circuit_open",
-          "outcome": "failure",
-          "provider_name": "sina",
-          "retry": true
-        }
-      ],
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "selection",
-        "sina"
-      ],
-      "quote": {
-        "amount": 124585865.0,
-        "change_pct": -3.378,
-        "code": "000882",
-        "latest_price": 1.43,
-        "market": "SZ",
-        "name": "华联股份",
-        "quote_date": "2026-11-13",
-        "volume": 85931271.0
-      },
-      "scores": null,
-      "status": {
-        "code": "000882",
-        "name": "华联股份",
-        "provider_name": "selection",
-        "provider_names": [
-          "akshare",
-          "sina"
-        ],
-        "reason_codes": [
-          "all_providers_failed"
-        ],
-        "status": "history_failed"
       }
     },
     {
@@ -117063,36 +115773,6 @@
         "provider_names": [],
         "reason_codes": [],
         "status": "valid"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_metrics": [],
-      "provider_name": "MarketDataService",
-      "provider_names": [
-        "MarketDataService"
-      ],
-      "quote": {
-        "amount": 342686027.0,
-        "change_pct": -3.852,
-        "code": "300065",
-        "latest_price": 12.98,
-        "market": "SZ",
-        "name": "海兰信",
-        "quote_date": "2026-11-13",
-        "volume": 25824082.0
-      },
-      "scores": null,
-      "status": {
-        "code": "300065",
-        "name": "海兰信",
-        "provider_name": "MarketDataService",
-        "provider_names": [],
-        "reason_codes": [
-          "fetch_timeout"
-        ],
-        "status": "history_failed"
       }
     },
     {
@@ -214708,36 +213388,6 @@
         "provider_names": [],
         "reason_codes": [],
         "status": "valid"
-      }
-    },
-    {
-      "history_hash": null,
-      "latest_trade_date": null,
-      "provider_metrics": [],
-      "provider_name": "MarketDataService",
-      "provider_names": [
-        "MarketDataService"
-      ],
-      "quote": {
-        "amount": 324564847.0,
-        "change_pct": 1.22,
-        "code": "600312",
-        "latest_price": 20.75,
-        "market": "SH",
-        "name": "平高电气",
-        "quote_date": "2026-11-13",
-        "volume": 15533600.0
-      },
-      "scores": null,
-      "status": {
-        "code": "600312",
-        "name": "平高电气",
-        "provider_name": "MarketDataService",
-        "provider_names": [],
-        "reason_codes": [
-          "fetch_timeout"
-        ],
-        "status": "history_failed"
       }
     },
     {
@@ -360223,10 +358873,1705 @@
         "reason_codes": [],
         "status": "valid"
       }
+    },
+    {
+      "history_hash": "82e103f235ff676889e37c018968ce648f0d56a819b78969dc21d0c1f17501f2",
+      "latest_trade_date": "2026-11-13",
+      "provider_metrics": [
+        {
+          "cache_hit": false,
+          "duration_ms": 1772,
+          "error_code": null,
+          "outcome": "success",
+          "provider_name": "akshare",
+          "retry": false
+        }
+      ],
+      "provider_name": "akshare",
+      "provider_names": [
+        "akshare"
+      ],
+      "quote": {
+        "amount": 345598419.0,
+        "change_pct": -1.487,
+        "code": "000815",
+        "latest_price": 13.25,
+        "market": "SZ",
+        "name": "美利云",
+        "quote_date": "2026-11-13",
+        "volume": 25722579.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-11-13",
+          "code": "000815",
+          "components": {
+            "momentum": 20.0,
+            "risk": 42.96576687202062,
+            "structure": 85.0,
+            "trend": 9.75,
+            "volume": 26.695029997119892
+          },
+          "evidence_codes": [
+            "macd_line_above_signal",
+            "positive_macd_histogram",
+            "trailing_volume_observed",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure"
+          ],
+          "profile": "balanced",
+          "risk_codes": [
+            "high_realized_volatility",
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 34.374119530371075
+        },
+        "trend": {
+          "as_of": "2026-11-13",
+          "code": "000815",
+          "components": {
+            "momentum": 20.0,
+            "risk": 42.96576687202062,
+            "structure": 85.0,
+            "trend": 9.75,
+            "volume": 26.695029997119892
+          },
+          "evidence_codes": [
+            "macd_line_above_signal",
+            "positive_macd_histogram",
+            "trailing_volume_observed"
+          ],
+          "profile": "trend",
+          "risk_codes": [
+            "high_realized_volatility",
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 18.688331186770046
+        }
+      },
+      "status": {
+        "code": "000815",
+        "name": "美利云",
+        "provider_name": "akshare",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "e1399adb48d9b9fff5fbf50d5701cd07ec7e85844f22c7ebee4549dfaea8ac40",
+      "latest_trade_date": "2026-11-13",
+      "provider_metrics": [
+        {
+          "cache_hit": false,
+          "duration_ms": 2237,
+          "error_code": null,
+          "outcome": "success",
+          "provider_name": "akshare",
+          "retry": false
+        }
+      ],
+      "provider_name": "akshare",
+      "provider_names": [
+        "akshare"
+      ],
+      "quote": {
+        "amount": 939310640.0,
+        "change_pct": 0.23,
+        "code": "000792",
+        "latest_price": 21.77,
+        "market": "SZ",
+        "name": "盐湖股份",
+        "quote_date": "2026-11-13",
+        "volume": 42693015.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-11-13",
+          "code": "000792",
+          "components": {
+            "momentum": 20.0,
+            "risk": 77.41915870401587,
+            "structure": 85.0,
+            "trend": 9.75,
+            "volume": 43.16534703617414
+          },
+          "evidence_codes": [
+            "macd_line_above_signal",
+            "positive_macd_histogram",
+            "trailing_volume_observed",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure"
+          ],
+          "profile": "balanced",
+          "risk_codes": [
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 42.0126758610285
+        },
+        "trend": {
+          "as_of": "2026-11-13",
+          "code": "000792",
+          "components": {
+            "momentum": 20.0,
+            "risk": 77.41915870401587,
+            "structure": 85.0,
+            "trend": 9.75,
+            "volume": 43.16534703617414
+          },
+          "evidence_codes": [
+            "macd_line_above_signal",
+            "positive_macd_histogram",
+            "trailing_volume_observed"
+          ],
+          "profile": "trend",
+          "risk_codes": [
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 24.604217925827708
+        }
+      },
+      "status": {
+        "code": "000792",
+        "name": "盐湖股份",
+        "provider_name": "akshare",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "05ec00b5d6417db9ddaf2513e346ba22ef5467c063a5fc3d7080ccced52a5e42",
+      "latest_trade_date": "2026-11-13",
+      "provider_metrics": [
+        {
+          "cache_hit": false,
+          "duration_ms": 3238,
+          "error_code": null,
+          "outcome": "success",
+          "provider_name": "akshare",
+          "retry": false
+        }
+      ],
+      "provider_name": "akshare",
+      "provider_names": [
+        "akshare"
+      ],
+      "quote": {
+        "amount": 53973455.0,
+        "change_pct": -0.913,
+        "code": "000828",
+        "latest_price": 9.77,
+        "market": "SZ",
+        "name": "东莞控股",
+        "quote_date": "2026-11-13",
+        "volume": 5486590.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-11-13",
+          "code": "000828",
+          "components": {
+            "momentum": 13.32040399377679,
+            "risk": 100.0,
+            "structure": 85.0,
+            "trend": 18.324259342927505,
+            "volume": 46.7168237572392
+          },
+          "evidence_codes": [
+            "ma60_above_ma120",
+            "ma60_slope_positive",
+            "positive_60_day_momentum",
+            "trailing_volume_observed",
+            "risk_measures_within_moderate_ranges",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure"
+          ],
+          "profile": "balanced",
+          "risk_codes": [],
+          "rule_version": "market-scan-v1",
+          "total": 47.168882165219486
+        },
+        "trend": {
+          "as_of": "2026-11-13",
+          "code": "000828",
+          "components": {
+            "momentum": 13.32040399377679,
+            "risk": 100.0,
+            "structure": 85.0,
+            "trend": 18.324259342927505,
+            "volume": 46.7168237572392
+          },
+          "evidence_codes": [
+            "ma60_above_ma120",
+            "ma60_slope_positive",
+            "positive_60_day_momentum",
+            "trailing_volume_observed",
+            "risk_measures_within_moderate_ranges"
+          ],
+          "profile": "trend",
+          "risk_codes": [],
+          "rule_version": "market-scan-v1",
+          "total": 29.249561466036294
+        }
+      },
+      "status": {
+        "code": "000828",
+        "name": "东莞控股",
+        "provider_name": "akshare",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "6d16e05b64b1465ff1ae03e185e01750d458863f82c2fa0b4a3f5e725ee36a8d",
+      "latest_trade_date": "2026-11-13",
+      "provider_metrics": [
+        {
+          "cache_hit": false,
+          "duration_ms": 2469,
+          "error_code": null,
+          "outcome": "success",
+          "provider_name": "akshare",
+          "retry": false
+        }
+      ],
+      "provider_name": "akshare",
+      "provider_names": [
+        "akshare"
+      ],
+      "quote": {
+        "amount": 85702362.0,
+        "change_pct": -0.403,
+        "code": "000839",
+        "latest_price": 2.47,
+        "market": "SZ",
+        "name": "国安股份",
+        "quote_date": "2026-11-13",
+        "volume": 34627951.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-11-13",
+          "code": "000839",
+          "components": {
+            "momentum": 20.0,
+            "risk": 75.32477011478477,
+            "structure": 85.0,
+            "trend": 9.75,
+            "volume": 38.09310486176649
+          },
+          "evidence_codes": [
+            "macd_line_above_signal",
+            "positive_macd_histogram",
+            "trailing_volume_observed",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure"
+          ],
+          "profile": "balanced",
+          "risk_codes": [
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 40.93768124648269
+        },
+        "trend": {
+          "as_of": "2026-11-13",
+          "code": "000839",
+          "components": {
+            "momentum": 20.0,
+            "risk": 75.32477011478477,
+            "structure": 85.0,
+            "trend": 9.75,
+            "volume": 38.09310486176649
+          },
+          "evidence_codes": [
+            "macd_line_above_signal",
+            "positive_macd_histogram",
+            "trailing_volume_observed"
+          ],
+          "profile": "trend",
+          "risk_codes": [
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 23.63394274074345
+        }
+      },
+      "status": {
+        "code": "000839",
+        "name": "国安股份",
+        "provider_name": "akshare",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "fa390a3787cf6c1bf891902956071d418fdfde1d2a742007e7e7b09d4e462f74",
+      "latest_trade_date": "2026-11-13",
+      "provider_metrics": [
+        {
+          "cache_hit": false,
+          "duration_ms": 2964,
+          "error_code": "network_error",
+          "outcome": "failure",
+          "provider_name": "akshare",
+          "retry": false
+        },
+        {
+          "cache_hit": false,
+          "duration_ms": 3852,
+          "error_code": null,
+          "outcome": "success",
+          "provider_name": "sina",
+          "retry": true
+        }
+      ],
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 99554836.0,
+        "change_pct": 1.407,
+        "code": "000848",
+        "latest_price": 7.93,
+        "market": "SZ",
+        "name": "承德露露",
+        "quote_date": "2026-11-13",
+        "volume": 12572435.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-11-13",
+          "code": "000848",
+          "components": {
+            "momentum": 21.969402307792034,
+            "risk": 80.13113598623366,
+            "structure": 85.0,
+            "trend": 32.5,
+            "volume": 29.443233362649806
+          },
+          "evidence_codes": [
+            "close_above_ma20",
+            "macd_line_above_signal",
+            "positive_macd_histogram",
+            "trailing_volume_observed",
+            "risk_measures_within_moderate_ranges",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure"
+          ],
+          "profile": "balanced",
+          "risk_codes": [],
+          "rule_version": "market-scan-v1",
+          "total": 47.58003586389093
+        },
+        "trend": {
+          "as_of": "2026-11-13",
+          "code": "000848",
+          "components": {
+            "momentum": 21.969402307792034,
+            "risk": 80.13113598623366,
+            "structure": 85.0,
+            "trend": 32.5,
+            "volume": 29.443233362649806
+          },
+          "evidence_codes": [
+            "close_above_ma20",
+            "macd_line_above_signal",
+            "positive_macd_histogram",
+            "trailing_volume_observed",
+            "risk_measures_within_moderate_ranges"
+          ],
+          "profile": "trend",
+          "risk_codes": [],
+          "rule_version": "market-scan-v1",
+          "total": 33.64541929535845
+        }
+      },
+      "status": {
+        "code": "000848",
+        "name": "承德露露",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "c1b42f3393469b28ab48aafd101903e110fa690308798cebaeb38091107f2698",
+      "latest_trade_date": "2026-11-13",
+      "provider_metrics": [
+        {
+          "cache_hit": false,
+          "duration_ms": 2032,
+          "error_code": "provider_circuit_open",
+          "outcome": "failure",
+          "provider_name": "akshare",
+          "retry": false
+        },
+        {
+          "cache_hit": false,
+          "duration_ms": 3811,
+          "error_code": null,
+          "outcome": "success",
+          "provider_name": "sina",
+          "retry": true
+        }
+      ],
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 1787998269.0,
+        "change_pct": 1.033,
+        "code": "000858",
+        "latest_price": 73.38,
+        "market": "SZ",
+        "name": "五 粮 液",
+        "quote_date": "2026-11-13",
+        "volume": 24500404.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-11-13",
+          "code": "000858",
+          "components": {
+            "momentum": 21.31598966344349,
+            "risk": 98.4625481144642,
+            "structure": 85.0,
+            "trend": 35.722889019642736,
+            "volume": 42.390186655153855
+          },
+          "evidence_codes": [
+            "ma20_above_ma60",
+            "ma20_slope_positive",
+            "positive_20_day_momentum",
+            "trailing_volume_observed",
+            "volume_with_positive_price_change",
+            "risk_measures_within_moderate_ranges",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure"
+          ],
+          "profile": "balanced",
+          "risk_codes": [],
+          "rule_version": "market-scan-v1",
+          "total": 53.10797485402423
+        },
+        "trend": {
+          "as_of": "2026-11-13",
+          "code": "000858",
+          "components": {
+            "momentum": 21.31598966344349,
+            "risk": 98.4625481144642,
+            "structure": 85.0,
+            "trend": 35.722889019642736,
+            "volume": 42.390186655153855
+          },
+          "evidence_codes": [
+            "ma20_above_ma60",
+            "ma20_slope_positive",
+            "positive_20_day_momentum",
+            "trailing_volume_observed",
+            "volume_with_positive_price_change",
+            "risk_measures_within_moderate_ranges"
+          ],
+          "profile": "trend",
+          "risk_codes": [],
+          "rule_version": "market-scan-v1",
+          "total": 38.674879767591776
+        }
+      },
+      "status": {
+        "code": "000858",
+        "name": "五 粮 液",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "a5c6b0ae7c3f593129dfb216de2ef441a3657ff0291a1939793ee180264c9ac6",
+      "latest_trade_date": "2026-11-13",
+      "provider_metrics": [
+        {
+          "cache_hit": false,
+          "duration_ms": 995,
+          "error_code": "provider_circuit_open",
+          "outcome": "failure",
+          "provider_name": "akshare",
+          "retry": false
+        },
+        {
+          "cache_hit": false,
+          "duration_ms": 3925,
+          "error_code": null,
+          "outcome": "success",
+          "provider_name": "sina",
+          "retry": true
+        }
+      ],
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 214203965.0,
+        "change_pct": -2.144,
+        "code": "000859",
+        "latest_price": 7.76,
+        "market": "SZ",
+        "name": "国风新材",
+        "quote_date": "2026-11-13",
+        "volume": 26921100.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-11-13",
+          "code": "000859",
+          "components": {
+            "momentum": 0.0,
+            "risk": 67.88721718898448,
+            "structure": 85.0,
+            "trend": 0.0,
+            "volume": 45.415410297752146
+          },
+          "evidence_codes": [
+            "trailing_volume_observed",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure"
+          ],
+          "profile": "balanced",
+          "risk_codes": [
+            "high_realized_volatility",
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 33.99539412301049
+        },
+        "trend": {
+          "as_of": "2026-11-13",
+          "code": "000859",
+          "components": {
+            "momentum": 0.0,
+            "risk": 67.88721718898448,
+            "structure": 85.0,
+            "trend": 0.0,
+            "volume": 45.415410297752146
+          },
+          "evidence_codes": [
+            "trailing_volume_observed"
+          ],
+          "profile": "trend",
+          "risk_codes": [
+            "high_realized_volatility",
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 13.60103326356127
+        }
+      },
+      "status": {
+        "code": "000859",
+        "name": "国风新材",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "188f94d6e4f02e29e408cb15c5a96a994e1696b7707726e9822e84b62fd0d7e1",
+      "latest_trade_date": "2026-11-13",
+      "provider_metrics": [
+        {
+          "cache_hit": false,
+          "duration_ms": 6261,
+          "error_code": "network_error",
+          "outcome": "failure",
+          "provider_name": "akshare",
+          "retry": false
+        },
+        {
+          "cache_hit": false,
+          "duration_ms": 3551,
+          "error_code": null,
+          "outcome": "success",
+          "provider_name": "sina",
+          "retry": true
+        }
+      ],
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 87059743.0,
+        "change_pct": -0.708,
+        "code": "000795",
+        "latest_price": 8.42,
+        "market": "SZ",
+        "name": "英洛华",
+        "quote_date": "2026-11-13",
+        "volume": 10277698.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-11-13",
+          "code": "000795",
+          "components": {
+            "momentum": 48.18648471213531,
+            "risk": 100.0,
+            "structure": 100.0,
+            "trend": 69.95717706165313,
+            "volume": 57.13452068309813
+          },
+          "evidence_codes": [
+            "close_above_ma20",
+            "ma20_above_ma60",
+            "macd_line_above_signal",
+            "ma20_slope_positive",
+            "positive_20_day_momentum",
+            "positive_60_day_momentum",
+            "positive_macd_histogram",
+            "trailing_volume_observed",
+            "volume_with_positive_price_change",
+            "risk_measures_within_moderate_ranges",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure",
+            "confirmed_central_breakout_observation"
+          ],
+          "profile": "balanced",
+          "risk_codes": [],
+          "rule_version": "market-scan-v1",
+          "total": 74.19462816338772
+        },
+        "trend": {
+          "as_of": "2026-11-13",
+          "code": "000795",
+          "components": {
+            "momentum": 48.18648471213531,
+            "risk": 100.0,
+            "structure": 100.0,
+            "trend": 69.95717706165313,
+            "volume": 57.13452068309813
+          },
+          "evidence_codes": [
+            "close_above_ma20",
+            "ma20_above_ma60",
+            "macd_line_above_signal",
+            "ma20_slope_positive",
+            "positive_20_day_momentum",
+            "positive_60_day_momentum",
+            "positive_macd_histogram",
+            "trailing_volume_observed",
+            "volume_with_positive_price_change",
+            "risk_measures_within_moderate_ranges"
+          ],
+          "profile": "trend",
+          "risk_codes": [],
+          "rule_version": "market-scan-v1",
+          "total": 64.50685319384922
+        }
+      },
+      "status": {
+        "code": "000795",
+        "name": "英洛华",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "a257beacb8286e4abbd5b8e28e5265a938b29a7919e66003e52b47c41e150c43",
+      "latest_trade_date": "2026-11-13",
+      "provider_metrics": [
+        {
+          "cache_hit": false,
+          "duration_ms": 0,
+          "error_code": "provider_circuit_open",
+          "outcome": "failure",
+          "provider_name": "akshare",
+          "retry": false
+        },
+        {
+          "cache_hit": false,
+          "duration_ms": 2961,
+          "error_code": null,
+          "outcome": "success",
+          "provider_name": "sina",
+          "retry": true
+        }
+      ],
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 162897849.0,
+        "change_pct": -2.457,
+        "code": "000875",
+        "latest_price": 3.97,
+        "market": "SZ",
+        "name": "电投绿能",
+        "quote_date": "2026-11-13",
+        "volume": 40649611.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-11-13",
+          "code": "000875",
+          "components": {
+            "momentum": 0.0,
+            "risk": 83.26380980826002,
+            "structure": 85.0,
+            "trend": 0.0,
+            "volume": 58.3048986163015
+          },
+          "evidence_codes": [
+            "trailing_volume_observed",
+            "volume_above_20_day_average",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure"
+          ],
+          "profile": "balanced",
+          "risk_codes": [
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 38.23530626368423
+        },
+        "trend": {
+          "as_of": "2026-11-13",
+          "code": "000875",
+          "components": {
+            "momentum": 0.0,
+            "risk": 83.26380980826002,
+            "structure": 85.0,
+            "trend": 0.0,
+            "volume": 58.3048986163015
+          },
+          "evidence_codes": [
+            "trailing_volume_observed",
+            "volume_above_20_day_average"
+          ],
+          "profile": "trend",
+          "risk_codes": [
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 17.07211577327123
+        }
+      },
+      "status": {
+        "code": "000875",
+        "name": "电投绿能",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "5b5b1e6741845eb2e2c3864079d64c3443b04796373983c6b7acdbf75050bce5",
+      "latest_trade_date": "2026-11-13",
+      "provider_metrics": [
+        {
+          "cache_hit": false,
+          "duration_ms": 0,
+          "error_code": "provider_circuit_open",
+          "outcome": "failure",
+          "provider_name": "akshare",
+          "retry": false
+        },
+        {
+          "cache_hit": false,
+          "duration_ms": 3421,
+          "error_code": null,
+          "outcome": "success",
+          "provider_name": "sina",
+          "retry": true
+        }
+      ],
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 320845200.0,
+        "change_pct": 3.279,
+        "code": "000860",
+        "latest_price": 11.97,
+        "market": "SZ",
+        "name": "顺鑫农业",
+        "quote_date": "2026-11-13",
+        "volume": 27136279.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-11-13",
+          "code": "000860",
+          "components": {
+            "momentum": 61.044362292051765,
+            "risk": 78.39768025488164,
+            "structure": 100.0,
+            "trend": 84.27342784778851,
+            "volume": 66.31073884906436
+          },
+          "evidence_codes": [
+            "close_above_ma20",
+            "ma20_above_ma60",
+            "ma60_above_ma120",
+            "ma20_slope_positive",
+            "ma60_slope_positive",
+            "positive_20_day_momentum",
+            "positive_60_day_momentum",
+            "trailing_volume_observed",
+            "volume_with_positive_price_change",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure",
+            "confirmed_central_breakout_observation"
+          ],
+          "profile": "balanced",
+          "risk_codes": [
+            "high_realized_volatility"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 79.19716367833881
+        },
+        "trend": {
+          "as_of": "2026-11-13",
+          "code": "000860",
+          "components": {
+            "momentum": 61.044362292051765,
+            "risk": 78.39768025488164,
+            "structure": 100.0,
+            "trend": 84.27342784778851,
+            "volume": 66.31073884906436
+          },
+          "evidence_codes": [
+            "close_above_ma20",
+            "ma20_above_ma60",
+            "ma60_above_ma120",
+            "ma20_slope_positive",
+            "ma60_slope_positive",
+            "positive_20_day_momentum",
+            "positive_60_day_momentum",
+            "trailing_volume_observed",
+            "volume_with_positive_price_change"
+          ],
+          "profile": "trend",
+          "risk_codes": [
+            "high_realized_volatility"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 74.02273007196818
+        }
+      },
+      "status": {
+        "code": "000860",
+        "name": "顺鑫农业",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "51d9626f1442bc1eead0bb995f24393c91cd3396551c2f5e4c067517747be7c0",
+      "latest_trade_date": "2026-11-13",
+      "provider_metrics": [
+        {
+          "cache_hit": false,
+          "duration_ms": 0,
+          "error_code": "provider_circuit_open",
+          "outcome": "failure",
+          "provider_name": "akshare",
+          "retry": false
+        },
+        {
+          "cache_hit": false,
+          "duration_ms": 4188,
+          "error_code": null,
+          "outcome": "success",
+          "provider_name": "sina",
+          "retry": true
+        }
+      ],
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 261656444.0,
+        "change_pct": 2.158,
+        "code": "000876",
+        "latest_price": 7.1,
+        "market": "SZ",
+        "name": "新 希 望",
+        "quote_date": "2026-11-13",
+        "volume": 36905369.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-11-13",
+          "code": "000876",
+          "components": {
+            "momentum": 53.555935617434514,
+            "risk": 88.56596670197874,
+            "structure": 100.0,
+            "trend": 59.808886625474805,
+            "volume": 80.21259376052414
+          },
+          "evidence_codes": [
+            "close_above_ma20",
+            "ma60_above_ma120",
+            "macd_line_above_signal",
+            "ma20_slope_positive",
+            "ma60_slope_positive",
+            "positive_20_day_momentum",
+            "positive_60_day_momentum",
+            "positive_macd_histogram",
+            "trailing_volume_observed",
+            "volume_above_20_day_average",
+            "volume_with_positive_price_change",
+            "risk_measures_within_moderate_ranges",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure",
+            "confirmed_central_breakout_observation"
+          ],
+          "profile": "balanced",
+          "risk_codes": [],
+          "rule_version": "market-scan-v1",
+          "total": 73.97063718050478
+        },
+        "trend": {
+          "as_of": "2026-11-13",
+          "code": "000876",
+          "components": {
+            "momentum": 53.555935617434514,
+            "risk": 88.56596670197874,
+            "structure": 100.0,
+            "trend": 59.808886625474805,
+            "volume": 80.21259376052414
+          },
+          "evidence_codes": [
+            "close_above_ma20",
+            "ma60_above_ma120",
+            "macd_line_above_signal",
+            "ma20_slope_positive",
+            "ma60_slope_positive",
+            "positive_20_day_momentum",
+            "positive_60_day_momentum",
+            "positive_macd_histogram",
+            "trailing_volume_observed",
+            "volume_above_20_day_average",
+            "volume_with_positive_price_change",
+            "risk_measures_within_moderate_ranges"
+          ],
+          "profile": "trend",
+          "risk_codes": [],
+          "rule_version": "market-scan-v1",
+          "total": 63.86926540097051
+        }
+      },
+      "status": {
+        "code": "000876",
+        "name": "新 希 望",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "463a463ca8018e8742c75898e26f85afcbd57c7ce3b600fa6b3c7fd39c43753c",
+      "latest_trade_date": "2026-11-13",
+      "provider_metrics": [
+        {
+          "cache_hit": false,
+          "duration_ms": 0,
+          "error_code": "provider_circuit_open",
+          "outcome": "failure",
+          "provider_name": "akshare",
+          "retry": false
+        },
+        {
+          "cache_hit": false,
+          "duration_ms": 5888,
+          "error_code": null,
+          "outcome": "success",
+          "provider_name": "sina",
+          "retry": true
+        }
+      ],
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 67099943.0,
+        "change_pct": -0.242,
+        "code": "000863",
+        "latest_price": 4.12,
+        "market": "SZ",
+        "name": "三湘印象",
+        "quote_date": "2026-11-13",
+        "volume": 16125893.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-11-13",
+          "code": "000863",
+          "components": {
+            "momentum": 32.21454274179395,
+            "risk": 71.5000542369381,
+            "structure": 85.0,
+            "trend": 34.258846728824786,
+            "volume": 49.00729210252257
+          },
+          "evidence_codes": [
+            "close_above_ma20",
+            "macd_line_above_signal",
+            "positive_macd_histogram",
+            "trailing_volume_observed",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure"
+          ],
+          "profile": "balanced",
+          "risk_codes": [
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 51.79666451792532
+        },
+        "trend": {
+          "as_of": "2026-11-13",
+          "code": "000863",
+          "components": {
+            "momentum": 32.21454274179395,
+            "risk": 71.5000542369381,
+            "structure": 85.0,
+            "trend": 34.258846728824786,
+            "volume": 49.00729210252257
+          },
+          "evidence_codes": [
+            "close_above_ma20",
+            "macd_line_above_signal",
+            "positive_macd_histogram",
+            "trailing_volume_observed"
+          ],
+          "profile": "trend",
+          "risk_codes": [
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 39.58194308958153
+        }
+      },
+      "status": {
+        "code": "000863",
+        "name": "三湘印象",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "74df1a7f4b5cc0e13f13722c04c9ef0fa281463be23a08fe9ebe95d9d53ca6a8",
+      "latest_trade_date": "2026-11-13",
+      "provider_metrics": [
+        {
+          "cache_hit": false,
+          "duration_ms": 0,
+          "error_code": "provider_circuit_open",
+          "outcome": "failure",
+          "provider_name": "akshare",
+          "retry": false
+        },
+        {
+          "cache_hit": false,
+          "duration_ms": 3048,
+          "error_code": null,
+          "outcome": "success",
+          "provider_name": "sina",
+          "retry": true
+        }
+      ],
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 73957405.0,
+        "change_pct": -4.235,
+        "code": "000877",
+        "latest_price": 2.94,
+        "market": "SZ",
+        "name": "天山股份",
+        "quote_date": "2026-11-13",
+        "volume": 24790029.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-11-13",
+          "code": "000877",
+          "components": {
+            "momentum": 0.0,
+            "risk": 77.08596060971423,
+            "structure": 85.0,
+            "trend": 0.0,
+            "volume": 85.04036573463458
+          },
+          "evidence_codes": [
+            "trailing_volume_observed",
+            "volume_above_20_day_average",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure"
+          ],
+          "profile": "balanced",
+          "risk_codes": [
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 41.318948951652324
+        },
+        "trend": {
+          "as_of": "2026-11-13",
+          "code": "000877",
+          "components": {
+            "momentum": 0.0,
+            "risk": 77.08596060971423,
+            "structure": 85.0,
+            "trend": 0.0,
+            "volume": 85.04036573463458
+          },
+          "evidence_codes": [
+            "trailing_volume_observed",
+            "volume_above_20_day_average"
+          ],
+          "profile": "trend",
+          "risk_codes": [
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 20.46465092116661
+        }
+      },
+      "status": {
+        "code": "000877",
+        "name": "天山股份",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "e67162f77ada804c97cc500e36fb653ed06a312b0e61a2447e36ce22e921b128",
+      "latest_trade_date": "2026-11-13",
+      "provider_metrics": [
+        {
+          "cache_hit": false,
+          "duration_ms": 0,
+          "error_code": "provider_circuit_open",
+          "outcome": "failure",
+          "provider_name": "akshare",
+          "retry": false
+        },
+        {
+          "cache_hit": false,
+          "duration_ms": 2933,
+          "error_code": null,
+          "outcome": "success",
+          "provider_name": "sina",
+          "retry": true
+        }
+      ],
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 303079544.0,
+        "change_pct": -5.149,
+        "code": "000880",
+        "latest_price": 19.16,
+        "market": "SZ",
+        "name": "潍柴重机",
+        "quote_date": "2026-11-13",
+        "volume": 15468906.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-11-13",
+          "code": "000880",
+          "components": {
+            "momentum": 0.0,
+            "risk": 52.13023098944836,
+            "structure": 85.0,
+            "trend": 0.0,
+            "volume": 76.6212242421166
+          },
+          "evidence_codes": [
+            "trailing_volume_observed",
+            "volume_above_20_day_average",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure"
+          ],
+          "profile": "balanced",
+          "risk_codes": [
+            "high_realized_volatility",
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 36.31271828473474
+        },
+        "trend": {
+          "as_of": "2026-11-13",
+          "code": "000880",
+          "components": {
+            "momentum": 0.0,
+            "risk": 52.13023098944836,
+            "structure": 85.0,
+            "trend": 0.0,
+            "volume": 76.6212242421166
+          },
+          "evidence_codes": [
+            "trailing_volume_observed",
+            "volume_above_20_day_average"
+          ],
+          "profile": "trend",
+          "risk_codes": [
+            "high_realized_volatility",
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 16.706206735262327
+        }
+      },
+      "status": {
+        "code": "000880",
+        "name": "潍柴重机",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "1d0f06f59d161965bab8728e5619b22e63352a9947f06f0f00da4446fa2a8a5f",
+      "latest_trade_date": "2026-11-13",
+      "provider_metrics": [
+        {
+          "cache_hit": false,
+          "duration_ms": 0,
+          "error_code": "provider_circuit_open",
+          "outcome": "failure",
+          "provider_name": "akshare",
+          "retry": false
+        },
+        {
+          "cache_hit": false,
+          "duration_ms": 4701,
+          "error_code": null,
+          "outcome": "success",
+          "provider_name": "sina",
+          "retry": true
+        }
+      ],
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 313977894.0,
+        "change_pct": -2.765,
+        "code": "000878",
+        "latest_price": 13.01,
+        "market": "SZ",
+        "name": "云南铜业",
+        "quote_date": "2026-11-13",
+        "volume": 23807361.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-11-13",
+          "code": "000878",
+          "components": {
+            "momentum": 20.0,
+            "risk": 67.94089075918454,
+            "structure": 85.0,
+            "trend": 9.75,
+            "volume": 42.54007948042968
+          },
+          "evidence_codes": [
+            "macd_line_above_signal",
+            "positive_macd_histogram",
+            "trailing_volume_observed",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure"
+          ],
+          "profile": "balanced",
+          "risk_codes": [
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 40.49714553594213
+        },
+        "trend": {
+          "as_of": "2026-11-13",
+          "code": "000878",
+          "components": {
+            "momentum": 20.0,
+            "risk": 67.94089075918454,
+            "structure": 85.0,
+            "trend": 9.75,
+            "volume": 42.54007948042968
+          },
+          "evidence_codes": [
+            "macd_line_above_signal",
+            "positive_macd_histogram",
+            "trailing_volume_observed"
+          ],
+          "profile": "trend",
+          "risk_codes": [
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 23.562600997982905
+        }
+      },
+      "status": {
+        "code": "000878",
+        "name": "云南铜业",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "c53512ef703e076a5ea8aa997a7c9bcc3bfc171f20ab50bf1f8b3e6e5e63fa87",
+      "latest_trade_date": "2026-11-13",
+      "provider_metrics": [
+        {
+          "cache_hit": false,
+          "duration_ms": 0,
+          "error_code": "provider_circuit_open",
+          "outcome": "failure",
+          "provider_name": "akshare",
+          "retry": false
+        },
+        {
+          "cache_hit": false,
+          "duration_ms": 3309,
+          "error_code": null,
+          "outcome": "success",
+          "provider_name": "sina",
+          "retry": true
+        }
+      ],
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 124585865.0,
+        "change_pct": -3.378,
+        "code": "000882",
+        "latest_price": 1.43,
+        "market": "SZ",
+        "name": "华联股份",
+        "quote_date": "2026-11-13",
+        "volume": 85931271.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-11-13",
+          "code": "000882",
+          "components": {
+            "momentum": 32.288087990142785,
+            "risk": 85.49580665827067,
+            "structure": 85.0,
+            "trend": 45.91586146828079,
+            "volume": 94.95459709353065
+          },
+          "evidence_codes": [
+            "close_above_ma20",
+            "ma60_above_ma120",
+            "macd_line_above_signal",
+            "positive_macd_histogram",
+            "trailing_volume_observed",
+            "volume_above_20_day_average",
+            "risk_measures_within_moderate_ranges",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure"
+          ],
+          "profile": "balanced",
+          "risk_codes": [],
+          "rule_version": "market-scan-v1",
+          "total": 64.299936601283
+        },
+        "trend": {
+          "as_of": "2026-11-13",
+          "code": "000882",
+          "components": {
+            "momentum": 32.288087990142785,
+            "risk": 85.49580665827067,
+            "structure": 85.0,
+            "trend": 45.91586146828079,
+            "volume": 94.95459709353065
+          },
+          "evidence_codes": [
+            "close_above_ma20",
+            "ma60_above_ma120",
+            "macd_line_above_signal",
+            "positive_macd_histogram",
+            "trailing_volume_observed",
+            "volume_above_20_day_average",
+            "risk_measures_within_moderate_ranges"
+          ],
+          "profile": "trend",
+          "risk_codes": [],
+          "rule_version": "market-scan-v1",
+          "total": 53.14133428762585
+        }
+      },
+      "status": {
+        "code": "000882",
+        "name": "华联股份",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "b3731636f31ba41d4f90c6cd2db07121c09ab42afcbd111309d99c2fc12b934d",
+      "latest_trade_date": "2026-11-13",
+      "provider_metrics": [
+        {
+          "cache_hit": false,
+          "duration_ms": 0,
+          "error_code": "provider_circuit_open",
+          "outcome": "failure",
+          "provider_name": "akshare",
+          "retry": false
+        },
+        {
+          "cache_hit": false,
+          "duration_ms": 1952,
+          "error_code": null,
+          "outcome": "success",
+          "provider_name": "sina",
+          "retry": true
+        }
+      ],
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 324564847.0,
+        "change_pct": 1.22,
+        "code": "600312",
+        "latest_price": 20.75,
+        "market": "SH",
+        "name": "平高电气",
+        "quote_date": "2026-11-13",
+        "volume": 15533600.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-11-13",
+          "code": "600312",
+          "components": {
+            "momentum": 24.936367368413638,
+            "risk": 91.53246799926632,
+            "structure": 85.0,
+            "trend": 51.018812643938816,
+            "volume": 38.27630752606119
+          },
+          "evidence_codes": [
+            "ma20_above_ma60",
+            "ma60_above_ma120",
+            "ma20_slope_positive",
+            "ma60_slope_positive",
+            "positive_20_day_momentum",
+            "positive_60_day_momentum",
+            "trailing_volume_observed",
+            "volume_with_positive_price_change",
+            "risk_measures_within_moderate_ranges",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure"
+          ],
+          "profile": "balanced",
+          "risk_codes": [],
+          "rule_version": "market-scan-v1",
+          "total": 56.7642335956635
+        },
+        "trend": {
+          "as_of": "2026-11-13",
+          "code": "600312",
+          "components": {
+            "momentum": 24.936367368413638,
+            "risk": 91.53246799926632,
+            "structure": 85.0,
+            "trend": 51.018812643938816,
+            "volume": 38.27630752606119
+          },
+          "evidence_codes": [
+            "ma20_above_ma60",
+            "ma60_above_ma120",
+            "ma20_slope_positive",
+            "ma60_slope_positive",
+            "positive_20_day_momentum",
+            "positive_60_day_momentum",
+            "trailing_volume_observed",
+            "volume_with_positive_price_change",
+            "risk_measures_within_moderate_ranges"
+          ],
+          "profile": "trend",
+          "risk_codes": [],
+          "rule_version": "market-scan-v1",
+          "total": 45.33406882913237
+        }
+      },
+      "status": {
+        "code": "600312",
+        "name": "平高电气",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
+    },
+    {
+      "history_hash": "1db8ecd6e72aae3c49a19d12948a24ddc868596d70ecf3fd647e0a929f8de057",
+      "latest_trade_date": "2026-11-13",
+      "provider_metrics": [
+        {
+          "cache_hit": false,
+          "duration_ms": 0,
+          "error_code": "provider_circuit_open",
+          "outcome": "failure",
+          "provider_name": "akshare",
+          "retry": false
+        },
+        {
+          "cache_hit": false,
+          "duration_ms": 4909,
+          "error_code": null,
+          "outcome": "success",
+          "provider_name": "sina",
+          "retry": true
+        }
+      ],
+      "provider_name": "sina",
+      "provider_names": [
+        "sina"
+      ],
+      "quote": {
+        "amount": 342686027.0,
+        "change_pct": -3.852,
+        "code": "300065",
+        "latest_price": 12.98,
+        "market": "SZ",
+        "name": "海兰信",
+        "quote_date": "2026-11-13",
+        "volume": 25824082.0
+      },
+      "scores": {
+        "balanced": {
+          "as_of": "2026-11-13",
+          "code": "300065",
+          "components": {
+            "momentum": 20.0,
+            "risk": 56.7400558562395,
+            "structure": 85.0,
+            "trend": 12.114151585911628,
+            "volume": 37.1613010721951
+          },
+          "evidence_codes": [
+            "macd_line_above_signal",
+            "positive_macd_histogram",
+            "trailing_volume_observed",
+            "confirmed_fractal_structure",
+            "confirmed_stroke_structure",
+            "confirmed_central_structure"
+          ],
+          "profile": "balanced",
+          "risk_codes": [
+            "high_realized_volatility",
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 38.71944901503868
+        },
+        "trend": {
+          "as_of": "2026-11-13",
+          "code": "300065",
+          "components": {
+            "momentum": 20.0,
+            "risk": 56.7400558562395,
+            "structure": 85.0,
+            "trend": 12.114151585911628,
+            "volume": 37.1613010721951
+          },
+          "evidence_codes": [
+            "macd_line_above_signal",
+            "positive_macd_histogram",
+            "trailing_volume_observed"
+          ],
+          "profile": "trend",
+          "risk_codes": [
+            "high_realized_volatility",
+            "deep_trailing_drawdown"
+          ],
+          "rule_version": "market-scan-v1",
+          "total": 22.69956896011345
+        }
+      },
+      "status": {
+        "code": "300065",
+        "name": "海兰信",
+        "provider_name": "sina",
+        "provider_names": [],
+        "reason_codes": [],
+        "status": "valid"
+      }
     }
   ],
   "execution_date": "2026-11-13",
-  "last_batch": 37,
+  "last_batch": 38,
   "manifest_hash": "a23ae4909e3fc7ff356a85401a3e553fab09e174c9eccff31066bbcf2b560a70",
   "market_state": {
     "breadth": {
@@ -416111,5 +416456,5 @@
       "volume": 758823.0
     }
   ],
-  "updated_at": "2026-11-13T10:21:45.932060Z"
+  "updated_at": "2026-11-13T15:24:50.309125Z"
 }

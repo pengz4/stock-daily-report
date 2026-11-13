@@ -232,7 +232,7 @@
       "trend_score": 87.67807356901507
     }
   ],
-  "coverage": 0.9818477377404498,
+  "coverage": 0.9867244649146573,
   "eligible_count": 3691,
   "exclusion_counts": {
     "data_quality_rejected": 49,
@@ -242,12 +242,9 @@
     "special_treatment_name": 196,
     "suspended_quote": 8
   },
-  "failure_counts": {
-    "all_providers_failed": 15,
-    "fetch_timeout": 3
-  },
-  "generated_at": "2026-11-13T10:21:45.672618Z",
-  "input_hash": "1c39d4b6ac6c91423938efd04480c8a077cb37c8032ca730d1c5333ae2b88d76",
+  "failure_counts": {},
+  "generated_at": "2026-11-13T15:24:49.914235Z",
+  "input_hash": "e2a7f7f18042d99fb8d1905df4566c1c367d3b87a12ff44ce4c35b183c366eb1",
   "market_state": {
     "breadth": {
       "advance_decline_ratio": 0.16115441331367178,
@@ -347,7 +344,6 @@
   "provider_names": [
     "MarketDataService",
     "akshare",
-    "selection",
     "sina",
     "sina-index"
   ],
@@ -4798,12 +4794,10 @@
     {
       "code": "000792",
       "name": "盐湖股份",
-      "provider_name": "MarketDataService",
+      "provider_name": "akshare",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000793",
@@ -4819,15 +4813,10 @@
     {
       "code": "000795",
       "name": "英洛华",
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "sina"
-      ],
-      "reason_codes": [
-        "all_providers_failed"
-      ],
-      "status": "history_failed"
+      "provider_name": "sina",
+      "provider_names": [],
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000796",
@@ -4948,15 +4937,10 @@
     {
       "code": "000815",
       "name": "美利云",
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "sina"
-      ],
-      "reason_codes": [
-        "all_providers_failed"
-      ],
-      "status": "history_failed"
+      "provider_name": "akshare",
+      "provider_names": [],
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000816",
@@ -5042,15 +5026,10 @@
     {
       "code": "000828",
       "name": "东莞控股",
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "sina"
-      ],
-      "reason_codes": [
-        "all_providers_failed"
-      ],
-      "status": "history_failed"
+      "provider_name": "akshare",
+      "provider_names": [],
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000829",
@@ -5110,28 +5089,18 @@
     {
       "code": "000839",
       "name": "国安股份",
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "sina"
-      ],
-      "reason_codes": [
-        "all_providers_failed"
-      ],
-      "status": "history_failed"
+      "provider_name": "akshare",
+      "provider_names": [],
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000848",
       "name": "承德露露",
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "sina"
-      ],
-      "reason_codes": [
-        "all_providers_failed"
-      ],
-      "status": "history_failed"
+      "provider_name": "sina",
+      "provider_names": [],
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000850",
@@ -5166,41 +5135,26 @@
     {
       "code": "000858",
       "name": "五 粮 液",
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "sina"
-      ],
-      "reason_codes": [
-        "all_providers_failed"
-      ],
-      "status": "history_failed"
+      "provider_name": "sina",
+      "provider_names": [],
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000859",
       "name": "国风新材",
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "sina"
-      ],
-      "reason_codes": [
-        "all_providers_failed"
-      ],
-      "status": "history_failed"
+      "provider_name": "sina",
+      "provider_names": [],
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000860",
       "name": "顺鑫农业",
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "sina"
-      ],
-      "reason_codes": [
-        "all_providers_failed"
-      ],
-      "status": "history_failed"
+      "provider_name": "sina",
+      "provider_names": [],
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000862",
@@ -5215,15 +5169,10 @@
     {
       "code": "000863",
       "name": "三湘印象",
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "sina"
-      ],
-      "reason_codes": [
-        "all_providers_failed"
-      ],
-      "status": "history_failed"
+      "provider_name": "sina",
+      "provider_names": [],
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000868",
@@ -5248,67 +5197,42 @@
     {
       "code": "000875",
       "name": "电投绿能",
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "sina"
-      ],
-      "reason_codes": [
-        "all_providers_failed"
-      ],
-      "status": "history_failed"
+      "provider_name": "sina",
+      "provider_names": [],
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000876",
       "name": "新 希 望",
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "sina"
-      ],
-      "reason_codes": [
-        "all_providers_failed"
-      ],
-      "status": "history_failed"
+      "provider_name": "sina",
+      "provider_names": [],
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000877",
       "name": "天山股份",
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "sina"
-      ],
-      "reason_codes": [
-        "all_providers_failed"
-      ],
-      "status": "history_failed"
+      "provider_name": "sina",
+      "provider_names": [],
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000878",
       "name": "云南铜业",
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "sina"
-      ],
-      "reason_codes": [
-        "all_providers_failed"
-      ],
-      "status": "history_failed"
+      "provider_name": "sina",
+      "provider_names": [],
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000880",
       "name": "潍柴重机",
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "sina"
-      ],
-      "reason_codes": [
-        "all_providers_failed"
-      ],
-      "status": "history_failed"
+      "provider_name": "sina",
+      "provider_names": [],
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000881",
@@ -5323,15 +5247,10 @@
     {
       "code": "000882",
       "name": "华联股份",
-      "provider_name": "selection",
-      "provider_names": [
-        "akshare",
-        "sina"
-      ],
-      "reason_codes": [
-        "all_providers_failed"
-      ],
-      "status": "history_failed"
+      "provider_name": "sina",
+      "provider_names": [],
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "000883",
@@ -15904,12 +15823,10 @@
     {
       "code": "300065",
       "name": "海兰信",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "300066",
@@ -29689,12 +29606,10 @@
     {
       "code": "600312",
       "name": "平高电气",
-      "provider_name": "MarketDataService",
+      "provider_name": "sina",
       "provider_names": [],
-      "reason_codes": [
-        "fetch_timeout"
-      ],
-      "status": "history_failed"
+      "reason_codes": [],
+      "status": "valid"
     },
     {
       "code": "600313",
@@ -51225,5 +51140,5 @@
     }
   ],
   "universe_count": 5578,
-  "valid_count": 3624
+  "valid_count": 3642
 }
