@@ -57,12 +57,43 @@ jobs:
           if [ "$SCAN_SCOPE" = watchlist ]; then
             args+=(--scope watchlist --watchlist config/watchlist.yaml)
           fi
-          python -m stock_daily_report.cli market-scan \
+          python - market-scan \
             --date "$REPORT_DATE" \
             --settings config/market_scan.yaml \
             --data-settings config/settings.yaml \
             --output-root . \
-            --resumable "${args[@]}"
+            --resumable "${args[@]}" <<'PY'
+          import sys
+          import time
+          from urllib.parse import urlparse
+
+          import requests
+          import stock_daily_report.cli as cli
+
+          original_get = requests.get
+
+          def get_with_bounded_sina_retries(url, *args, **kwargs):
+              if urlparse(url).hostname != "vip.stock.finance.sina.com.cn":
+                  return original_get(url, *args, **kwargs)
+              kwargs.setdefault("timeout", 8)
+              for attempt in range(4):
+                  try:
+                      return original_get(url, *args, **kwargs)
+                  except requests.exceptions.RequestException:
+                      if attempt == 3:
+                          raise
+                      time.sleep(attempt + 1)
+
+          requests.get = get_with_bounded_sina_retries
+          original_provider = cli.AkShareUniverseProvider
+
+          def provider_with_longer_deadline(*args, **kwargs):
+              kwargs["request_timeout_seconds"] = 480
+              return original_provider(*args, **kwargs)
+
+          cli.AkShareUniverseProvider = provider_with_longer_deadline
+          raise SystemExit(cli.main(sys.argv[1:]))
+          PY
       - name: Upload isolated scan
         if: always()
         uses: actions/upload-artifact@v4
